@@ -1,0 +1,11 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ url('estate_unit', {slug: application.unit.slug}) }}{% endblock %}
+{% block action_text %}Revoir le logement{% endblock %}
+{% block content %}
+<p>Bonjour {{ application.firstName }},</p>
+<p>Votre candidature a retenu notre attention : nous vous proposons de visiter <strong>{{ application.unit.name }}</strong> le <strong>{{ application.visitAt|format_datetime('full', 'short') }}</strong>{% if application.unit.address %}, {{ application.unit.address }}, {{ application.unit.postcode }} {{ application.unit.city }}{% endif %}.</p>
+{% if note %}<p style="white-space: pre-line">{{ note }}</p>{% endif %}
+<p>Si ce créneau ne vous convient pas, répondez simplement à ce message.</p>
+<p>Bien cordialement,<br>{{ organisation.name }}</p>
+{% endblock %}

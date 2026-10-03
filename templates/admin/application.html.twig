@@ -1,0 +1,54 @@
+{% extends '@Admin/layout.html.twig' %}
+
+{% set titles = {visit: 'Proposer une visite', decline: 'Refuser la candidature', accept: 'Accepter la candidature'} %}
+{% block page_title %}{{ titles[do] }} — {{ application.name }}{% endblock %}
+
+{% block content_header %}
+<div class="admin-header">
+    <span class="admin-header-icon"><i class="fa-solid {{ {visit: 'fa-calendar-check', decline: 'fa-xmark', accept: 'fa-file-signature'}[do] }}"></i></span>
+    <div class="admin-header-titles">
+        <h1>{{ titles[do] }}</h1>
+        <div class="admin-header-subtitle">{{ application.name }} · {{ application.unit.name }} · reçue le {{ application.createdAt|format_date('long') }}</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .estate-admin-form { display: grid; gap: 1rem; max-width: 44rem; }
+    .estate-admin-form .card { padding: 1rem 1.25rem; }
+    .estate-admin-form dl { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1.25rem; margin: 0; }
+    .estate-admin-form dt { opacity: .7; } .estate-admin-form dd { margin: 0; font-weight: 600; }
+    .estate-admin-form form { display: grid; gap: .9rem; }
+    .estate-admin-form label { display: grid; gap: .3rem; font-weight: 600; }
+    .estate-admin-form label.check { display: flex; gap: .5rem; align-items: center; font-weight: 500; }
+    .estate-admin-form .help { opacity: .7; font-size: .9rem; margin: 0; }
+</style>
+<div class="estate-admin-form">
+    <div class="card"><dl>
+        <dt>E-mail</dt><dd>{{ application.email }}{% if application.phone %} · {{ application.phone }}{% endif %}</dd>
+        <dt>Foyer</dt><dd>{{ application.occupants }} personne{{ application.occupants > 1 ? 's' }}{% if application.moveInOn %}, entrée le {{ application.moveInOn|format_date('long') }}{% endif %}</dd>
+        <dt>Revenus nets</dt><dd>{{ application.income|euros }} / mois{% if application.incomeRatio %} — {{ application.incomeRatio|number_format(1, ',') }} × le loyer de {{ application.asked|euros }}{% endif %}</dd>
+        <dt>Garantie</dt><dd>{{ {visale: 'Visale', person: 'Garant personne', company: 'Organisme ou banque', none: 'Aucune'}[application.guarantee.value] }}</dd>
+        <dt>Dossier</dt><dd>{% if application.dossierUrl %}<a href="{{ application.dossierUrl }}" target="_blank" rel="noopener">ouvrir sur DossierFacile</a>{% else %}<span style="opacity: .7">aucun lien</span>{% endif %}</dd>
+        {% if application.message %}<dt>Message</dt><dd style="font-weight: 400; white-space: pre-line">{{ application.message }}</dd>{% endif %}
+    </dl></div>
+    <form method="post" class="card">
+        <input type="hidden" name="_token" value="{{ csrf_token('estate_application_' ~ do ~ '_' ~ application.id) }}">
+        {% if do == 'visit' %}
+            <label>Date et heure de la visite<input class="form-control" type="datetime-local" name="at" required value="{{ (application.visitAt ?? date('+2 days 18:00'))|date('Y-m-d\\TH:i') }}"></label>
+            <label>Un mot pour le candidat (facultatif)<textarea class="form-control" name="note" rows="3" placeholder="Code de l'immeuble, personne à demander…"></textarea></label>
+            <button class="btn btn-success" type="submit">Envoyer l'invitation</button>
+        {% elseif do == 'decline' %}
+            <label>Un mot pour le candidat (facultatif)<textarea class="form-control" name="note" rows="3"></textarea></label>
+            <p class="help">Le candidat reçoit un refus courtois ; sa candidature est supprimée trois mois plus tard.</p>
+            <button class="btn text-danger" type="submit">Refuser et prévenir le candidat</button>
+        {% else %}
+            <label>Début du bail<input class="form-control" type="date" name="startOn" required value="{{ (application.moveInOn ?? application.unit.availableFrom ?? date())|date('Y-m-d') }}"></label>
+            <p class="help">Le bail est créé avec le loyer ({{ application.unit.rent|euros }}), les charges ({{ application.unit.charges|euros }}) et le dépôt de garantie ({{ application.unit.deposit|euros }}) du bien ; le bien n'est plus proposé à la location.</p>
+            {% if others %}<label class="check"><input type="checkbox" name="declineOthers" value="1" checked> Refuser les {{ others|length }} autre{{ others|length > 1 ? 's' }} candidature{{ others|length > 1 ? 's' }} en cours pour ce bien (un e-mail courtois les prévient)</label>{% endif %}
+            <button class="btn btn-success" type="submit">Créer le bail</button>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}

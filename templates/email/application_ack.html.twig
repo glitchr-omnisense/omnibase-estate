@@ -1,0 +1,11 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ url('estate_unit', {slug: application.unit.slug}) }}{% endblock %}
+{% block action_text %}Revoir le logement{% endblock %}
+{% block content %}
+<p>Bonjour {{ application.firstName }},</p>
+<p>Merci pour votre candidature pour <strong>{{ application.unit.name }}</strong>. Nous l'étudions et revenons vers vous par e-mail, pour vous proposer une visite ou vous donner notre réponse.</p>
+{% if not application.dossierUrl %}<p>Pour aller plus vite, vous pouvez constituer votre dossier sur <a href="https://www.dossierfacile.logement.gouv.fr">DossierFacile</a>, le service de l'État, et nous en envoyer le lien en répondant à ce message.</p>{% endif %}
+<p>Vos informations ne servent qu'à cette candidature : elles sont supprimées trois mois après notre décision.</p>
+<p>Bien cordialement,<br>{{ organisation.name }}</p>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends '@Estate/client/layout.html.twig' %}
+
+{% block estate_title %}{{ order.title }}{% endblock %}
+{% block estate_eyebrow %}<p class="estate-eyebrow"><a href="{{ path('estate_contractor') }}">{{ '@estate.contractor.title'|trans }}</a> · #{{ order.id }} · {{ order.category }}</p>{% endblock %}
+{% block estate_class %}estate-space estate-work{% endblock %}
+{% block estate_actions %}<span class="estate-status is-{{ order.status.value }} is-large">{{ ('@estate.work.' ~ order.status.value)|trans }}</span>{% endblock %}
+
+{% block estate_content %}
+<div class="estate-columns">
+<div class="estate-stack">
+    <section class="estate-panel">
+        <h2>{{ '@estate.work.problem'|trans }}</h2>
+        <p class="estate-text">{{ order.description|nl2br }}</p>
+        <p class="estate-muted">{{ ('@estate.urgency.' ~ order.urgency.value)|trans }} · {{ '@estate.work.reported_on'|trans({date: order.createdAt|format_datetime('medium', 'short')}) }}</p>
+    </section>
+    <section class="estate-panel">
+        <h2>{{ '@estate.work.timeline'|trans }}</h2>
+        <ol class="estate-timeline">{% for event in order.events %}<li><time>{{ event.createdAt|format_datetime('short', 'short') }}</time> <b>{{ event.authorName }}</b> — {{ event.body }}</li>{% endfor %}</ol>
+    </section>
+    <section class="estate-panel">
+        <h2>{{ '@estate.work.update'|trans }}</h2>
+        {{ form_start(form, {attr: {class: 'estate-form is-wide', novalidate: 'novalidate'}}) }}
+            <div class="estate-form-row">{{ form_row(form.visitAt) }}{{ form_row(form.quote) }}</div>
+            {{ form_row(form.report) }}
+            <div class="estate-form-row">{{ form_row(form.invoice) }}{{ form_row(form.invoiceNumber) }}</div>
+            {{ form_row(form.done) }}
+            <button type="submit" class="estate-button">{{ '@estate.work.save'|trans }}</button>
+        {{ form_end(form) }}
+    </section>
+    <section class="estate-panel" id="files">
+        <h2>{{ '@estate.work.files'|trans }}</h2>
+        {% if files %}{% include '@Estate/client/_documents.html.twig' with {documents: files} %}{% else %}<p class="estate-empty">{{ '@estate.work.no_files'|trans }}</p>{% endif %}
+        {{ form_start(file, {attr: {class: 'estate-form is-wide', novalidate: 'novalidate'}}) }}
+            {{ form_row(file.kind) }}
+            <div class="estate-form-row">{{ form_row(file.file) }}{{ form_row(file.title) }}</div>
+            <button type="submit" class="estate-button">{{ '@estate.work.add_file'|trans }}</button>
+        {{ form_end(file) }}
+    </section>
+</div>
+<aside class="estate-stack">
+    <section class="estate-panel">
+        <h2>{{ '@estate.work.where'|trans }}</h2>
+        <p><strong>{{ order.unit.name }}</strong>{% if order.unit.door %} — {{ order.unit.door }}{% endif %}<br>{{ order.unit.address }}<br>{{ order.unit.postcode }} {{ order.unit.city }}</p>
+        {% if order.unit.building and order.unit.building.access %}<h3>{{ '@estate.work.access'|trans }}</h3><p class="estate-text">{{ order.unit.building.access|nl2br }}</p>{% endif %}
+        <p><a class="estate-button is-ghost is-small" href="https://www.openstreetmap.org/search?query={{ (order.unit.address ~ ' ' ~ order.unit.postcode ~ ' ' ~ order.unit.city)|url_encode }}" target="_blank" rel="noopener"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i> {{ '@estate.work.map'|trans }}</a></p>
+    </section>
+    {% if lease and order.status.isOpen %}
+    <section class="estate-panel">
+        <h2>{{ '@estate.work.resident'|trans }}</h2>
+        <ul class="estate-list">{% for party in lease.tenants %}<li><strong>{{ party.name }}</strong><span>{% if party.phone %}<a href="tel:{{ party.phone|replace({' ': ''}) }}">{{ party.phone }}</a> · {% endif %}{{ party.email }}</span></li>{% endfor %}</ul>
+    </section>
+    {% endif %}
+    <section class="estate-panel">
+        <h2>{{ '@estate.work.manager'|trans }}</h2>
+        <p>{{ order.organisation.name }}<br>{% if order.organisation.phone %}{{ order.organisation.phone }}<br>{% endif %}{% if order.organisation.email %}<a href="mailto:{{ order.organisation.email }}">{{ order.organisation.email }}</a>{% endif %}</p>
+    </section>
+</aside>
+</div>
+{% endblock %}

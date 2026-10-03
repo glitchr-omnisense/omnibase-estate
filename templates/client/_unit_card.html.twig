@@ -1,0 +1,18 @@
+{# A unit in a grid: its picture, its kind and neighbourhood, its name, its size, and whether it is free. #}
+<a class="estate-card" href="{{ path('estate_unit', {slug: unit.slug}) }}"{% if filterable ?? false %} data-estate-filter-target="card" data-kind="{{ unit.kind.value }}" data-free="{{ unit.availableFrom ? 1 : 0 }}"{% endif %}{{ (hidden ?? false) ? ' hidden' }}>
+    {% include '@Estate/client/_facade.html.twig' with {unit: unit} %}
+    <div class="estate-card-body">
+        <p class="estate-card-kind">{{ ('@estate.kind.' ~ unit.kind.value)|trans }}{% if unit.district %} · {{ unit.district }}{% endif %}</p>
+        <h3>{{ unit.name }}</h3>
+        <p class="estate-card-meta">
+            {% if unit.surface %}{{ unit.surface|number_format(0, ',', ' ') }} m²{% endif %}
+            {% if unit.rooms %} · {{ '@estate.unit.rooms_count'|trans({count: unit.rooms}) }}{% endif %}
+            {% if unit.rent %} · {{ (unit.rent + unit.charges)|euros(true) }}{{ '@estate.unit.per_month'|trans }}{% endif %}
+        </p>
+        {% if unit.availableFrom %}
+            <span class="estate-pill is-free">{{ unit.availableFrom <= date('today') ? '@estate.unit.free_now'|trans : '@estate.unit.free_on'|trans({date: unit.availableFrom|format_date('long')}) }}</span>
+        {% else %}
+            <span class="estate-pill">{{ '@estate.unit.let'|trans }}</span>
+        {% endif %}
+    </div>
+</a>

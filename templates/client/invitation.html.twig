@@ -1,0 +1,27 @@
+{% extends '@Estate/client/layout.html.twig' %}
+
+{% block estate_title %}{{ '@estate.invitation.title'|trans({name: invitation.organisation.name}) }}{% endblock %}
+{% block estate_lead %}{{ ('@estate.invitation.lead_' ~ invitation.kind.value)|trans({name: invitation.name}) }}{% endblock %}
+{% block estate_class %}estate-invitation{% endblock %}
+
+{% block estate_content %}
+<section class="estate-panel is-narrow">
+{% if app.user %}
+    <p>{{ '@estate.invitation.signed_in'|trans({user: app.user}) }}</p>
+    <form method="post">
+        <input type="hidden" name="_token" value="{{ csrf_token('invitation_' ~ invitation.id) }}">
+        <button type="submit" class="estate-button">{{ '@estate.invitation.attach'|trans }}</button>
+    </form>
+{% elseif existing %}
+    <p>{{ '@estate.invitation.existing'|trans({email: invitation.email}) }}</p>
+    <a class="estate-button" href="{{ path('security_login', {_target_path: path('estate_invitation', {token: token})}) }}">{{ '@estate.invitation.sign_in'|trans }}</a>
+{% else %}
+    <p>{{ '@estate.invitation.create'|trans({email: invitation.email}) }}</p>
+    {{ form_start(form, {attr: {class: 'estate-form', novalidate: 'novalidate'}}) }}
+        {{ form_row(form.username) }}
+        {{ form_row(form.password) }}
+        <button type="submit" class="estate-button">{{ '@estate.invitation.submit'|trans }}</button>
+    {{ form_end(form) }}
+{% endif %}
+</section>
+{% endblock %}

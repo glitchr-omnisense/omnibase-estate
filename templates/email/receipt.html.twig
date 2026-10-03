@@ -1,0 +1,10 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ url('estate_rent_document', {id: call.id, kind: 'quittance'}) }}{% endblock %}
+{% block action_text %}Télécharger la quittance{% endblock %}
+{% block content %}
+<p>Bonjour {{ lease.tenantNames }},</p>
+<p>Nous avons bien reçu <strong>{{ call.paid|euros }}</strong> pour le loyer de {{ call.period|format_date(pattern: 'MMMM yyyy') }} ({{ lease.unit.name }}). Merci !</p>
+<p>Votre quittance <strong>{{ call.receiptNumber }}</strong> est jointe et reste disponible dans votre espace locataire.</p>
+<p>{{ organisation.name }}</p>
+{% endblock %}

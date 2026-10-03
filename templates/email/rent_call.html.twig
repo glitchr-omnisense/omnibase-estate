@@ -1,0 +1,15 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ url('estate_tenant') }}{% endblock %}
+{% block action_text %}Voir et payer en ligne{% endblock %}
+{% block content %}
+<p>Bonjour {{ lease.tenantNames }},</p>
+<p>Voici l'avis d'échéance de <strong>{{ call.period|format_date(pattern: 'MMMM yyyy') }}</strong> pour {{ lease.unit.name }} :</p>
+<table style="width:100%;border-collapse:collapse">
+    <tr><td>Loyer</td><td style="text-align:right">{{ call.rent|euros }}</td></tr>
+    <tr><td>Provision sur charges</td><td style="text-align:right">{{ call.charges|euros }}</td></tr>
+    <tr><td><strong>À régler avant le {{ call.dueOn|format_date('long') }}</strong></td><td style="text-align:right"><strong>{{ call.total|euros }}</strong></td></tr>
+</table>
+<p>Par virement{% if organisation.iban %} sur l'IBAN <strong>{{ organisation.iban }}</strong>{% endif %}, avec la référence <strong>{{ call.reference }}</strong> - ou en ligne, par carte ou prélèvement, depuis votre espace locataire.</p>
+<p>{{ organisation.name }}</p>
+{% endblock %}

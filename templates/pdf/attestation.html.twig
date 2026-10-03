@@ -1,0 +1,14 @@
+{% extends '@Estate/pdf/_document.html.twig' %}
+{% set title = 'Attestation de loyer à jour — ' ~ lease.reference %}
+{% block document %}
+<h1>Attestation de loyer à jour</h1>
+<div class="ref">Bail {{ lease.reference }} · {{ on|format_date('long') }}</div>
+<p>{{ organisation.legalName ?? organisation.name }}{% if organisation.legalForm %}, {{ organisation.legalForm|lower }}{% endif %}{% if organisation.siren %} immatriculée sous le numéro SIREN {{ organisation.siren }}{% endif %}, bailleur, atteste que <strong>{{ lease.tenantNames }}</strong> occupe en qualité de locataire le logement {{ lease.unit.name }}{% if lease.unit.address %} situé {{ lease.unit.address }}{% if lease.unit.door %}, {{ lease.unit.door }}{% endif %}, {{ lease.unit.postcode }} {{ lease.unit.city }}{% endif %}, depuis le {{ lease.startOn|format_date('long') }}.</p>
+<table class="amounts">
+    <tr><td>Loyer mensuel</td><td class="num">{{ lease.rent|euros }}</td></tr>
+    <tr><td>Provision sur charges</td><td class="num">{{ lease.charges|euros }}</td></tr>
+    <tr class="total"><td>Total mensuel</td><td class="num">{{ lease.monthly|euros }}</td></tr>
+</table>
+<p>À la date du {{ on|format_date('long') }}, {{ lease.tenants|length > 1 ? 'les locataires sont' : 'le locataire est' }} à jour du paiement de {{ lease.tenants|length > 1 ? 'leurs' : 'ses' }} loyers et charges.</p>
+<div class="sign">Fait à {{ organisation.city ?? 'Strasbourg' }}, le {{ on|format_date('long') }}, pour servir et valoir ce que de droit.<br><strong>{{ organisation.name }}</strong></div>
+{% endblock %}

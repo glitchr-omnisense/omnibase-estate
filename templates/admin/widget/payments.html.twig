@@ -1,0 +1,30 @@
+{# EstatePayments: money in this month, per way, and the latest payments. #}
+<div class="analytics-card card estate-payments">
+    <div class="analytics-card-header">
+        <h2 class="analytics-card-title">{{ widget.label|trans({}, 'admin') }}</h2>
+        <span class="estate-payments-online {{ online ? 'is-on' : 'is-off' }}">{{ online ? 'Paiement en ligne actif (carte, SEPA)' : 'Paiement en ligne inactif — clé Stripe à renseigner' }}</span>
+    </div>
+    <div class="estate-payments-split">
+        <div class="estate-payments-total"><strong>{{ total|euros }}</strong><span>reçus ce mois-ci</span></div>
+        <ul>{% for method, amount in byMethod %}<li><span>{{ methods[method] }}</span><b>{{ amount|euros }}</b><i style="width: {{ total ? (100 * amount / total)|round : 0 }}%"></i></li>{% else %}<li class="text-muted">Aucun paiement ce mois-ci.</li>{% endfor %}</ul>
+    </div>
+    <table class="table table-sm estate-payments-latest">
+        <tbody>
+        {% for p in latest %}<tr><td>{{ p.paidOn|format_date('short') }}</td><td>{{ p.rentCall.lease.tenantNames }}<small class="d-block text-muted">{{ p.rentCall.lease.unit.name }}</small></td><td>{{ methods[p.method.value] }}</td><td class="text-end"><strong>{{ p.amount|euros }}</strong></td></tr>
+        {% else %}<tr><td class="text-muted">Pas encore de paiement.</td></tr>{% endfor %}
+        </tbody>
+    </table>
+</div>
+<style>
+    .estate-payments .analytics-card-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .estate-payments-online { font-size: .75rem; font-weight: 600; padding: .2rem .6rem; border-radius: 1rem; }
+    .estate-payments-online.is-on { background: rgba(45, 106, 79, .14); color: #2d6a4f; }
+    .estate-payments-online.is-off { background: rgba(176, 125, 30, .14); color: #8a6114; }
+    .estate-payments-split { display: grid; grid-template-columns: minmax(8rem, auto) 1fr; gap: 1.5rem; align-items: center; padding: 0 1rem 1rem; }
+    .estate-payments-total strong { display: block; font-size: 1.6rem; }
+    .estate-payments-total span { font-size: .75rem; opacity: .75; }
+    .estate-payments-split ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
+    .estate-payments-split li { display: grid; grid-template-columns: 1fr auto; gap: .2rem .75rem; font-size: .8rem; }
+    .estate-payments-split li i { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: #1e3a5f; }
+    .estate-payments-latest { margin: 0 1rem 1rem; width: calc(100% - 2rem); font-size: .8rem; }
+</style>

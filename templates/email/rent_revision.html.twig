@@ -1,0 +1,11 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ url('estate_tenant', {bail: lease.id}) }}{% endblock %}
+{% block action_text %}Ouvrir mon espace{% endblock %}
+{% block content %}
+<p>Madame, Monsieur,</p>
+<p>Comme le prévoit votre bail ({{ lease.reference }}), le loyer de <strong>{{ lease.unit.name }}</strong> est révisé chaque année selon l'indice de référence des loyers (IRL) publié par l'INSEE.</p>
+<p>À compter du <strong>{{ on|format_date('long') }}</strong>, votre loyer hors charges passe de {{ former|euros }} à <strong>{{ rent|euros }}</strong>{% if formerQuarter %} (IRL {{ formerQuarter }} : {{ formerIndex|number_format(2, ',', ' ') }} → IRL {{ lease.indexQuarter }} : {{ lease.indexValue|number_format(2, ',', ' ') }}){% endif %}. La provision sur charges reste de {{ lease.charges|euros }}, soit {{ lease.monthly|euros }} par mois.</p>
+<p>Le prochain avis d'échéance tiendra compte de ce montant.</p>
+<p>Bien cordialement,<br>{{ organisation.name }}</p>
+{% endblock %}

@@ -1,0 +1,14 @@
+{# A list of documents, each opened through estate_document (EstateVoter::DOCUMENT_VIEW): its kind's icon, its title, who added it and when; photos as thumbnails. #}
+<ul class="estate-documents">
+{% for document in documents %}
+    <li>
+        <a href="{{ path('estate_document', {id: document.id}) }}" target="_blank" rel="noopener">
+            {% if document.image and document.file %}<img src="{{ document.file|thumbnail(160, 120) }}" alt="" loading="lazy">{% else %}<i class="{{ document.kind.icon }}" aria-hidden="true"></i>{% endif %}
+            <span>
+                <strong>{{ document.title }}</strong>
+                <small>{{ ('@estate.document.kinds.' ~ document.kind.value)|trans }} · {{ document.createdAt|format_date('medium') }}{% if document.uploadedByName %} · {{ document.uploadedByName }}{% endif %}{% if document.validUntil %} · {{ '@estate.document.valid_until'|trans({date: document.validUntil|format_date('medium')}) }}{% endif %}</small>
+            </span>
+        </a>
+    </li>
+{% endfor %}
+</ul>

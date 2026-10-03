@@ -1,0 +1,46 @@
+{% extends '@Admin/layout.html.twig' %}
+
+{% block page_title %}Encaisser {{ call.reference }}{% endblock %}
+
+{% block content_header %}
+<div class="admin-header">
+    <span class="admin-header-icon"><i class="fa-solid fa-hand-holding-dollar"></i></span>
+    <div class="admin-header-titles">
+        <h1>Encaisser {{ call.reference }}</h1>
+        <div class="admin-header-subtitle">{{ call.lease.tenantNames }} · {{ call.lease.unit.name }} · échéance du {{ call.dueOn|format_date('long') }}</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .estate-admin-form { display: grid; gap: 1rem; max-width: 40rem; }
+    .estate-admin-form .card { padding: 1rem 1.25rem; }
+    .estate-admin-form dl { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1.25rem; margin: 0; }
+    .estate-admin-form dt { opacity: .7; }
+    .estate-admin-form dd { margin: 0; font-weight: 600; }
+    .estate-admin-form form { display: grid; gap: .9rem; }
+    .estate-admin-form label { display: grid; gap: .3rem; font-weight: 600; }
+    .estate-admin-form .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+</style>
+<div class="estate-admin-form">
+    <div class="card"><dl>
+        <dt>Appelé</dt><dd>{{ call.total|euros }}</dd>
+        <dt>Déjà reçu</dt><dd>{{ call.paid|euros }}</dd>
+        <dt>Reste dû</dt><dd>{{ call.remaining|euros }}</dd>
+    </dl></div>
+    <form method="post" class="card">
+        <input type="hidden" name="_token" value="{{ csrf_token('estate_payment_' ~ call.id) }}">
+        <div class="row2">
+            <label>Montant reçu (€)<input class="form-control" name="amount" required inputmode="decimal" value="{{ (call.remaining / 100)|number_format(2, ',', '') }}"></label>
+            <label>Reçu le<input class="form-control" type="date" name="paidOn" value="{{ 'now'|date('Y-m-d') }}"></label>
+        </div>
+        <div class="row2">
+            <label>Moyen<select class="form-select" name="method">{% for m in methods %}<option value="{{ m.value }}">{{ {transfer: 'Virement', card: 'Carte', sepa_debit: 'Prélèvement SEPA', cheque: 'Chèque', cash: 'Espèces'}[m.value] }}</option>{% endfor %}</select></label>
+            <label>Référence (facultatif)<input class="form-control" name="reference" placeholder="n° de chèque, libellé du virement"></label>
+        </div>
+        <p class="text-muted">Le paiement passe en comptabilité ; soldé, la quittance est numérotée et envoyée au locataire.</p>
+        <div><button class="btn btn-primary" type="submit"><i class="fa-solid fa-check"></i> Encaisser</button></div>
+    </form>
+</div>
+{% endblock %}

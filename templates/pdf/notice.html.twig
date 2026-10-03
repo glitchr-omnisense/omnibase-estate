@@ -1,0 +1,14 @@
+{% extends '@Estate/pdf/_document.html.twig' %}
+{% set title = "Avis d'échéance " ~ call.reference %}
+{% block document %}
+<h1>Avis d'échéance</h1>
+<div class="ref">{{ call.reference }} · {{ call.period|format_date(pattern: 'MMMM yyyy')|capitalize }} · bail {{ lease.reference }}</div>
+<p>Logement : {{ lease.unit.name }}{% if lease.unit.address %}, {{ lease.unit.address }}, {{ lease.unit.postcode }} {{ lease.unit.city }}{% endif %}</p>
+<table class="amounts">
+    <tr><td>Loyer</td><td class="num">{{ call.rent|euros }}</td></tr>
+    <tr><td>Provision sur charges</td><td class="num">{{ call.charges|euros }}</td></tr>
+    {% if call.paid %}<tr><td>Déjà réglé</td><td class="num">- {{ call.paid|euros }}</td></tr>{% endif %}
+    <tr class="total"><td>À régler avant le {{ call.dueOn|format_date('long') }}</td><td class="num">{{ call.remaining|euros }}</td></tr>
+</table>
+<p>Par virement{% if organisation.iban %} sur l'IBAN <strong>{{ organisation.iban }}</strong>{% endif %}, en indiquant la référence <strong>{{ call.reference }}</strong>, ou en ligne depuis votre espace locataire.</p>
+{% endblock %}

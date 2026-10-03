@@ -1,0 +1,6 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block content %}
+<p style="white-space: pre-line">{{ notice.body }}</p>
+<p>{{ organisation.name }}</p>
+{% endblock %}

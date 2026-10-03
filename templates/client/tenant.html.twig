@@ -1,0 +1,167 @@
+{% extends '@Estate/client/layout.html.twig' %}
+
+{% block estate_title %}{{ '@estate.tenant.title'|trans }}{% endblock %}
+{% block estate_eyebrow %}<p class="estate-eyebrow">{{ lease.organisation.name }} · {{ '@estate.tenant.lease'|trans({reference: lease.reference}) }}</p>{% endblock %}
+{% block estate_lead %}{{ lease.unit.name }}{% if lease.unit.address %} — {{ lease.unit.address }}, {{ lease.unit.postcode }} {{ lease.unit.city }}{% endif %}{% if lease.unit.door %} ({{ lease.unit.door }}){% endif %}{% endblock %}
+{% block estate_class %}estate-space estate-tenant{% endblock %}
+{% block estate_actions %}
+    {% if leases|length > 1 %}
+    <nav class="estate-filters">{% for l in leases %}<a href="{{ path('estate_tenant', {bail: l.id}) }}" {{ l == lease ? 'aria-current="true"' }}>{{ l.unit.name }}</a>{% endfor %}</nav>
+    {% endif %}
+    <a class="estate-button is-ghost" href="#messages"><i class="fa-solid fa-comments" aria-hidden="true"></i> {{ '@estate.tenant.write'|trans }}</a>
+    <a class="estate-button is-ghost" href="#report"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> {{ '@estate.tenant.report'|trans }}</a>
+{% endblock %}
+
+{% block estate_content %}
+{% set open = calls|filter(c => not c.paid) %}
+<div class="estate-tiles">
+    <div class="estate-tile{{ open|length ? ' is-alert' }}">
+        <span>{{ '@estate.tenant.due'|trans }}</span>
+        <strong>{{ open|reduce((sum, c) => sum + c.remaining, 0)|euros }}</strong>
+        <small>{{ open|length ? '@estate.tenant.due_detail'|trans({count: open|length}) : '@estate.tenant.up_to_date'|trans }}</small>
+    </div>
+    <div class="estate-tile">
+        <span>{{ '@estate.tenant.monthly'|trans }}</span>
+        <strong>{{ lease.monthly|euros }}</strong>
+        <small>{{ '@estate.tenant.monthly_detail'|trans({rent: lease.rent|euros, charges: lease.charges|euros, day: lease.dueDay}) }}</small>
+    </div>
+    <div class="estate-tile">
+        <span>{{ '@estate.tenant.since'|trans }}</span>
+        <strong>{{ lease.startOn|format_date('medium') }}</strong>
+        <small>{{ '@estate.tenant.deposit'|trans({amount: lease.deposit|euros}) }}</small>
+    </div>
+    <div class="estate-tile{{ lease.insuranceUntil and lease.insuranceUntil < date('+30 days') ? ' is-alert' }}">
+        <span>{{ '@estate.tenant.insurance'|trans }}</span>
+        <strong>{{ lease.insuranceUntil ? lease.insuranceUntil|format_date('medium') : '—' }}</strong>
+        <small>{{ lease.insuranceUntil and lease.insuranceUntil < date() ? '@estate.tenant.insurance_expired'|trans : '@estate.tenant.insurance_hint'|trans }}</small>
+    </div>
+</div>
+
+<div class="estate-columns">
+<section class="estate-panel">
+    <h2>{{ '@estate.tenant.rents'|trans }}</h2>
+    {% if calls|length %}
+    <table class="estate-table">
+        <thead><tr><th>{{ '@estate.tenant.period'|trans }}</th><th>{{ '@estate.tenant.due_on'|trans }}</th><th class="is-num">{{ '@estate.tenant.amount'|trans }}</th><th>{{ '@estate.tenant.state'|trans }}</th><th><span class="visually-hidden">{{ '@estate.tenant.documents'|trans }}</span></th></tr></thead>
+        <tbody>
+        {% for call in calls %}
+            <tr>
+                <td>{{ call.period|format_date(pattern: 'MMMM yyyy')|capitalize }}</td>
+                <td>{{ call.dueOn|format_date('short') }}</td>
+                <td class="is-num">{{ call.total|euros }}{% if call.paid and not call.isPaid %}<small>{{ '@estate.tenant.remaining'|trans({amount: call.remaining|euros}) }}</small>{% endif %}</td>
+                <td><span class="estate-status is-{{ call.status.value }}">{{ ('@estate.rent.' ~ call.status.value)|trans }}</span></td>
+                <td class="estate-row-actions">
+                    {% if call.isPaid %}
+                        <a href="{{ path('estate_rent_document', {id: call.id, kind: 'quittance'}) }}" target="_blank"><i class="fa-solid fa-file-circle-check" aria-hidden="true"></i> {{ '@estate.tenant.receipt'|trans }}</a>
+                    {% else %}
+                        <a href="{{ path('estate_rent_document', {id: call.id, kind: 'avis'}) }}" target="_blank"><i class="fa-solid fa-file-invoice" aria-hidden="true"></i> {{ '@estate.tenant.notice'|trans }}</a>
+                        {% if online %}
+                        <form method="post" action="{{ path('estate_rent_pay', {id: call.id}) }}" class="estate-pay">
+                            <input type="hidden" name="_token" value="{{ csrf_token('rent_pay_' ~ call.id) }}">
+                            {% for method in methods %}
+                                <button type="submit" name="method" value="{{ method }}" class="estate-button is-small">{{ ('@estate.pay.' ~ method)|trans }}</button>
+                            {% endfor %}
+                        </form>
+                        {% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% if not online %}<p class="estate-muted">{{ '@estate.tenant.transfer_hint'|trans({iban: lease.organisation.iban ?? '—'}) }}</p>{% endif %}
+    {% else %}
+    <p class="estate-empty">{{ '@estate.tenant.no_rent'|trans }}</p>
+    {% endif %}
+</section>
+
+<div class="estate-stack">
+    <section class="estate-panel">
+        <h2>{{ '@estate.tenant.people'|trans }}</h2>
+        <ul class="estate-list">
+            {% for party in lease.parties %}<li><strong>{{ party.name }}</strong><span>{{ ('@estate.role.' ~ party.role.value)|trans }} · {{ party.email }}</span></li>{% endfor %}
+        </ul>
+        <h3>{{ '@estate.tenant.manager'|trans }}</h3>
+        <p>{{ lease.organisation.name }}<br>{% if lease.organisation.email %}<a href="mailto:{{ lease.organisation.email }}">{{ lease.organisation.email }}</a>{% endif %}{% if lease.organisation.phone %} · {{ lease.organisation.phone }}{% endif %}</p>
+    </section>
+    {% if notices %}
+    <section class="estate-panel">
+        <h2>{{ '@estate.tenant.notices'|trans }}</h2>
+        <ul class="estate-list estate-notices">{% for notice in notices %}<li><strong>{{ notice.title }}</strong><span>{{ notice.sentAt|format_date('long') }}</span><p>{{ notice.body|nl2br }}</p></li>{% endfor %}</ul>
+    </section>
+    {% endif %}
+</div>
+</div>
+
+<div class="estate-columns">
+<section class="estate-panel" id="documents">
+    <h2>{{ '@estate.tenant.documents_title'|trans }}</h2>
+    {% if documents %}{% include '@Estate/client/_documents.html.twig' with {documents: documents} %}{% else %}<p class="estate-empty">{{ '@estate.tenant.no_documents'|trans }}</p>{% endif %}
+    <p class="estate-actions-row">
+        {% set owing = calls|filter(c => not c.paid and c.dueOn < date('today')) %}
+        {% if owing|length %}
+            <span class="estate-muted">{{ '@estate.tenant.attestation_after'|trans }}</span>
+        {% else %}
+            <a class="estate-button is-ghost is-small" href="{{ path('estate_tenant_attestation', {id: lease.id}) }}" target="_blank"><i class="fa-solid fa-file-circle-check" aria-hidden="true"></i> {{ '@estate.tenant.attestation'|trans }}</a>
+        {% endif %}
+    </p>
+    <h3>{{ '@estate.tenant.insurance_send'|trans }}</h3>
+    <p class="estate-muted">{{ '@estate.tenant.insurance_lead'|trans }}</p>
+    {{ form_start(insurance, {attr: {class: 'estate-form is-wide', novalidate: 'novalidate'}}) }}
+        <div class="estate-form-row">{{ form_row(insurance.file) }}{{ form_row(insurance.until) }}</div>
+        <button type="submit" class="estate-button is-small">{{ '@estate.tenant.insurance_submit'|trans }}</button>
+    {{ form_end(insurance) }}
+</section>
+
+<section class="estate-panel" id="messages">
+    <h2>{{ '@estate.tenant.messages'|trans }}</h2>
+    {% if thread %}
+    <ol class="estate-thread">
+        {% for m in thread %}
+        <li class="{{ m.fromManagement ? 'is-them' : 'is-me' }}">
+            <p>{{ m.body|nl2br }}</p>
+            <small>{{ m.authorName }} · {{ m.createdAt|format_datetime('medium', 'short') }}</small>
+        </li>
+        {% endfor %}
+    </ol>
+    {% else %}
+    <p class="estate-empty">{{ '@estate.tenant.no_messages'|trans }}</p>
+    {% endif %}
+    {{ form_start(message, {attr: {class: 'estate-form is-wide', novalidate: 'novalidate'}}) }}
+        {{ form_row(message.body) }}
+        <button type="submit" class="estate-button is-small">{{ '@estate.tenant.message_submit'|trans }}</button>
+    {{ form_end(message) }}
+</section>
+</div>
+
+<section class="estate-panel" id="works">
+    <h2>{{ '@estate.tenant.works'|trans }}</h2>
+    {% if workOrders %}
+    <ul class="estate-works">
+        {% for order in workOrders %}
+        <li id="work-{{ order.id }}">
+            <div class="estate-works-head">
+                <strong>{{ order.title }}</strong>
+                <span class="estate-status is-{{ order.status.value }}">{{ ('@estate.work.' ~ order.status.value)|trans }}</span>
+            </div>
+            <p class="estate-muted">{{ order.category }} · {{ order.createdAt|format_date('medium') }}{% if order.contractor %} · {{ order.contractor.company }}{% endif %}{% if order.visitAt %} · {{ '@estate.work.visit'|trans({date: order.visitAt|format_datetime('medium', 'short')}) }}{% endif %}</p>
+            <ol class="estate-timeline">{% for event in order.events %}<li><time>{{ event.createdAt|format_date('short') }}</time> <b>{{ event.authorName }}</b> — {{ event.body }}</li>{% endfor %}</ol>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="estate-empty">{{ '@estate.tenant.no_work'|trans }}</p>
+    {% endif %}
+</section>
+
+<section class="estate-panel" id="report">
+    <h2>{{ '@estate.tenant.report'|trans }}</h2>
+    <p class="estate-muted">{{ '@estate.tenant.report_lead'|trans }}</p>
+    {{ form_start(form, {attr: {class: 'estate-form is-wide', novalidate: 'novalidate'}}) }}
+        <div class="estate-form-row">{{ form_row(form.title) }}{{ form_row(form.category) }}</div>
+        {{ form_row(form.urgency) }}
+        {{ form_row(form.description) }}
+        <button type="submit" class="estate-button">{{ '@estate.tenant.report_submit'|trans }}</button>
+    {{ form_end(form) }}
+</section>
+{% endblock %}

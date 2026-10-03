@@ -1,0 +1,14 @@
+{% extends '@Estate/pdf/_document.html.twig' %}
+{% set title = 'Quittance ' ~ call.receiptNumber %}
+{% block document %}
+<h1>Quittance de loyer</h1>
+<div class="ref">N° {{ call.receiptNumber }} · {{ call.period|format_date(pattern: 'MMMM yyyy')|capitalize }} · bail {{ lease.reference }}</div>
+<p>Je soussigné·e, {{ organisation.name }}, bailleur du logement {{ lease.unit.name }}{% if lease.unit.address %} situé {{ lease.unit.address }}, {{ lease.unit.postcode }} {{ lease.unit.city }}{% endif %}, déclare avoir reçu de <strong>{{ lease.tenantNames }}</strong> la somme de <strong>{{ call.paid|euros }}</strong> au titre du loyer et des charges de la période du {{ call.period|format_date('long') }} au {{ call.period|date_modify('last day of this month')|format_date('long') }}, et lui en donne quittance, sous réserve de tous mes droits.</p>
+<table class="amounts">
+    <tr><td>Loyer</td><td class="num">{{ call.rent|euros }}</td></tr>
+    <tr><td>Provision sur charges</td><td class="num">{{ call.charges|euros }}</td></tr>
+    <tr class="total"><td>Total reçu{% if call.paidAt %} le {{ call.paidAt|format_date('long') }}{% endif %}</td><td class="num">{{ call.paid|euros }}</td></tr>
+</table>
+<div class="sign">Fait à {{ organisation.city ?? 'Strasbourg' }}, le {{ (call.paidAt ?? 'now')|format_date('long') }}<br><strong>{{ organisation.name }}</strong></div>
+<p class="note">Cette quittance annule tous les reçus qui auraient pu être donnés pour acomptes versés sur la période. Elle ne libère pas le locataire des sommes restant éventuellement dues pour des périodes antérieures.</p>
+{% endblock %}

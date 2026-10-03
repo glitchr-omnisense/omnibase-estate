@@ -1,0 +1,10 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ url('estate_tenant') }}{% endblock %}
+{% block action_text %}Régler en ligne{% endblock %}
+{% block content %}
+<p>Bonjour {{ lease.tenantNames }},</p>
+<p>Sauf erreur de notre part, le loyer de <strong>{{ call.period|format_date(pattern: 'MMMM yyyy') }}</strong> ({{ lease.unit.name }}), dû le {{ call.dueOn|format_date('long') }}, n'est pas encore réglé : il reste <strong>{{ call.remaining|euros }}</strong>.</p>
+<p>Si le virement est parti, merci d'ignorer ce message. Une difficulté ? Répondez simplement à cet e-mail, nous trouverons une solution ensemble.</p>
+<p>{{ organisation.name }}</p>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends '@Estate/client/layout.html.twig' %}
+
+{% block estate_title %}{{ '@estate.associate.title'|trans }}{% endblock %}
+{% block estate_eyebrow %}<p class="estate-eyebrow">{{ organisation.name }} · {{ '@estate.associate.you'|trans({name: associate.name, shares: associate.shares, total: shares}) }}</p>{% endblock %}
+{% block estate_lead %}{{ '@estate.associate.lead'|trans({date: 'now'|format_date('long')}) }}{% endblock %}
+{% block estate_class %}estate-space estate-associate{% endblock %}
+{% block estate_actions %}
+    {% if associateships|length > 1 %}<nav class="estate-filters">{% for a in associateships %}<a href="{{ path('estate_associate', {societe: a.organisation.slug}) }}" {{ a == associate ? 'aria-current="true"' }}>{{ a.organisation.name }}</a>{% endfor %}</nav>{% endif %}
+    {% if documentsRoute %}<a class="estate-button is-ghost" href="{{ path(documentsRoute) }}"><i class="fa-solid fa-folder-open" aria-hidden="true"></i> {{ '@estate.associate.documents'|trans }}</a>{% endif %}
+{% endblock %}
+
+{% block estate_content %}
+{% set f = figures %}
+<div class="estate-tiles">
+    <div class="estate-tile"><span>{{ '@estate.associate.let'|trans }}</span><strong>{{ f.let }} / {{ f.lettable }}</strong><small>{{ '@estate.associate.occupancy'|trans({rate: f.occupancy}) }}</small></div>
+    <div class="estate-tile"><span>{{ '@estate.associate.monthly'|trans }}</span><strong>{{ f.monthly|euros(true) }}</strong><small>{{ '@estate.associate.monthly_detail'|trans }}</small></div>
+    <div class="estate-tile"><span>{{ '@estate.associate.received'|trans({year: 'now'|date('Y')}) }}</span><strong>{{ f.received|euros(true) }}</strong><small>{{ '@estate.associate.received_detail'|trans({called: f.called|euros(true), rate: f.rate}) }}</small></div>
+    <div class="estate-tile{{ f.lateTotal ? ' is-alert' }}"><span>{{ '@estate.associate.late'|trans }}</span><strong>{{ f.lateTotal|euros(true) }}</strong><small>{{ '@estate.associate.late_detail'|trans({count: f.late|length}) }}</small></div>
+    <div class="estate-tile"><span>{{ '@estate.associate.works'|trans({year: 'now'|date('Y')}) }}</span><strong>{{ f.worksSpent|euros(true) }}</strong><small>{{ '@estate.associate.works_detail'|trans({count: f.openWorkOrders|length}) }}</small></div>
+</div>
+
+<div class="estate-columns">
+<section class="estate-panel">
+    <h2>{{ '@estate.associate.rents'|trans }}</h2>
+    <div class="estate-chart" role="img" aria-label="{{ '@estate.associate.rents_label'|trans }}">
+        {% for m in f.months %}
+        <div class="estate-chart-month">
+            <div class="estate-chart-bars">
+                <span class="is-called" style="height: {{ (100 * m.called / f.monthsMax)|round }}%" title="{{ '@estate.associate.called'|trans }} {{ m.called|euros(true) }}"></span>
+                <span class="is-received" style="height: {{ (100 * m.received / f.monthsMax)|round }}%" title="{{ '@estate.associate.received_short'|trans }} {{ m.received|euros(true) }}"></span>
+            </div>
+            <span class="estate-chart-label">{{ m.month|format_date(pattern: 'MMM')|trim('.') }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    <p class="estate-legend"><span class="is-called"></span> {{ '@estate.associate.called'|trans }} <span class="is-received"></span> {{ '@estate.associate.received_short'|trans }}</p>
+
+    <h2>{{ '@estate.associate.units'|trans }}</h2>
+    <table class="estate-table">
+        <thead><tr><th>{{ '@estate.associate.unit'|trans }}</th><th>{{ '@estate.associate.occupation'|trans }}</th><th class="is-num">{{ '@estate.associate.rent'|trans }}</th><th>{{ '@estate.associate.this_month'|trans }}</th></tr></thead>
+        <tbody>
+        {% for unit in units %}
+            {% set lease = unit.currentLease %}
+            {% set call = lease ? lease.rentCalls|filter(c => c.period|date('Y-m') == 'now'|date('Y-m'))|first : null %}
+            <tr>
+                <td><strong>{{ unit.name }}</strong><small>{{ ('@estate.kind.' ~ unit.kind.value)|trans }}{% if unit.surface %} · {{ unit.surface|number_format(0, ',', ' ') }} m²{% endif %}</small></td>
+                <td>{{ lease ? '@estate.associate.let_since'|trans({date: lease.startOn|format_date('short')}) : (unit.availableFrom ? '@estate.associate.free'|trans : '@estate.associate.not_let'|trans) }}</td>
+                <td class="is-num">{{ lease ? lease.monthly|euros(true) : '—' }}</td>
+                <td>{% if call %}<span class="estate-status is-{{ call.status.value }}">{{ ('@estate.rent.' ~ call.status.value)|trans }}</span>{% elseif lease %}<span class="estate-muted">{{ '@estate.associate.not_called'|trans }}</span>{% else %}—{% endif %}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<div class="estate-stack">
+    <section class="estate-panel">
+        <h2>{{ '@estate.associate.deadlines'|trans }}</h2>
+        <ul class="estate-list">{% for d in deadlines %}<li><strong>{{ d.title }}</strong><span>{{ d.next|format_date('long') }}</span></li>{% else %}<li class="estate-muted">{{ '@estate.associate.no_deadline'|trans }}</li>{% endfor %}</ul>
+    </section>
+    <section class="estate-panel">
+        <h2>{{ '@estate.associate.partners'|trans }}</h2>
+        <ul class="estate-list">{% for a in associates %}<li><strong>{{ a.name }}</strong><span>{{ ('@estate.quality.' ~ a.quality.value)|trans }} · {{ '@estate.associate.shares'|trans({count: a.shares, rate: shares ? (100 * a.shares / shares)|round(1) : 0}) }}</span></li>{% endfor %}</ul>
+    </section>
+    {% if f.openWorkOrders %}
+    <section class="estate-panel">
+        <h2>{{ '@estate.associate.open_works'|trans }}</h2>
+        <ul class="estate-list">{% for o in f.openWorkOrders %}<li><strong>{{ o.title }}</strong><span>{{ o.unit.name }} · {{ ('@estate.work.' ~ o.status.value)|trans }}{% if o.quoteAmount %} · {{ '@estate.associate.quote'|trans({amount: o.quoteAmount|euros(true)}) }}{% endif %}</span></li>{% endfor %}</ul>
+    </section>
+    {% endif %}
+</div>
+</div>
+
+{% if accounts %}
+{% set st = accounts.statement %}
+{% set n1 = st.previous and (st.previous.income or st.previous.expenses) %}
+<section class="estate-panel estate-accounts" id="comptes">
+    <h2>{{ '@estate.accounts.title'|trans({year: accounts.year}) }}</h2>
+    <p class="estate-muted">{{ '@estate.accounts.lead'|trans({date: 'now'|format_date('long')}) }}</p>
+    <div class="estate-accounts-grid">
+        <div>
+            <table class="estate-table estate-statement">
+                <thead><tr><th>{{ '@estate.accounts.income'|trans }}</th><th class="is-num">{{ accounts.year }}</th>{% if n1 %}<th class="is-num">{{ accounts.year - 1 }}</th>{% endif %}</tr></thead>
+                <tbody>
+                {% for g in st.income|filter(g => g.total or g.previous) %}<tr><td>{{ ('@estate.accounts.groups.' ~ g.key)|trans }}</td><td class="is-num">{{ g.total|euros(true) }}</td>{% if n1 %}<td class="is-num is-soft">{{ g.previous|euros(true) }}</td>{% endif %}</tr>{% endfor %}
+                <tr class="is-total"><td>{{ '@estate.accounts.income_total'|trans }}</td><td class="is-num">{{ st.totals.income|euros(true) }}</td>{% if n1 %}<td class="is-num is-soft">{{ st.previous ? st.previous.income|euros(true) }}</td>{% endif %}</tr>
+                </tbody>
+                <thead><tr><th>{{ '@estate.accounts.expenses'|trans }}</th><th></th>{% if n1 %}<th></th>{% endif %}</tr></thead>
+                <tbody>
+                {% for g in st.expenses|filter(g => g.total or g.previous) %}<tr><td>{{ ('@estate.accounts.groups.' ~ g.key)|trans }}</td><td class="is-num">{{ g.total|euros(true) }}</td>{% if n1 %}<td class="is-num is-soft">{{ g.previous|euros(true) }}</td>{% endif %}</tr>{% endfor %}
+                <tr class="is-total"><td>{{ '@estate.accounts.expenses_total'|trans }}</td><td class="is-num">{{ st.totals.expenses|euros(true) }}</td>{% if n1 %}<td class="is-num is-soft">{{ st.previous ? st.previous.expenses|euros(true) }}</td>{% endif %}</tr>
+                <tr class="is-result{{ st.totals.result < 0 ? ' is-loss' }}"><td>{{ st.totals.result < 0 ? '@estate.accounts.loss'|trans : '@estate.accounts.profit'|trans }}</td><td class="is-num">{{ st.totals.result|euros(true) }}</td>{% if n1 %}<td class="is-num is-soft">{{ st.previous ? st.previous.result|euros(true) }}</td>{% endif %}</tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="estate-stack">
+            <div>
+                <h3>{{ '@estate.accounts.shares'|trans }}</h3>
+                <ul class="estate-list">
+                    {% for s in accounts.shares %}<li{{ s.associate == associate ? ' class="is-you"' }}><strong>{{ s.associate.name }}{{ s.associate == associate ? ' · ' ~ '@estate.accounts.you'|trans }}</strong><span>{{ s.associate.shares }} {{ '@estate.accounts.parts'|trans }} ({{ (s.rate * 100)|round(1) }} %) · {{ s.share|euros(true) }}</span></li>{% endfor %}
+                </ul>
+                <p class="estate-muted is-small">{{ '@estate.accounts.shares_hint'|trans }}</p>
+            </div>
+            {% for b in accounts.banks %}
+            <div>
+                <h3>{{ b.account.name }} <small class="estate-muted">{{ b.account.maskedIban }}</small></h3>
+                <p class="estate-bank-balance"><strong>{{ b.balance|euros }}</strong> <span class="estate-muted">{{ '@estate.accounts.in_books'|trans }}</span></p>
+                <ul class="estate-bank-lines">
+                    {% for line in b.lines %}<li><time>{{ line.bookedOn|format_date('short') }}</time><span>{{ line.counterpartyName ?: line.label }}</span><b class="{{ line.amount < 0 ? 'is-out' : 'is-in' }}">{{ line.amount|euros }}</b></li>{% endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<section class="estate-panel">
+    <h2>{{ '@estate.associate.activity'|trans }}</h2>
+    <ul class="estate-feed">
+    {% for a in activities %}
+        <li class="is-{{ a.kind.value }}"><i class="{{ a.kind.icon }}" aria-hidden="true"></i><time>{{ a.happenedAt|format_date('short') }}</time><div><strong>{{ a.message }}</strong>{% if a.unit %}<span>{{ a.unit.name }}</span>{% endif %}</div>{% if a.amount %}<b class="{{ a.amount < 0 ? 'is-out' : 'is-in' }}">{{ a.amount|euros }}</b>{% endif %}</li>
+    {% else %}
+        <li class="estate-muted">{{ '@estate.associate.no_activity'|trans }}</li>
+    {% endfor %}
+    </ul>
+</section>
+{% endblock %}

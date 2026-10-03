@@ -1,0 +1,8 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ url('admin') }}{% endblock %}
+{% block action_text %}Ouvrir la gestion{% endblock %}
+{% block content %}
+<p><strong>{{ who }}</strong> a ajouté un document{% if document.unit %} pour <strong>{{ document.unit.name }}</strong>{% endif %} :</p>
+<p>{{ document.title }}{% if document.validUntil %} — valable jusqu'au {{ document.validUntil|format_date('long') }}{% endif %}</p>
+{% endblock %}

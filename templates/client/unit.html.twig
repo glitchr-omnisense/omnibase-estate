@@ -1,0 +1,88 @@
+{% extends '@Estate/client/layout.html.twig' %}
+
+{% block estate_title %}{{ unit.name }}{% endblock %}
+{% block description %}{{ unit.description|default('')|striptags|slice(0, 155) }}{% endblock %}
+{% block estate_class %}estate-unit{% endblock %}
+{% block estate_eyebrow %}<p class="estate-eyebrow"><a href="{{ path('estate_units') }}">{{ '@estate.units.title'|trans }}</a> · {{ ('@estate.kind.' ~ unit.kind.value)|trans }}{% if unit.district %} · {{ unit.district }}{% endif %}</p>{% endblock %}
+{% block estate_actions %}
+    {% if unit.availableFrom %}<span class="estate-pill is-free is-large">{{ unit.availableFrom <= date('today') ? '@estate.unit.free_now'|trans : '@estate.unit.free_on'|trans({date: unit.availableFrom|format_date('long')}) }}</span>
+    {% else %}<span class="estate-pill is-large">{{ '@estate.unit.let'|trans }}</span>{% endif %}
+{% endblock %}
+
+{% block estate_content %}
+<div class="estate-gallery{{ unit.photos|length > 1 ? ' is-many' }}">
+    {% include '@Estate/client/_facade.html.twig' with {unit: unit} %}
+    {% for photo in unit.photos|slice(1, 2) %}
+        <div class="estate-facade has-photo"><img src="{{ photo.image|thumbnail(1200, 900) }}" alt="{{ photo.caption ?? unit.name }}" loading="lazy"></div>
+    {% endfor %}
+</div>
+
+<div class="estate-unit-grid">
+    <div class="estate-unit-main">
+        <dl class="estate-facts">
+            {% if unit.surface %}<div><dt>{{ '@estate.unit.surface'|trans }}</dt><dd>{{ unit.surface|number_format(0, ',', ' ') }} m²</dd></div>{% endif %}
+            {% if unit.rooms %}<div><dt>{{ '@estate.unit.rooms'|trans }}</dt><dd>{{ unit.rooms }}</dd></div>{% endif %}
+            {% if unit.bedrooms %}<div><dt>{{ '@estate.unit.bedrooms'|trans }}</dt><dd>{{ unit.bedrooms }}</dd></div>{% endif %}
+            {% if unit.floor is not null %}<div><dt>{{ '@estate.unit.floor'|trans }}</dt><dd>{{ unit.floor == 0 ? '@estate.unit.ground'|trans : unit.floor }}</dd></div>{% endif %}
+            {% if unit.heating %}<div><dt>{{ '@estate.unit.heating'|trans }}</dt><dd>{{ unit.heating }}</dd></div>{% endif %}
+            <div><dt>{{ '@estate.unit.furnished'|trans }}</dt><dd>{{ (unit.furnished ? '@estate.yes' : '@estate.no')|trans }}</dd></div>
+        </dl>
+
+        {% if unit.description %}
+        <section>
+            <h2>{{ '@estate.unit.about'|trans }}</h2>
+            <div class="estate-text">{{ unit.description|nl2br }}</div>
+        </section>
+        {% endif %}
+
+        {% if unit.features %}
+        <section>
+            <h2>{{ '@estate.unit.features'|trans }}</h2>
+            <ul class="estate-tags">{% for feature in unit.features %}<li>{{ feature }}</li>{% endfor %}</ul>
+        </section>
+        {% endif %}
+
+        {% if unit.energyClass %}
+        <section>
+            <h2>{{ '@estate.unit.energy'|trans }}</h2>
+            <div class="estate-dpe" role="img" aria-label="{{ '@estate.unit.energy_label'|trans({class: unit.energyClass, value: unit.energyValue ?? '—'}) }}">
+                {% for letter in ['A', 'B', 'C', 'D', 'E', 'F', 'G'] %}
+                    <span class="is-{{ letter|lower }}{{ letter == unit.energyClass ? ' is-current' }}">{{ letter }}{% if letter == unit.energyClass and unit.energyValue %}<small>{{ unit.energyValue }} kWh/m²/an</small>{% endif %}</span>
+                {% endfor %}
+            </div>
+            {% if unit.climateClass %}<p class="estate-muted">{{ '@estate.unit.climate'|trans({class: unit.climateClass}) }}</p>{% endif %}
+        </section>
+        {% endif %}
+    </div>
+
+    <aside class="estate-unit-aside">
+        {% if unit.rent %}
+        <div class="estate-price">
+            <span>{{ '@estate.unit.monthly'|trans }}</span>
+            <strong>{{ (unit.rent + unit.charges)|euros(true) }}</strong>
+            <small>{{ '@estate.unit.price_detail'|trans({rent: unit.rent|euros(true), charges: unit.charges|euros(true), deposit: unit.deposit|euros(true)}) }}</small>
+            {% if unit.availableFrom %}
+            <a class="estate-button estate-apply" href="{{ path('estate_unit_apply', {slug: unit.slug}) }}"><i class="fa-solid fa-file-signature" aria-hidden="true"></i> {{ '@estate.application.cta'|trans }}</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        <h2>{{ '@estate.visit.title'|trans }}</h2>
+        {{ form_start(form, {attr: {class: 'estate-form', novalidate: 'novalidate'}}) }}
+            {{ form_row(form.name) }}
+            {{ form_row(form.email) }}
+            {{ form_row(form.phone) }}
+            {{ form_row(form.message) }}
+            {{ form_row(form.website) }}
+            <button type="submit" class="estate-button">{{ '@estate.visit.submit'|trans }}</button>
+        {{ form_end(form) }}
+        <p class="estate-muted">{{ '@estate.unit.tenant_hint'|trans({url: path(app.user ? 'estate_tenant' : 'security_login')})|raw }}</p>
+    </aside>
+</div>
+
+{% if others %}
+<section class="estate-others">
+    <h2>{{ '@estate.unit.others'|trans }}</h2>
+    <div class="estate-grid">{% for unit in others %}{% include '@Estate/client/_unit_card.html.twig' %}{% endfor %}</div>
+</section>
+{% endif %}
+{% endblock %}

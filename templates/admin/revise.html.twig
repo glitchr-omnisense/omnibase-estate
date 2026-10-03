@@ -1,0 +1,52 @@
+{% extends '@Admin/layout.html.twig' %}
+
+{% block page_title %}Réviser le loyer — {{ lease.reference }}{% endblock %}
+
+{% block content_header %}
+<div class="admin-header">
+    <span class="admin-header-icon"><i class="fa-solid fa-arrow-trend-up"></i></span>
+    <div class="admin-header-titles">
+        <h1>Réviser le loyer</h1>
+        <div class="admin-header-subtitle">{{ lease.tenantNames }} · {{ lease.unit.name }} · bail {{ lease.reference }} · {{ next < date('today') ? 'révision due depuis le ' : 'révision au ' }}{{ next|format_date('long') }}</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .estate-admin-form { display: grid; gap: 1rem; max-width: 42rem; }
+    .estate-admin-form .card { padding: 1rem 1.25rem; }
+    .estate-admin-form dl { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1.25rem; margin: 0; }
+    .estate-admin-form dt { opacity: .7; } .estate-admin-form dd { margin: 0; font-weight: 600; }
+    .estate-admin-form form { display: grid; gap: .9rem; }
+    .estate-admin-form label { display: grid; gap: .3rem; font-weight: 600; }
+    .estate-admin-form .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+    .estate-admin-form .result { font-size: 1.15rem; } .estate-admin-form .result strong { font-size: 1.5rem; }
+    .estate-admin-form .help { opacity: .7; font-size: .9rem; margin: 0; }
+</style>
+<div class="estate-admin-form">
+    <div class="card"><dl>
+        <dt>Loyer actuel (hors charges)</dt><dd>{{ lease.rent|euros }}</dd>
+        <dt>Charges</dt><dd>{{ lease.charges|euros }}</dd>
+        <dt>Indice de référence</dt><dd>{% if lease.indexValue %}IRL {{ lease.indexQuarter }} : {{ lease.indexValue|number_format(2, ',', ' ') }}{% else %}<span style="color: #d0312d">non renseigné</span> — <a href="{{ path('admin_crud_leases_edit', {entityId: lease.id}) }}">compléter le bail</a>{% endif %}</dd>
+        <dt>Dernière révision</dt><dd>{{ lease.revisedOn ? lease.revisedOn|format_date('long') : 'aucune' }}</dd>
+    </dl></div>
+    {% if error %}<div class="alert alert-warning">{{ error }}</div>{% endif %}
+    <form method="post" class="card">
+        <input type="hidden" name="_token" value="{{ csrf_token('estate_revise_' ~ lease.id) }}">
+        <div class="row3">
+            <label>Trimestre de l'IRL<input class="form-control" name="quarter" required placeholder="T2 2025" value="{{ values.quarter }}"></label>
+            <label>Valeur de l'IRL<input class="form-control" name="index" required inputmode="decimal" placeholder="146,68" value="{{ values.index }}"></label>
+            <label>À partir du<input class="form-control" type="date" name="on" value="{{ values.on }}"></label>
+        </div>
+        <p class="help">Le même trimestre que celui du bail, l'année suivante : sa valeur est publiée par l'INSEE (<a href="https://www.insee.fr/fr/statistiques/serie/001515333" target="_blank" rel="noopener">série de l'IRL</a>).</p>
+        {% if rent %}
+        <p class="result">Nouveau loyer hors charges : <strong>{{ rent|euros }}</strong> ({{ rent >= lease.rent ? '+' : '' }}{{ (rent - lease.rent)|euros }}), soit {{ (rent + lease.charges)|euros }} par mois charges comprises.</p>
+        {% endif %}
+        <div style="display: flex; gap: .6rem">
+            <button class="btn {{ rent ? '' : 'btn-success' }}" type="submit" name="do" value="preview">Calculer</button>
+            {% if rent %}<button class="btn btn-success" type="submit" name="do" value="apply">Appliquer et prévenir les locataires</button>{% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}

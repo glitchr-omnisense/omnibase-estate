@@ -1,0 +1,12 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ url('estate_work_order', {id: order.id}) }}{% endblock %}
+{% block action_text %}Voir l'intervention{% endblock %}
+{% block content %}
+<p>Bonjour {{ order.contractor.contactName ?? order.contractor.company }},</p>
+<p>{{ order.organisation.name }} vous confie une intervention :</p>
+<p><strong>{{ order.title }}</strong> ({{ order.category }}{% if order.urgency.value == 'urgent' %}, <strong>urgent</strong>{% endif %})<br>{{ order.unit.name }} — {{ order.unit.address }}, {{ order.unit.postcode }} {{ order.unit.city }}</p>
+{% if order.visitAt %}<p>Passage convenu : <strong>{{ order.visitAt|format_datetime('full', 'short') }}</strong>.</p>{% endif %}
+<p style="white-space: pre-line">{{ order.description }}</p>
+<p>Indiquez votre date de passage, votre devis et votre compte rendu depuis votre espace artisan.</p>
+{% endblock %}

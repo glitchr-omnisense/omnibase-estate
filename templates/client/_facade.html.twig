@@ -1,0 +1,21 @@
+{#
+ # A unit's picture: its first photo (through omnibase's `thumbnail`: the
+ # uploader keeps files out of public/), or - none yet - a gabled façade of
+ # Strasbourg's old town in its colour (ochre, rose, sage, sky, brick,
+ # mustard), half-timbered, its windows lit.
+ #}
+{% set photo = unit.cover and unit.cover.image ? unit.cover.image|thumbnail(1200, 900) : null %}
+<div class="estate-facade is-{{ unit.facade }}{{ photo ? ' has-photo' }}">
+    {% if photo %}
+        <img src="{{ photo }}" alt="{{ unit.cover.caption ?? unit.name }}" loading="lazy">
+    {% else %}
+        <svg viewBox="0 0 120 100" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+            <path class="estate-facade-wall" d="M18 100 V44 L60 8 L102 44 V100 Z"/>
+            <path class="estate-facade-timber" d="M18 44 H102 M18 70 H102 M40 44 V100 M80 44 V100 M40 44 L60 70 L80 44 M40 70 L60 44 L80 70 M60 8 V44 M39 26 H81"/>
+            <rect class="estate-facade-window" x="27" y="50" width="9" height="14"/><rect class="estate-facade-window" x="84" y="50" width="9" height="14"/>
+            <rect class="estate-facade-window" x="27" y="76" width="9" height="14"/><rect class="estate-facade-window" x="84" y="76" width="9" height="14"/>
+            <rect class="estate-facade-window" x="55" y="26" width="10" height="12"/>
+            <path class="estate-facade-door" d="M52 100 V82 Q60 75 68 82 V100 Z"/>
+        </svg>
+    {% endif %}
+</div>

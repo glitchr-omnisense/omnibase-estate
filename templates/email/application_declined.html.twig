@@ -1,0 +1,11 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ url('estate_units') }}{% endblock %}
+{% block action_text %}Voir nos autres biens{% endblock %}
+{% block content %}
+<p>Bonjour {{ application.firstName }},</p>
+<p>Merci de l'intérêt que vous avez porté à <strong>{{ application.unit.name }}</strong>. Nous ne pouvons malheureusement pas donner suite à votre candidature pour ce logement.</p>
+{% if note %}<p style="white-space: pre-line">{{ note }}</p>{% endif %}
+<p>Vos informations seront supprimées d'ici trois mois. Nous vous souhaitons de trouver rapidement le logement qui vous convient.</p>
+<p>Bien cordialement,<br>{{ organisation.name }}</p>
+{% endblock %}

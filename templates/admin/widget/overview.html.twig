@@ -1,0 +1,57 @@
+{# EstateOverview: per company, its tiles and its last six months of rent. #}
+{% for company in companies %}
+{% set f = company.figures %}
+<div class="analytics-card card estate-overview">
+    <div class="analytics-card-header">
+        <h2 class="analytics-card-title">{{ company.organisation.name }}</h2>
+        <a class="estate-overview-link" href="{{ path('estate_admin_rents_call', {_token: csrf_token('estate_rents_call_0')}) }}"><i class="fa-solid fa-paper-plane"></i> Appeler les loyers du mois</a>
+    </div>
+    <div class="estate-overview-tiles">
+        <a class="estate-overview-tile" href="{{ path('admin_crud_units_index') }}"><strong>{{ f.let }}/{{ f.lettable }}</strong><span>biens loués ({{ f.occupancy }} %)</span></a>
+        <a class="estate-overview-tile" href="{{ path('admin_crud_leases_index') }}"><strong>{{ f.monthly|euros(true) }}</strong><span>loyers charges comprises / mois</span></a>
+        <a class="estate-overview-tile" href="{{ path('admin_crud_rent_calls_index') }}"><strong>{{ f.received|euros(true) }}</strong><span>reçus en {{ 'now'|date('Y') }} sur {{ f.called|euros(true) }} ({{ f.rate }} %)</span></a>
+        <a class="estate-overview-tile{{ f.lateTotal ? ' is-waiting' }}" href="{{ path('admin_crud_rent_calls_index') }}"><strong>{{ f.lateTotal|euros(true) }}</strong><span>en retard ({{ f.late|length }} loyer{{ f.late|length > 1 ? 's' }})</span></a>
+        <a class="estate-overview-tile{{ f.openWorkOrders|length ? ' is-waiting' }}" href="{{ path('admin_crud_work_orders_index') }}"><strong>{{ f.openWorkOrders|length }}</strong><span>interventions en cours</span></a>
+        <a class="estate-overview-tile" href="{{ path('admin_crud_work_orders_index') }}"><strong>{{ f.worksSpent|euros(true) }}</strong><span>de travaux en {{ 'now'|date('Y') }}</span></a>
+    </div>
+    <div class="estate-overview-chart">
+        {% for m in f.months %}
+        <div><div class="bars"><span class="called" style="height: {{ (100 * m.called / f.monthsMax)|round }}%"></span><span class="received" style="height: {{ (100 * m.received / f.monthsMax)|round }}%"></span></div><small>{{ m.month|format_date(pattern: 'MMM')|trim('.') }}</small></div>
+        {% endfor %}
+    </div>
+    {% if company.revisions or company.unread or company.uninsured or company.applications %}
+    <ul class="estate-overview-todo">
+        {% if company.applications %}<li><a href="{{ path('admin_crud_applications_index') }}"><i class="fa-solid fa-user-plus"></i> {{ company.applications }} nouvelle{{ company.applications > 1 ? 's' }} candidature{{ company.applications > 1 ? 's' }} à étudier</a></li>{% endif %}
+        {% if company.unread %}<li><a href="{{ path('estate_admin_messages') }}"><i class="fa-solid fa-comments"></i> {{ company.unread }} message{{ company.unread > 1 ? 's' }} de locataire à lire</a></li>{% endif %}
+        {% for r in company.revisions %}<li><a href="{{ path('estate_admin_revise', {id: r.lease.id}) }}"><i class="fa-solid fa-arrow-trend-up"></i> Réviser le loyer de {{ r.lease.tenantNames }} ({{ r.lease.unit.name }}) {{ r.on < date('today') ? 'depuis le' : 'au' }} {{ r.on|format_date('short') }}</a></li>{% endfor %}
+        {% for l in company.uninsured %}<li><a href="{{ path('admin_crud_leases_edit', {entityId: l.id}) }}"><i class="fa-solid fa-shield-halved"></i> Attestation d'assurance {{ l.insuranceUntil ? 'expirée le ' ~ l.insuranceUntil|format_date('short') : 'manquante' }} : {{ l.tenantNames }}</a></li>{% endfor %}
+    </ul>
+    {% endif %}
+    {% if f.late %}
+    <ul class="estate-overview-late">
+        {% for call in f.late|slice(0, 4) %}<li><a href="{{ path('estate_admin_payment', {id: call.id}) }}">{{ call.lease.tenantNames }} — {{ call.lease.unit.name }} · {{ call.remaining|euros }} depuis le {{ call.dueOn|format_date('short') }}</a></li>{% endfor %}
+    </ul>
+    {% endif %}
+</div>
+{% endfor %}
+<style>
+    .estate-overview .analytics-card-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    .estate-overview-link { font-size: .8rem; font-weight: 600; text-decoration: none; }
+    .estate-overview-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: .6rem; padding: 0 1rem 1rem; }
+    .estate-overview-tile { display: grid; gap: .2rem; padding: .8rem .9rem; border-radius: .6rem; background: rgba(127, 127, 127, .08); color: inherit; text-decoration: none; }
+    .estate-overview-tile strong { font-size: 1.35rem; line-height: 1.1; }
+    .estate-overview-tile span { font-size: .75rem; opacity: .75; }
+    .estate-overview-tile:hover { background: rgba(127, 127, 127, .16); }
+    .estate-overview-tile.is-waiting { background: rgba(208, 49, 45, .12); }
+    .estate-overview-tile.is-waiting strong { color: #c0302b; }
+    .estate-overview-chart { display: grid; grid-template-columns: repeat(6, 1fr); gap: .75rem; height: 7rem; padding: 0 1rem .75rem; }
+    .estate-overview-chart > div { display: grid; grid-template-rows: 1fr auto; text-align: center; }
+    .estate-overview-chart .bars { display: flex; align-items: flex-end; justify-content: center; gap: 3px; }
+    .estate-overview-chart .bars span { width: 40%; max-width: 1.2rem; border-radius: 3px 3px 0 0; min-height: 2px; }
+    .estate-overview-chart .called { background: rgba(30, 58, 95, .25); }
+    .estate-overview-chart .received { background: #1e3a5f; }
+    .estate-overview-chart small { font-size: .7rem; opacity: .7; }
+    .estate-overview-late { margin: 0; padding: 0 1rem 1rem 2rem; font-size: .8rem; }
+    .estate-overview-todo { display: grid; gap: .35rem; margin: 0 1rem .9rem; padding: .7rem .9rem; border-radius: .6rem; background: rgba(208, 49, 45, .06); list-style: none; font-size: .82rem; }
+    .estate-overview-todo i { width: 1.2rem; opacity: .7; }
+</style>

@@ -1,0 +1,30 @@
+{% extends '@Admin/layout.html.twig' %}
+
+{% block page_title %}Messages des locataires{% endblock %}
+
+{% block content_header %}
+<div class="admin-header">
+    <span class="admin-header-icon"><i class="fa-solid fa-comments"></i></span>
+    <div class="admin-header-titles">
+        <h1>Messages des locataires</h1>
+        <div class="admin-header-subtitle">Un fil par bail ; la réponse part par e-mail et s'affiche dans l'espace du locataire.</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% include '@Estate/admin/_messages_style.html.twig' %}
+{% if threads %}
+<div class="card estate-threads">
+    {% for t in threads %}
+    <a class="estate-thread-row{{ t.unread ? ' is-unread' }}" href="{{ path('estate_admin_messages_thread', {id: t.lease.id}) }}">
+        <span class="estate-thread-who"><strong>{{ t.lease.tenantNames }}</strong><small>{{ t.lease.unit.name }} · bail {{ t.lease.reference }}</small></span>
+        <span class="estate-thread-last">{{ t.last.fromManagement ? 'Vous : ' }}{{ t.last.body|length > 110 ? t.last.body|slice(0, 110) ~ '…' : t.last.body }}</span>
+        <span class="estate-thread-meta">{% if t.unread %}<span class="estate-unread" title="non lus">{{ t.unread }}</span>{% endif %}<small>{{ t.last.createdAt|format_datetime('short', 'short') }}</small></span>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card" style="padding: 1.25rem">Aucun message pour l'instant : les locataires écrivent depuis leur espace (« Écrire à la gestion »).</div>
+{% endif %}
+{% endblock %}

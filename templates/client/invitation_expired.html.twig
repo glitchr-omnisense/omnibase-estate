@@ -1,0 +1,5 @@
+{% extends '@Estate/client/layout.html.twig' %}
+
+{% block estate_title %}{{ '@estate.invitation.expired_title'|trans }}{% endblock %}
+{% block estate_lead %}{{ '@estate.invitation.expired_lead'|trans }}{% endblock %}
+{% block estate_content %}<p><a class="estate-button" href="{{ path('security_login') }}">{{ '@estate.invitation.sign_in'|trans }}</a></p>{% endblock %}

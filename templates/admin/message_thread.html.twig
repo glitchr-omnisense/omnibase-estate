@@ -1,0 +1,39 @@
+{% extends '@Admin/layout.html.twig' %}
+
+{% block page_title %}{{ lease.tenantNames }} — messages{% endblock %}
+
+{% block content_header %}
+<div class="admin-header">
+    <span class="admin-header-icon"><i class="fa-solid fa-comments"></i></span>
+    <div class="admin-header-titles">
+        <h1>{{ lease.tenantNames }}</h1>
+        <div class="admin-header-subtitle">{{ lease.unit.name }} · bail {{ lease.reference }} · <a href="{{ path('estate_admin_messages') }}">tous les messages</a></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% include '@Estate/admin/_messages_style.html.twig' %}
+<div class="estate-thread-page">
+    <div class="card">
+        {% if thread %}
+        <ol class="estate-thread">
+            {% for m in thread %}
+            <li class="{{ m.fromManagement ? 'is-me' : 'is-them' }}">
+                <p>{{ m.body|nl2br }}</p>
+                <small>{{ m.authorName }} · {{ m.createdAt|format_datetime('medium', 'short') }}{% if m.fromManagement and m.readAt %} · lu{% endif %}</small>
+            </li>
+            {% endfor %}
+        </ol>
+        {% else %}
+        <p>Pas encore de message avec ce bail. Écrivez le premier : il part par e-mail aux locataires.</p>
+        {% endif %}
+    </div>
+    <div class="card">
+        {{ form_start(form) }}
+            {{ form_row(form.body, {label: 'Votre réponse'}) }}
+            <button type="submit" class="btn btn-success">Envoyer</button>
+        {{ form_end(form) }}
+    </div>
+</div>
+{% endblock %}

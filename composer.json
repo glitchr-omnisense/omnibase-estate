@@ -1,0 +1,30 @@
+{
+    "name": "omnibase/estate",
+    "type": "symfony-bundle",
+    "description": "Property management for omnibase: organisations, buildings and units, associates, leases and tenants, rent calls, receipts and online payment, contractors and work orders, invitations and a private space for each - posting to omnibase/ledger",
+    "keywords": ["symfony", "property-management", "real-estate", "rental", "lease", "tenant", "sci"],
+    "license": "proprietary",
+    "authors": [{"name": "Marco Meyer", "email": "marco.meyer@glitchr.io"}],
+    "autoload": {"psr-4": {"Base\\Estate\\": "./src"}},
+    "autoload-dev": {"psr-4": {"Tests\\Base\\Estate\\": "./tests"}},
+    "require": {
+        "php": "^8.2",
+        "doctrine/orm": "^2.15|^3.0",
+        "glitchr/omnibase": "3.x-dev",
+        "omnibase/admin": "dev-main",
+        "symfony/config": "^7.0|^8.0",
+        "symfony/dependency-injection": "^7.0|^8.0",
+        "symfony/form": "^7.0|^8.0",
+        "symfony/http-kernel": "^7.0|^8.0",
+        "symfony/mailer": "^7.0|^8.0",
+        "symfony/security-bundle": "^7.0|^8.0"
+    },
+    "suggest": {
+        "omnibase/ledger": "Rent calls, payments and work invoices posted to the company's books",
+        "glitchr/omnitrade": "Rent paid online (omnitrade/stripe: card and SEPA debit)",
+        "dompdf/dompdf": "Rent notices and receipts as PDF"
+    },
+    "config": {"sort-packages": true, "allow-plugins": {"glitchr/base-plugin": true, "glitchr/doctrine-dc2type": true, "php-http/discovery": true}},
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

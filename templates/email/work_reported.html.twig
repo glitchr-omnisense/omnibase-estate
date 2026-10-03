@@ -1,0 +1,9 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ url('admin') }}{% endblock %}
+{% block action_text %}Confier à un artisan{% endblock %}
+{% block content %}
+<p>Un problème est signalé dans <strong>{{ order.unit.name }}</strong> ({{ order.category }}{% if order.urgency.value == 'urgent' %}, <strong>urgent</strong>{% endif %}) :</p>
+<p><strong>{{ order.title }}</strong></p>
+<p style="white-space: pre-line">{{ order.description }}</p>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends '@Estate/client/layout.html.twig' %}
+
+{% block estate_title %}{{ '@estate.application.title'|trans }}{% endblock %}
+{% block description %}{{ '@estate.application.title'|trans }} — {{ unit.name }}{% endblock %}
+{% block estate_eyebrow %}<p class="estate-eyebrow"><a href="{{ path('estate_units') }}">{{ '@estate.units.title'|trans }}</a> · <a href="{{ path('estate_unit', {slug: unit.slug}) }}">{{ unit.name }}</a></p>{% endblock %}
+{% block estate_lead %}{{ '@estate.application.lead'|trans }}{% endblock %}
+{% block estate_class %}estate-unit estate-apply-page{% endblock %}
+
+{% block estate_content %}
+<div class="estate-unit-grid">
+    <div class="estate-unit-main">
+        {{ form_start(form, {attr: {class: 'estate-form is-wide', novalidate: 'novalidate'}}) }}
+            <h2>{{ '@estate.application.you'|trans }}</h2>
+            <div class="estate-form-row">{{ form_row(form.firstName) }}{{ form_row(form.lastName) }}</div>
+            <div class="estate-form-row">{{ form_row(form.email) }}{{ form_row(form.phone) }}</div>
+            <div class="estate-form-row">{{ form_row(form.occupants) }}{{ form_row(form.moveInOn) }}</div>
+            <h2>{{ '@estate.application.situation'|trans }}</h2>
+            <div class="estate-form-row">{{ form_row(form.occupation) }}{{ form_row(form.income) }}</div>
+            {{ form_row(form.guarantee) }}
+            <h2>{{ '@estate.application.file'|trans }}</h2>
+            {{ form_row(form.dossierUrl) }}
+            {{ form_row(form.message) }}
+            {{ form_row(form.consent) }}
+            {{ form_row(form.website) }}
+            <button type="submit" class="estate-button">{{ '@estate.application.submit'|trans }}</button>
+        {{ form_end(form) }}
+    </div>
+
+    <aside class="estate-unit-aside">
+        <a class="estate-card" href="{{ path('estate_unit', {slug: unit.slug}) }}">
+            {% include '@Estate/client/_facade.html.twig' with {unit: unit} %}
+            <div class="estate-card-body">
+                <p class="estate-card-kind">{{ ('@estate.kind.' ~ unit.kind.value)|trans }}{% if unit.district %} · {{ unit.district }}{% endif %}</p>
+                <h3>{{ unit.name }}</h3>
+                <p class="estate-card-meta">{% if unit.surface %}{{ unit.surface|number_format(0, ',', ' ') }} m²{% endif %}{% if unit.rooms %} · {{ '@estate.unit.rooms_count'|trans({count: unit.rooms}) }}{% endif %} · {{ (unit.rent + unit.charges)|euros(true) }}{{ '@estate.unit.per_month'|trans }}</p>
+                <span class="estate-pill is-free">{{ unit.availableFrom <= date('today') ? '@estate.unit.free_now'|trans : '@estate.unit.free_on'|trans({date: unit.availableFrom|format_date('long')}) }}</span>
+            </div>
+        </a>
+        <div class="estate-panel estate-apply-how">
+            <h2>{{ '@estate.application.how'|trans }}</h2>
+            <ol>
+                <li>{{ '@estate.application.how_1'|trans }}</li>
+                <li>{{ '@estate.application.how_2'|trans }}</li>
+                <li>{{ '@estate.application.how_3'|trans }}</li>
+            </ol>
+            <p class="estate-muted">{{ '@estate.application.privacy'|trans }}</p>
+        </div>
+    </aside>
+</div>
+{% endblock %}

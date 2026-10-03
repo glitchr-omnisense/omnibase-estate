@@ -1,0 +1,33 @@
+{% extends '@Estate/client/layout.html.twig' %}
+
+{% block estate_title %}{{ '@estate.units.title'|trans }}{% endblock %}
+{% block estate_lead %}{{ '@estate.units.lead'|trans }}{% endblock %}
+{% block estate_class %}estate-units{% endblock %}
+{% block estate_attributes %}data-controller="estate-filter"{% endblock %}
+
+{#
+ # The filters are links (they work alone); the host may filter in the page
+ # instead: its "estate-filter" Stimulus controller reads the targets below
+ # and each card's data-kind / data-free.
+ #}
+{% block estate_actions %}
+<nav class="estate-filters" aria-label="{{ '@estate.units.filter'|trans }}">
+    {% set link = 'data-estate-filter-target="link" data-action="estate-filter#pick"' %}
+    <a href="{{ path('estate_units') }}" {{ link|raw }} {{ not kind and not available ? 'aria-current="true"' }}>{{ '@estate.units.all'|trans }}</a>
+    {% for k in kinds|filter(k => k.value in ['house', 'apartment', 'studio']) %}
+        <a href="{{ path('estate_units', {type: k.value}) }}" {{ link|raw }} {{ kind == k.value ? 'aria-current="true"' }}>{{ ('@estate.kinds.' ~ k.value)|trans }}</a>
+    {% endfor %}
+    <a href="{{ path('estate_units', {libres: 1}) }}" {{ link|raw }} {{ available ? 'aria-current="true"' }}>{{ '@estate.units.free'|trans }}</a>
+</nav>
+{% endblock %}
+
+{% block estate_content %}
+<div class="estate-grid">
+    {% set shownIds = units|map(u => u.id) %}
+    {% for unit in all %}
+        {% set shown = unit.id in shownIds %}
+        {% include '@Estate/client/_unit_card.html.twig' with {filterable: true, hidden: not shown} %}
+    {% endfor %}
+</div>
+<p class="estate-empty" data-estate-filter-target="empty" {{ units ? 'hidden' }}>{{ '@estate.units.none'|trans }}</p>
+{% endblock %}

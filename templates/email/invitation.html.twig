@@ -1,0 +1,12 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ url }}{% endblock %}
+{% block action_text %}Ouvrir mon accès{% endblock %}
+{% block content %}
+<p>Bonjour {{ invitation.name }},</p>
+{% if invitation.kind.value == 'tenant' %}<p>{{ organisation.name }} vous ouvre votre espace locataire : votre bail, vos avis d'échéance et quittances, le paiement en ligne et le signalement d'un problème dans le logement.</p>
+{% elseif invitation.kind.value == 'associate' %}<p>{{ organisation.name }} vous ouvre l'espace des associés : l'activité de la société au jour le jour, les loyers, les travaux, les comptes et les documents officiels.</p>
+{% elseif invitation.kind.value == 'contractor' %}<p>{{ organisation.name }} vous ouvre votre espace artisan : les interventions qui vous sont confiées, l'adresse et l'accès, et de quoi y indiquer votre passage, votre devis et votre compte rendu.</p>
+{% else %}<p>{{ organisation.name }} vous ouvre sa gestion : les biens, les baux, les loyers, les interventions et la comptabilité.</p>{% endif %}
+<p>Le lien ci-dessous est valable jusqu'au {{ invitation.expiresAt|format_date('long') }}. Il vous permet de choisir votre identifiant et votre mot de passe.</p>
+{% endblock %}

@@ -1,0 +1,7 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block content %}
+<p><strong>{{ visit.name }}</strong> &lt;{{ visit.email }}&gt;{% if visit.phone %} · {{ visit.phone }}{% endif %} demande à visiter <strong>{{ unit.name }}</strong>.</p>
+<p style="white-space: pre-line">{{ visit.message }}</p>
+<p><small>Répondez simplement à cet e-mail : la réponse part à {{ visit.email }}.</small></p>
+{% endblock %}

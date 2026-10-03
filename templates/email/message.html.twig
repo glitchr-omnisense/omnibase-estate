@@ -1,0 +1,8 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ message.fromManagement ? url('estate_tenant', {bail: lease.id, _fragment: 'messages'}) : url('estate_admin_messages_thread', {id: lease.id}) }}{% endblock %}
+{% block action_text %}{{ message.fromManagement ? 'Répondre depuis votre espace' : 'Répondre' }}{% endblock %}
+{% block content %}
+<p><strong>{{ message.authorName }}</strong>{% if not message.fromManagement %} ({{ lease.unit.name }}){% endif %} vous écrit :</p>
+<p style="white-space: pre-line">{{ message.body }}</p>
+{% endblock %}

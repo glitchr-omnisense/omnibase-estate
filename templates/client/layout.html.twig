@@ -1,0 +1,28 @@
+{% extends 'layout/layout1.html.twig' %}
+
+{#
+ # Every page of the bundle: the host's layout, a heading (title, lead, the
+ # page's own actions) and the content. The bundle writes estate-* markup;
+ # the host styles it.
+ #}
+{% block title %}{% block estate_title %}{% endblock %}{% endblock %}
+
+{% block content %}
+<div class="estate {% block estate_class %}{% endblock %}" {% block estate_attributes %}{% endblock %}>
+    <header class="estate-head">
+        <div>
+            {% block estate_eyebrow %}{% endblock %}
+            <h1>{{ block('estate_title') }}</h1>
+            {% if block('estate_lead') is defined and block('estate_lead')|trim %}<p class="estate-lead">{% block estate_lead %}{% endblock %}</p>{% endif %}
+        </div>
+        {% if block('estate_actions') is defined and block('estate_actions')|trim %}<div class="estate-head-actions">{% block estate_actions %}{% endblock %}</div>{% endif %}
+    </header>
+
+    {% for type, messages in app.flashes %}
+        {# The bundle's own flashes are keys (tenant.reported); others - omnibase's greeting - are sentences already. #}
+        {% for message in messages %}<p class="estate-flash is-{{ type }}" role="status">{{ message matches '/^[a-z_]+\\.[a-z_.]+$/' ? ('@estate.flash.' ~ message)|trans : message|trans }}</p>{% endfor %}
+    {% endfor %}
+
+    {% block estate_content %}{% endblock %}
+</div>
+{% endblock %}

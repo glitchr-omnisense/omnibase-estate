@@ -1,0 +1,17 @@
+<style>
+    .estate-threads { padding: 0; overflow: hidden; }
+    .estate-thread-row { display: grid; grid-template-columns: minmax(12rem, 18rem) 1fr auto; gap: 1rem; align-items: center; padding: .85rem 1.1rem; border-top: 1px solid rgba(0, 0, 0, .07); color: inherit; text-decoration: none; }
+    .estate-thread-row:first-child { border-top: 0; }
+    .estate-thread-row:hover { background: rgba(0, 0, 0, .03); }
+    .estate-thread-row.is-unread .estate-thread-last { font-weight: 600; }
+    .estate-thread-who { display: grid; } .estate-thread-who small, .estate-thread-meta small { opacity: .65; }
+    .estate-thread-last { opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .estate-thread-meta { display: flex; gap: .5rem; align-items: center; }
+    .estate-unread { min-width: 1.4rem; padding: .1rem .4rem; border-radius: 1rem; background: #d0312d; color: #fff; font-size: .75rem; font-weight: 700; text-align: center; }
+    .estate-thread-page { display: grid; gap: 1rem; max-width: 46rem; } .estate-thread-page .card { padding: 1.1rem 1.25rem; }
+    .estate-thread { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
+    .estate-thread li { max-width: 80%; padding: .6rem .85rem; border-radius: .9rem; background: rgba(0, 0, 0, .05); }
+    .estate-thread li.is-me { justify-self: end; background: #1e3a5f; color: #fff; }
+    .estate-thread li p { margin: 0 0 .25rem; } .estate-thread li small { opacity: .7; }
+    @media (max-width: 720px) { .estate-thread-row { grid-template-columns: 1fr; gap: .3rem; } }
+</style>

@@ -1,0 +1,13 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ url('admin_crud_applications_index') }}{% endblock %}
+{% block action_text %}Voir les candidatures{% endblock %}
+{% block content %}
+<p>Nouvelle candidature pour <strong>{{ application.unit.name }}</strong> ({{ application.asked|euros }} par mois charges comprises) :</p>
+<p><strong>{{ application.name }}</strong> · {{ application.email }}{% if application.phone %} · {{ application.phone }}{% endif %}<br>
+{{ application.occupants }} occupant{{ application.occupants > 1 ? 's' }}{% if application.moveInOn %}, entrée souhaitée le {{ application.moveInOn|format_date('long') }}{% endif %}<br>
+Revenus nets : {{ application.income|euros }} par mois{% if application.incomeRatio %} (soit {{ application.incomeRatio|number_format(1, ',') }} fois le loyer){% endif %}<br>
+Garantie : {{ {visale: 'Visale', person: 'une personne', company: 'un organisme ou une banque', none: 'aucune'}[application.guarantee.value] }}</p>
+{% if application.dossierUrl %}<p>Dossier : <a href="{{ application.dossierUrl }}">{{ application.dossierUrl }}</a></p>{% endif %}
+{% if application.message %}<p style="white-space: pre-line">{{ application.message }}</p>{% endif %}
+{% endblock %}

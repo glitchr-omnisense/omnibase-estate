@@ -1,0 +1,8 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block content %}
+<p>Intervention <strong>#{{ order.id }} — {{ order.title }}</strong> ({{ order.unit.name }}) :</p>
+{% set last = order.events|last %}
+{% if last %}<p><strong>{{ last.authorName }}</strong> — {{ last.body }}</p>{% endif %}
+{% if order.visitAt and order.status.value == 'scheduled' %}<p>Passage prévu le <strong>{{ order.visitAt|format_datetime('full', 'short') }}</strong>.</p>{% endif %}
+{% endblock %}
