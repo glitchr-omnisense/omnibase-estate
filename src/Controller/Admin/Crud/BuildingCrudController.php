@@ -17,10 +17,10 @@ class BuildingCrudController extends AbstractEstateCrudController
     {
         yield AssociationField::new('organisation', 'Société')->setColumns(4);
         yield TextField::new('name', 'Nom')->setColumns(4);
-        yield IntegerField::new('builtIn', 'Construit en')->setColumns(4)->hideOnIndex();
+        yield IntegerField::new('builtIn', 'Construit en')->setRequired(false)->setColumns(4)->hideOnIndex();
         yield TextField::new('address', 'Adresse')->setColumns(6);
         yield TextField::new('postcode', 'Code postal')->setColumns(2);
         yield TextField::new('city', 'Ville')->setColumns(4);
-        yield TextareaField::new('access', 'Accès (digicode, clés)')->setColumns(12)->hideOnIndex()->setHelp('Donné aux artisans envoyés sur place, jamais sur le site public.');
+        yield TextareaField::new('access', 'Accès (digicode, clés)')->setRequired(false)->setColumns(12)->hideOnIndex()->setHelp('Donné aux artisans envoyés sur place, jamais sur le site public.');
     }
 }

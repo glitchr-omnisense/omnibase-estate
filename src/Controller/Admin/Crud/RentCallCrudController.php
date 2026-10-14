@@ -38,6 +38,6 @@ class RentCallCrudController extends AbstractEstateCrudController
         yield $this->euros('total', 'Montant');
         yield $this->euros('paid', 'Reçu');
         yield $this->enum('status', 'État', RentStatus::class, fn (RentStatus $s) => self::STATUSES[$s->value]);
-        yield TextField::new('receiptNumber', 'Quittance');
+        yield TextField::new('receiptNumber', 'Quittance')->setRequired(false);
     }
 }

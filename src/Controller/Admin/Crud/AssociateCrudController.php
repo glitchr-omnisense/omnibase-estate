@@ -36,13 +36,13 @@ class AssociateCrudController extends AbstractEstateCrudController
         yield TextField::new('firstName', 'Prénom')->setColumns(4);
         yield TextField::new('lastName', 'Nom')->setColumns(4);
         yield EmailField::new('email', 'E-mail')->setColumns(4);
-        yield TextField::new('phone', 'Téléphone')->setColumns(4)->hideOnIndex();
+        yield TextField::new('phone', 'Téléphone')->setRequired(false)->setColumns(4)->hideOnIndex();
         yield IntegerField::new('shares', 'Parts')->setColumns(2);
         yield $this->enum('quality', 'Qualité', AssociateQuality::class, fn (AssociateQuality $q) => AssociateQuality::MANAGER === $q ? 'Gérant·e' : 'Associé·e')->setColumns(2);
-        yield DateField::new('since', 'Depuis')->setColumns(3)->hideOnIndex();
+        yield DateField::new('since', 'Depuis')->setRequired(false)->setColumns(3)->hideOnIndex();
         yield BooleanField::new('public', 'Sur le site')->setColumns(3)->setHelp('Montré·e sur la page « La société » : seulement avec son accord.');
         yield ImageField::new('portrait', 'Portrait')->setColumns(4)->hideOnIndex()->setRequired(false);
-        yield TextareaField::new('bio', 'Quelques mots (site public)')->setColumns(8)->hideOnIndex();
+        yield TextareaField::new('bio', 'Quelques mots (site public)')->setRequired(false)->setColumns(8)->hideOnIndex();
         yield AssociationField::new('user', 'Compte')->setColumns(4)->setRequired(false)->hideOnIndex()->hideOnForm();
     }
 }

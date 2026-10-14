@@ -26,6 +26,6 @@ class PaymentCrudController extends AbstractEstateCrudController
         yield AssociationField::new('rentCall', 'Loyer');
         yield $this->euros('amount', 'Montant');
         yield $this->enum('method', 'Moyen', PaymentMethod::class, fn (PaymentMethod $m) => LeaseCrudController::METHODS[$m->value]);
-        yield TextField::new('reference', 'Référence');
+        yield TextField::new('reference', 'Référence')->setRequired(false);
     }
 }

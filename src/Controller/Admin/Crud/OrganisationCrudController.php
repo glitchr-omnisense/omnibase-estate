@@ -39,18 +39,18 @@ class OrganisationCrudController extends AbstractEstateCrudController
         yield IdField::new('id')->onlyOnIndex();
         yield TextField::new('name', 'Nom sur le site')->setColumns(6);
         yield TextField::new('slug', 'Identifiant')->setColumns(3)->hideOnIndex();
-        yield TextField::new('siren', 'SIREN')->setColumns(3)->setHelp('Le reste de l\'identité se lit dans les registres (Sirene, VIES) : « Lire les registres ».');
-        yield TextField::new('legalName', 'Dénomination')->setColumns(6)->hideOnIndex();
-        yield TextField::new('legalForm', 'Forme juridique')->setColumns(3)->hideOnIndex();
-        yield TextField::new('vatNumber', 'N° de TVA')->setColumns(3)->hideOnIndex()->setHelp('Vide : non assujettie (inconnue de VIES).');
+        yield TextField::new('siren', 'SIREN')->setRequired(false)->setColumns(3)->setHelp('Le reste de l\'identité se lit dans les registres (Sirene, VIES) : « Lire les registres ».');
+        yield TextField::new('legalName', 'Dénomination')->setRequired(false)->setColumns(6)->hideOnIndex();
+        yield TextField::new('legalForm', 'Forme juridique')->setRequired(false)->setColumns(3)->hideOnIndex();
+        yield TextField::new('vatNumber', 'N° de TVA')->setRequired(false)->setColumns(3)->hideOnIndex()->setHelp('Vide : non assujettie (inconnue de VIES).');
         yield DateTimeField::new('registryCheckedAt', 'Registres lus le')->onlyOnDetail();
-        yield DateField::new('foundedOn', 'Créée le')->setColumns(3)->hideOnIndex();
-        yield TextField::new('address', 'Adresse')->setColumns(6)->hideOnIndex();
-        yield TextField::new('postcode', 'Code postal')->setColumns(2)->hideOnIndex();
-        yield TextField::new('city', 'Ville')->setColumns(4);
-        yield EmailField::new('email', 'E-mail')->setColumns(4);
-        yield TextField::new('phone', 'Téléphone')->setColumns(4)->hideOnIndex();
-        yield TextField::new('iban', 'IBAN des loyers')->setColumns(4)->hideOnIndex()->setHelp('Imprimé sur les avis d\'échéance pour les virements.');
-        yield IntegerField::new('bookId', 'Comptabilité (n° du livre)')->setColumns(4)->hideOnIndex()->setHelp('Le livre comptable (omnibase/ledger) où loyers et travaux sont passés.');
+        yield DateField::new('foundedOn', 'Créée le')->setRequired(false)->setColumns(3)->hideOnIndex();
+        yield TextField::new('address', 'Adresse')->setRequired(false)->setColumns(6)->hideOnIndex();
+        yield TextField::new('postcode', 'Code postal')->setRequired(false)->setColumns(2)->hideOnIndex();
+        yield TextField::new('city', 'Ville')->setRequired(false)->setColumns(4);
+        yield EmailField::new('email', 'E-mail')->setRequired(false)->setColumns(4);
+        yield TextField::new('phone', 'Téléphone')->setRequired(false)->setColumns(4)->hideOnIndex();
+        yield TextField::new('iban', 'IBAN des loyers')->setRequired(false)->setColumns(4)->hideOnIndex()->setHelp('Imprimé sur les avis d\'échéance pour les virements.');
+        yield IntegerField::new('bookId', 'Comptabilité (n° du livre)')->setRequired(false)->setColumns(4)->hideOnIndex()->setHelp('Le livre comptable (omnibase/ledger) où loyers et travaux sont passés.');
     }
 }

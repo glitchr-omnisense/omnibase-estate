@@ -44,7 +44,7 @@ class DocumentCrudController extends AbstractEstateCrudController
         yield AssociationField::new('lease', 'Bail')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Lease::class, 'required' => false])->setColumns(3)->setHelp('Un document du bail (bail signé, état des lieux) : vu par ses locataires.');
         yield AssociationField::new('workOrder', 'Intervention')->setFormType(EntityType::class)->setFormTypeOptions(['class' => WorkOrder::class, 'required' => false])->setColumns(3)->hideOnIndex();
         yield BooleanField::new('tenantVisible', 'Visible des locataires')->setColumns(3);
-        yield DateField::new('validUntil', 'Valable jusqu\'au')->setColumns(3)->hideOnIndex();
+        yield DateField::new('validUntil', 'Valable jusqu\'au')->setRequired(false)->setColumns(3)->hideOnIndex();
         yield TextField::new('uploadedByName', 'Ajouté par')->hideOnForm();
         yield DateTimeField::new('createdAt', 'Ajouté le')->hideOnForm();
     }

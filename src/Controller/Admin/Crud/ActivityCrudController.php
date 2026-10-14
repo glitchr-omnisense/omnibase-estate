@@ -23,7 +23,7 @@ class ActivityCrudController extends AbstractEstateCrudController
     {
         yield DateTimeField::new('happenedAt', 'Quand');
         yield TextField::new('message', 'Quoi');
-        yield AssociationField::new('unit', 'Bien');
-        yield $this->euros('amount', 'Montant');
+        yield AssociationField::new('unit', 'Bien')->setRequired(false);
+        yield $this->euros('amount', 'Montant')->setRequired(false);
     }
 }

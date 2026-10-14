@@ -29,7 +29,7 @@ class MemberCrudController extends AbstractEstateCrudController
         yield AssociationField::new('organisation', 'Société')->setColumns(4);
         yield TextField::new('name', 'Nom')->setColumns(4);
         yield EmailField::new('email', 'E-mail')->setColumns(4);
-        yield TextField::new('title', 'Fonction')->setColumns(4);
+        yield TextField::new('title', 'Fonction')->setRequired(false)->setColumns(4);
         yield AssociationField::new('user', 'Compte')->setColumns(4)->setRequired(false)->setHelp('Rempli quand l\'invitation est acceptée.')->hideOnForm();
     }
 }

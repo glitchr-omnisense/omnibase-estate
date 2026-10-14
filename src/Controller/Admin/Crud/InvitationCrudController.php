@@ -25,6 +25,6 @@ class InvitationCrudController extends AbstractEstateCrudController
         yield TextField::new('kind', 'Pour')->formatValue(fn ($v) => $v instanceof \BackedEnum ? ['member' => 'Gestion', 'associate' => 'Associé·e', 'tenant' => 'Locataire', 'contractor' => 'Artisan'][$v->value] : $v);
         yield DateTimeField::new('createdAt', 'Envoyée le');
         yield DateTimeField::new('expiresAt', 'Valable jusqu\'au');
-        yield DateTimeField::new('acceptedAt', 'Acceptée le');
+        yield DateTimeField::new('acceptedAt', 'Acceptée le')->setRequired(false);
     }
 }

@@ -65,15 +65,15 @@ class ApplicationCrudController extends AbstractEstateCrudController
         yield TextField::new('firstName', 'Prénom')->setColumns(4)->hideOnIndex();
         yield TextField::new('lastName', 'Nom')->setColumns(4)->hideOnIndex();
         yield EmailField::new('email', 'E-mail')->setColumns(4)->hideOnIndex();
-        yield TextField::new('phone', 'Téléphone')->setColumns(4)->hideOnIndex();
+        yield TextField::new('phone', 'Téléphone')->setRequired(false)->setColumns(4)->hideOnIndex();
         yield IntegerField::new('occupants', 'Occupants')->setColumns(2)->hideOnIndex();
-        yield DateField::new('moveInOn', 'Entrée souhaitée')->setColumns(3)->hideOnIndex();
+        yield DateField::new('moveInOn', 'Entrée souhaitée')->setRequired(false)->setColumns(3)->hideOnIndex();
         yield $this->enum('occupation', 'Situation', Occupation::class, fn (Occupation $o) => self::OCCUPATIONS[$o->value])->setColumns(3)->hideOnIndex();
         yield $this->euros('income', 'Revenus nets / mois')->setColumns(3)->hideOnIndex();
         yield $this->enum('guarantee', 'Garantie', Guarantee::class, fn (Guarantee $g) => self::GUARANTEES[$g->value])->setColumns(3)->hideOnIndex();
-        yield TextField::new('dossierUrl', 'DossierFacile')->setColumns(6)->hideOnIndex();
-        yield DateTimeField::new('visitAt', 'Visite')->setColumns(3)->hideOnIndex();
-        yield TextareaField::new('message', 'Son message')->setColumns(12)->hideOnIndex();
-        yield TextareaField::new('notes', 'Vos notes (jamais montrées au candidat)')->setColumns(12)->hideOnIndex();
+        yield TextField::new('dossierUrl', 'DossierFacile')->setRequired(false)->setColumns(6)->hideOnIndex();
+        yield DateTimeField::new('visitAt', 'Visite')->setRequired(false)->setColumns(3)->hideOnIndex();
+        yield TextareaField::new('message', 'Son message')->setRequired(false)->setColumns(12)->hideOnIndex();
+        yield TextareaField::new('notes', 'Vos notes (jamais montrées au candidat)')->setRequired(false)->setColumns(12)->hideOnIndex();
     }
 }

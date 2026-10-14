@@ -38,17 +38,17 @@ class LeaseCrudController extends AbstractEstateCrudController
         yield TextField::new('tenantNames', 'Locataires')->onlyOnIndex();
         yield $this->enum('status', 'État', LeaseStatus::class, fn (LeaseStatus $s) => self::STATUSES[$s->value])->setColumns(4);
         yield DateField::new('startOn', 'Début')->setColumns(3);
-        yield DateField::new('endOn', 'Fin')->setColumns(3)->hideOnIndex();
-        yield DateField::new('noticeOn', 'Congé reçu le')->setColumns(3)->hideOnIndex();
-        yield DateField::new('insuranceUntil', 'Assurance jusqu\'au')->setColumns(3)->hideOnIndex();
+        yield DateField::new('endOn', 'Fin')->setRequired(false)->setColumns(3)->hideOnIndex();
+        yield DateField::new('noticeOn', 'Congé reçu le')->setRequired(false)->setColumns(3)->hideOnIndex();
+        yield DateField::new('insuranceUntil', 'Assurance jusqu\'au')->setRequired(false)->setColumns(3)->hideOnIndex();
         yield $this->euros('rent', 'Loyer HC')->setColumns(3);
         yield $this->euros('charges', 'Charges')->setColumns(3)->hideOnIndex();
         yield $this->euros('deposit', 'Dépôt de garantie')->setColumns(3)->hideOnIndex();
         yield IntegerField::new('dueDay', 'Jour d\'échéance')->setColumns(3)->hideOnIndex();
         yield $this->enum('paymentMethod', 'Paiement', PaymentMethod::class, fn (PaymentMethod $m) => self::METHODS[$m->value])->setColumns(3)->hideOnIndex();
-        yield TextField::new('indexQuarter', 'IRL de référence (trimestre)')->setColumns(3)->hideOnIndex()->setHelp('« T2 2025 » : celui du bail, ou de la dernière révision.');
-        yield TextField::new('indexValue', 'IRL de référence (valeur)')->setColumns(3)->hideOnIndex()->setHelp('La valeur publiée par l\'INSEE pour ce trimestre.');
-        yield DateField::new('revisedOn', 'Dernière révision')->setColumns(3)->hideOnIndex();
-        yield TextareaField::new('notes', 'Notes')->setColumns(12)->hideOnIndex();
+        yield TextField::new('indexQuarter', 'IRL de référence (trimestre)')->setRequired(false)->setColumns(3)->hideOnIndex()->setHelp('« T2 2025 » : celui du bail, ou de la dernière révision.');
+        yield TextField::new('indexValue', 'IRL de référence (valeur)')->setRequired(false)->setColumns(3)->hideOnIndex()->setHelp('La valeur publiée par l\'INSEE pour ce trimestre.');
+        yield DateField::new('revisedOn', 'Dernière révision')->setRequired(false)->setColumns(3)->hideOnIndex();
+        yield TextareaField::new('notes', 'Notes')->setRequired(false)->setColumns(12)->hideOnIndex();
     }
 }

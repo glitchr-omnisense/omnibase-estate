@@ -20,6 +20,6 @@ class DeadlineCrudController extends AbstractEstateCrudController
         yield TextField::new('title', 'Échéance')->setColumns(4);
         yield DateField::new('dueOn', 'Date')->setColumns(2);
         yield BooleanField::new('yearly', 'Chaque année')->setColumns(2);
-        yield TextareaField::new('notes', 'Notes')->setColumns(12)->hideOnIndex();
+        yield TextareaField::new('notes', 'Notes')->setRequired(false)->setColumns(12)->hideOnIndex();
     }
 }

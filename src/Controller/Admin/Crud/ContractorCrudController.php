@@ -28,11 +28,11 @@ class ContractorCrudController extends AbstractEstateCrudController
         yield AssociationField::new('organisation', 'Société')->setColumns(4)->hideOnIndex();
         yield TextField::new('company', 'Entreprise')->setColumns(4);
         yield TextField::new('trade', 'Métier')->setColumns(4);
-        yield TextField::new('contactName', 'Contact')->setColumns(4);
+        yield TextField::new('contactName', 'Contact')->setRequired(false)->setColumns(4);
         yield EmailField::new('email', 'E-mail')->setColumns(4);
-        yield TextField::new('phone', 'Téléphone')->setColumns(4);
-        yield TextField::new('siret', 'SIRET')->setColumns(4)->hideOnIndex();
-        yield TextField::new('iban', 'IBAN')->setColumns(4)->hideOnIndex();
+        yield TextField::new('phone', 'Téléphone')->setRequired(false)->setColumns(4);
+        yield TextField::new('siret', 'SIRET')->setRequired(false)->setColumns(4)->hideOnIndex();
+        yield TextField::new('iban', 'IBAN')->setRequired(false)->setColumns(4)->hideOnIndex();
         yield AssociationField::new('user', 'Compte')->setColumns(4)->setRequired(false)->hideOnIndex()->hideOnForm();
     }
 }

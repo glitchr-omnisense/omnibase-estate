@@ -32,8 +32,8 @@ class LeasePartyCrudController extends AbstractEstateCrudController
         yield TextField::new('firstName', 'Prénom')->setColumns(3);
         yield TextField::new('lastName', 'Nom')->setColumns(3);
         yield EmailField::new('email', 'E-mail')->setColumns(4);
-        yield TextField::new('phone', 'Téléphone')->setColumns(4)->hideOnIndex();
-        yield TextField::new('iban', 'IBAN (ses virements)')->setColumns(4)->hideOnIndex()->setHelp('Pour reconnaître ses virements au rapprochement bancaire.');
+        yield TextField::new('phone', 'Téléphone')->setRequired(false)->setColumns(4)->hideOnIndex();
+        yield TextField::new('iban', 'IBAN (ses virements)')->setRequired(false)->setColumns(4)->hideOnIndex()->setHelp('Pour reconnaître ses virements au rapprochement bancaire.');
         yield AssociationField::new('user', 'Compte')->setColumns(4)->setRequired(false)->hideOnIndex()->hideOnForm();
     }
 }

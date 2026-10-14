@@ -42,12 +42,12 @@ class WorkOrderCrudController extends AbstractEstateCrudController
         yield $this->enum('urgency', 'Urgence', Urgency::class, fn (Urgency $u) => self::URGENCIES[$u->value])->setColumns(3);
         yield $this->enum('status', 'État', WorkOrderStatus::class, fn (WorkOrderStatus $s) => self::STATUSES[$s->value])->setColumns(3);
         yield AssociationField::new('contractor', 'Artisan')->setColumns(3)->setRequired(false);
-        yield DateTimeField::new('visitAt', 'Passage')->setColumns(3);
-        yield $this->euros('quoteAmount', 'Devis')->setColumns(3)->hideOnIndex();
-        yield $this->euros('invoiceAmount', 'Facture')->setColumns(3);
-        yield TextField::new('invoiceNumber', 'N° de facture')->setColumns(3)->hideOnIndex();
+        yield DateTimeField::new('visitAt', 'Passage')->setRequired(false)->setColumns(3);
+        yield $this->euros('quoteAmount', 'Devis')->setRequired(false)->setColumns(3)->hideOnIndex();
+        yield $this->euros('invoiceAmount', 'Facture')->setRequired(false)->setColumns(3);
+        yield TextField::new('invoiceNumber', 'N° de facture')->setRequired(false)->setColumns(3)->hideOnIndex();
         yield TextareaField::new('description', 'Description')->setColumns(12)->hideOnIndex();
-        yield TextareaField::new('report', 'Compte rendu')->setColumns(12)->hideOnIndex();
+        yield TextareaField::new('report', 'Compte rendu')->setRequired(false)->setColumns(12)->hideOnIndex();
         yield DateTimeField::new('createdAt', 'Signalé le')->hideOnForm();
     }
 }
