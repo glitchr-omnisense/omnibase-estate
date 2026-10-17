@@ -21,7 +21,7 @@
     },
     "suggest": {
         "omnibase/ledger": "Rent calls, payments and work invoices posted to the company's books",
-        "glitchr/omnitrade": "Rent paid online (omnitrade/stripe: card and SEPA debit)",
+        "omniscient/omnitrade": "Rent paid online (omnitrade/stripe: card and SEPA debit)",
         "dompdf/dompdf": "Rent notices and receipts as PDF"
     },
     "config": {"sort-packages": true, "allow-plugins": {"glitchr/base-plugin": true, "glitchr/doctrine-dc2type": true, "php-http/discovery": true}},
