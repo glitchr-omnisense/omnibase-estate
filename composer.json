@@ -10,7 +10,7 @@
     "require": {
         "php": "^8.2",
         "doctrine/orm": "^2.15|^3.0",
-        "glitchr/omnibase": "3.x-dev",
+        "omniscient/omnibase": "3.x-dev",
         "omnibase/admin": "dev-main",
         "symfony/config": "^7.0|^8.0",
         "symfony/dependency-injection": "^7.0|^8.0",
