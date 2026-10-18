@@ -10,7 +10,8 @@
     "require": {
         "php": "^8.2",
         "doctrine/orm": "^2.15|^3.0",
-        "omniscient/omnibase": "3.x-dev",
+        "omnibridge/symfony": "1.x-dev",
+        "omniscient/omnibase": "3.x-dev || 4.0.*-dev",
         "omnibase/admin": "dev-main",
         "symfony/config": "^7.0|^8.0",
         "symfony/dependency-injection": "^7.0|^8.0",
