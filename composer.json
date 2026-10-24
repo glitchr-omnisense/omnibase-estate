@@ -25,7 +25,7 @@
         "omniscient/omnitrade": "Rent paid online (omnitrade/stripe: card and SEPA debit)",
         "dompdf/dompdf": "Rent notices and receipts as PDF"
     },
-    "config": {"sort-packages": true, "allow-plugins": {"glitchr/base-plugin": true, "glitchr/doctrine-dc2type": true, "php-http/discovery": true}},
+    "config": {"sort-packages": true, "allow-plugins": {"omnibridge/composer": true, "php-http/discovery": true}},
     "minimum-stability": "dev",
     "prefer-stable": true
 }
