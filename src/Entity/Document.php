@@ -95,7 +95,6 @@ class Document
     public function getTitle(): string { return $this->title; }
     public function setTitle(?string $title): self { $this->title = (string) $title; return $this; }
     public function getFile(): ?string { return Uploader::getPublic($this, 'file'); }
-    public function getFileFile() { return Uploader::get($this, 'file'); }
     public function setFile($file): self { $this->file = $file ?: null; return $this; }
     public function isTenantVisible(): bool { return $this->tenantVisible; }
     public function setTenantVisible(bool $tenantVisible): self { $this->tenantVisible = $tenantVisible; return $this; }

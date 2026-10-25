@@ -2,6 +2,7 @@
 
 namespace Base\Estate\Controller\Client;
 
+use Base\Database\Attribute\Uploader;
 use Base\Estate\Entity\Document;
 use Base\Estate\Security\Voter\EstateVoter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -19,7 +20,7 @@ class DocumentController extends AbstractController
     public function show(Document $document): BinaryFileResponse
     {
         $this->denyAccessUnlessGranted(EstateVoter::DOCUMENT_VIEW, $document);
-        $file = $document->getFileFile();
+        $file = Uploader::get($document, 'file');
         if (!$file instanceof File || !$file->isFile()) {
             throw $this->createNotFoundException('The file is missing.');
         }
