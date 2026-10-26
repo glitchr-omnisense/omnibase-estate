@@ -5,7 +5,7 @@ contractor or a member of the team (`Invitations::invite()`); the link creates
 the account or attaches the existing one (`/invitation/{token}`).
 
 The token, its hash (only the SHA-256 is stored), the expiry, the lookup and
-the new account are omniscient/omnibase's:
+the new account are omnisense/omnibase's:
 
 - `Base\Estate\Entity\Invitation` extends `Base\Entity\User\Invitation` (a
   mapped superclass: e-mail, name, `tokenHash`, `createdAt`, `expiresAt`,

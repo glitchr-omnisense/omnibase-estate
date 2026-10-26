@@ -11,7 +11,7 @@
         "php": "^8.2",
         "doctrine/orm": "^2.15|^3.0",
         "omnibridge/symfony": "1.x-dev",
-        "omniscient/omnibase": "3.x-dev || 4.0.*-dev",
+        "omnisense/omnibase": "3.x-dev || 4.0.*-dev",
         "omnibase/admin": "dev-main",
         "symfony/config": "^7.0|^8.0",
         "symfony/dependency-injection": "^7.0|^8.0",
@@ -22,7 +22,7 @@
     },
     "suggest": {
         "omnibase/ledger": "Rent calls, payments and work invoices posted to the company's books",
-        "omniscient/omnitrade": "Rent paid online (omnitrade/stripe: card and SEPA debit)",
+        "omnisense/omnitrade": "Rent paid online (omnitrade/stripe: card and SEPA debit)",
         "dompdf/dompdf": "Rent notices and receipts as PDF"
     },
     "config": {"sort-packages": true, "allow-plugins": {"omnibridge/composer": true, "php-http/discovery": true}},
