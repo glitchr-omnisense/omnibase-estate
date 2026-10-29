@@ -32,7 +32,7 @@ estate:
     # How long an invitation link stays valid.
     invitation_days:      14
 
-    # How many days after its due date an unpaid rent is reminded (estate:rent:remind).
+    # How many days after its due date an unpaid rent is marked late and reminded (estate:rent:late).
     reminder_days:        5
 
     # The application's documents page, linked from the associates' space. Null: none.
@@ -48,10 +48,6 @@ estate:
 | `invitation_days` | int, 1 or more | `14` | `Invitations` |
 | `reminder_days` | int, 1 or more | `5` | `RentCalls::markLate()` |
 | `documents_route` | route name or null | `null` | `AssociateController` |
-
-> [!WARNING]
-> Known defect: the info of `reminder_days` names `estate:rent:remind`, a command that does not
-> exist, where the reminder is sent by `estate:rent:late`.
 
 ## Services
 
