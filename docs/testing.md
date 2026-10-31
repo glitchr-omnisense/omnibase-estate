@@ -24,7 +24,12 @@ OK (6 tests, 7 assertions)
 Beside it, the services' own tests: `Service/ActivitiesTest` (the default, the order, an
 unknown activity), `Admin/ActivityMenuTest` (assets and ownership keep every item and its key,
 an agency has no associates, sales alone hide the rental screens and cards and the sections
-left empty), `Service/BooksTest` (a rent call and a work invoice posted with their unit on
+left empty, the management's screens only with it), `Service/ManagementTest` (a managed home's
+rent called and collected for its owner with the dimensions owner and unit, the fee and its VAT,
+an expense charged, the escrow account, the activity off: nothing), `Service/PayoutsTest` (what an
+owner is due, a payout issued, its SEPA file checked against the pain.001.001.03 schema, paid by
+hand or by the bank line), `Model/MandateStatementTest` (a month's statement's balances),
+`Service/OwnerSpacesTest`, `Admin/ManagementStatementPdfTest`, `Service/BooksTest` (a rent call and a work invoice posted with their unit on
 every line), the online payments, the webhook and the dashboard cards. In meyers' container:
 
 ```bash

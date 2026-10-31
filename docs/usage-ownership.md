@@ -124,7 +124,7 @@ From the co-owner's side, what the indivision owes them is positive:
 It is built from estate's records - the same the books are posted from - so it holds with or
 without omnibase/ledger. The PDF is `@Estate/pdf/ownership_statement.html.twig`; the e-mail
 `@Estate/email/ownership_statement.html.twig` attaches it. Periods are keys: `2026-10`, `2026-Q3`,
-`2026` (`Model\OwnershipPeriod`).
+`2026` (`Model\Period`, shared with the owners' statements).
 
 ## The co-owner's space
 

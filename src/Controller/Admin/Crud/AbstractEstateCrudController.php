@@ -34,6 +34,8 @@ abstract class AbstractEstateCrudController extends AbstractCrudController
         'Document' => ['Document', 'Documents des biens'], 'Application' => ['Candidature', 'Candidatures'],
         'Ownership' => ['Indivision', 'Indivisions'], 'OwnershipShare' => ['Quote-part', 'Quotes-parts des indivisaires'],
         'OwnershipInvoice' => ['Facture partagée', 'Factures partagées'], 'OwnershipCall' => ['Appel de fonds', 'Appels de fonds'],
+        'Mandator' => ['Propriétaire', 'Propriétaires en gérance'], 'Mandate' => ['Mandat de gestion', 'Mandats de gestion'],
+        'MandateExpense' => ['Dépense pour un propriétaire', 'Dépenses des propriétaires'], 'MandatePayout' => ['Reversement', 'Reversements aux propriétaires'],
     ];
 
     public function configureCrud(Crud $crud): Crud

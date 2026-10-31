@@ -4,9 +4,10 @@ namespace Base\Estate\Model;
 
 /**
  * A statement's period, as a key: a month ("2026-10"), a quarter
- * ("2026-Q3") or a year ("2026").
+ * ("2026-Q3") or a year ("2026") - a co-owner's statement's
+ * (OwnershipStatement) and an owner's (MandateStatement).
  */
-final class OwnershipPeriod
+final class Period
 {
     /** @return array{0: \DateTimeImmutable, 1: \DateTimeImmutable} its first and last days */
     public static function parse(string $key): array

@@ -1,0 +1,20 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ url('estate_owner') }}{% endblock %}
+{% block action_text %}Voir mon espace propriétaire{% endblock %}
+{% block content %}
+{% set st = statement %}
+<p>Bonjour {{ mandator.name }},</p>
+<p>Voici votre compte rendu de gérance pour {{ st.periodLabel }} (mandat {{ mandate.number }}), en pièce jointe :</p>
+<table style="width:100%;border-collapse:collapse">
+    <tr><td>Solde d'ouverture</td><td style="text-align:right">{{ st.opening|euros }}</td></tr>
+    <tr><td>Loyers et charges encaissés</td><td style="text-align:right">{{ st.collected|euros }}</td></tr>
+    <tr><td>Honoraires de gestion TTC</td><td style="text-align:right">− {{ st.fees|euros }}</td></tr>
+    <tr><td>Dépenses pour votre compte</td><td style="text-align:right">− {{ st.expenses|euros }}</td></tr>
+    <tr><td>Reversements</td><td style="text-align:right">− {{ st.payouts|euros }}</td></tr>
+    <tr><td><strong>Solde au {{ st.to|format_date('long') }}</strong></td><td style="text-align:right"><strong>{{ st.closing|euros }}</strong></td></tr>
+</table>
+{% if st.available %}<p>Disponible pour reversement : <strong>{{ st.available|euros }}</strong>{% if mandator.iban %}, viré sur votre compte se terminant par {{ mandator.iban|slice(-4) }}{% endif %}.</p>{% endif %}
+{% if st.unpaid %}<p>Restent dus par les locataires : {{ st.unpaid|reduce((sum, r) => sum + r.remaining, 0)|euros }} - nous les suivons.</p>{% endif %}
+<p>{{ organisation.name }}</p>
+{% endblock %}

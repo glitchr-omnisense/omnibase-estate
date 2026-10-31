@@ -1,0 +1,26 @@
+{# Base\Estate\Admin\Widget\Dashboard\ManagementWidgetType: the owners under management, what they are due, the payouts to transfer, the statements to send, the mandates ending. #}
+{% extends '@Estate/admin/widget/dashboard/_card.html.twig' %}
+{% block subtitle %}{{ on ? 'dashboard.management.sub'|trans({date: on|format_date('short')}, 'estate') }}{% endblock %}
+{% block actions %}<a class="dash-card-action" href="{{ path('estate_admin_management_payouts') }}">{{ 'dashboard.management.payouts'|trans({}, 'estate') }}</a>{% endblock %}
+{% block body %}
+<div class="es-hero"><span class="es-hero-value">{{ dueTotal|euros(true) }}</span><span class="es-hero-unit">{{ 'dashboard.management.due'|trans({count: due|length}, 'estate') }}</span></div>
+<ul class="dash-rows">
+    {% if unpaid|length %}
+    <li><a class="dash-row" href="{{ path('estate_admin_management_payouts') }}">
+        <i class="fa-solid fa-money-bill-transfer dash-row-icon" aria-hidden="true"></i>
+        <span class="dash-row-label">{{ 'dashboard.management.unpaid'|trans({count: unpaid|length}, 'estate') }}<small>{{ 'dashboard.management.unpaid_hint'|trans({}, 'estate') }}</small></span>
+        <span class="dash-row-value">{{ unpaid|reduce((sum, p) => sum + p.amount, 0)|euros(true) }}</span>
+    </a></li>
+    {% endif %}
+    <li><a class="dash-row" href="{{ path('estate_admin_management_statements') }}">
+        <i class="fa-solid fa-file-invoice dash-row-icon{{ toSend|length ? ' es-bad' }}" aria-hidden="true"></i>
+        <span class="dash-row-label">{{ 'dashboard.management.to_send'|trans({count: toSend|length}, 'estate') }}<small>{{ toSend|length ? toSend|slice(0, 3)|map(t => t.mandate.mandator.name)|join(', ') : 'dashboard.management.all_sent'|trans({}, 'estate') }}</small></span>
+    </a></li>
+    {% for mandate in ending|slice(0, 3) %}
+    <li><a class="dash-row" href="{{ path('admin_crud_mandates_detail', {entityId: mandate.id}) }}">
+        <i class="fa-solid fa-hourglass-half dash-row-icon" aria-hidden="true"></i>
+        <span class="dash-row-label">{{ mandate.mandator.name }}<small>{{ 'dashboard.management.ending'|trans({number: mandate.number ?? '', date: mandate.endsOn|format_date('short')}, 'estate') }}</small></span>
+    </a></li>
+    {% endfor %}
+</ul>
+{% endblock %}

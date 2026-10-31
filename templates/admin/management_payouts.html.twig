@@ -1,0 +1,97 @@
+{% extends '@Admin/layout.html.twig' %}
+
+{% block page_title %}Reversements aux propriétaires{% endblock %}
+
+{% block content_header %}
+<div class="admin-header">
+    <span class="admin-header-icon"><i class="fa-solid fa-money-bill-transfer"></i></span>
+    <div class="admin-header-titles">
+        <h1>Reversements aux propriétaires</h1>
+        <div class="admin-header-subtitle">Dus au {{ on|format_date('long') }} · {{ unpaid|length }} à virer</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{{ include('@Estate/admin/_ownership_style.html.twig') }}
+<div class="estate-own" style="max-width: 72rem">
+    <form method="post" class="card">
+        <input type="hidden" name="_token" value="{{ csrf_token('estate_management_payouts') }}">
+        <div class="actions" style="justify-content: space-between">
+            <label style="display: flex; align-items: center; gap: .5rem">Solde au <input class="form-control" type="date" name="on" value="{{ on|date('Y-m-d') }}" style="max-width: 11rem"></label>
+            <button class="btn btn-secondary" type="submit" formmethod="get" formaction="{{ path('estate_admin_management_payouts') }}">Recalculer</button>
+        </div>
+        {% if due %}
+        <table>
+            <thead><tr><th>Propriétaire</th><th>Mandat</th><th>IBAN</th><th class="num">Solde</th><th class="num">Réserve</th><th class="num">À reverser</th></tr></thead>
+            <tbody>
+            {% for d in due %}
+                <tr>
+                    <td><strong>{{ d.mandate.mandator.name }}</strong></td>
+                    <td>{{ d.mandate.number }}</td>
+                    <td class="{{ d.mandate.mandator.iban ? '' : 'is-bad' }}">{{ d.mandate.mandator.iban ?: 'pas d\'IBAN' }}</td>
+                    <td class="num">{{ d.balance|euros }}</td>
+                    <td class="num">{{ (0 - d.reserve)|euros }}</td>
+                    <td class="num"><strong>{{ d.amount|euros }}</strong></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot><tr><td colspan="5">Total</td><td class="num">{{ due|reduce((sum, d) => sum + d.amount, 0)|euros }}</td></tr></tfoot>
+        </table>
+        <div><button class="btn btn-success" type="submit" name="do" value="issue"><i class="fa-solid fa-check"></i> Émettre les reversements au {{ on|format_date('short') }}</button></div>
+        <p class="text-muted">Émis, chaque reversement solde le compte du propriétaire (4671) contre « reversements à payer » (4678), sous sa référence : le virement vu au relevé du compte séquestre s'y rapproche seul.</p>
+        {% else %}
+        <p class="text-muted">Rien à reverser au {{ on|format_date('long') }} : aucun propriétaire n'a de solde au-delà de sa réserve.</p>
+        {% endif %}
+    </form>
+
+    <form method="post" class="card">
+        <input type="hidden" name="_token" value="{{ csrf_token('estate_management_payouts') }}"><input type="hidden" name="on" value="{{ on|date('Y-m-d') }}">
+        <h2 style="font-size: 1.05rem; margin: 0">À virer</h2>
+        {% if unpaid %}
+        <table>
+            <thead><tr><th></th><th>Référence</th><th>Propriétaire</th><th>IBAN</th><th>Solde au</th><th>État</th><th class="num">Montant</th><th></th></tr></thead>
+            <tbody>
+            {% for p in unpaid %}
+                <tr>
+                    <td><input type="checkbox" name="payouts[]" value="{{ p.id }}" checked aria-label="{{ p.reference }}"></td>
+                    <td>{{ p.reference }}</td>
+                    <td>{{ p.mandator.name }}</td>
+                    <td class="{{ p.iban ? '' : 'is-bad' }}">{{ p.iban ?: 'pas d\'IBAN' }}</td>
+                    <td>{{ p.balanceOn|format_date('short') }}</td>
+                    <td>{{ p.status.label }}{% if p.exportedAt %} <small class="text-muted">{{ p.exportedAt|format_date('short') }}</small>{% endif %}</td>
+                    <td class="num">{{ p.amount|euros }}</td>
+                    <td class="actions" style="justify-content: flex-end">
+                        <a class="btn btn-sm btn-secondary" href="{{ path('estate_admin_management_payout_paid', {id: p.id}) }}"><i class="fa-solid fa-check"></i> Payé</a>
+                        <button class="btn btn-sm btn-secondary" type="submit" name="cancel" value="{{ p.id }}" formnovalidate><i class="fa-solid fa-xmark"></i> Annuler</button>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% if sepa %}
+        <div class="actions">
+            <label style="display: flex; align-items: center; gap: .5rem">Exécution le <input class="form-control" type="date" name="execution" value="{{ 'now'|date('Y-m-d') }}" style="max-width: 11rem"></label>
+            <button class="btn btn-success" type="submit" name="do" value="sepa"><i class="fa-solid fa-file-export"></i> Télécharger le fichier SEPA (pain.001)</button>
+        </div>
+        <p class="text-muted">Un virement SEPA par reversement, depuis le compte séquestre de l'agence, la référence du reversement comme identifiant de bout en bout : à déposer sur le site de la banque.</p>
+        {% else %}
+        <p class="text-muted">Le fichier SEPA demande omnibank/files : virez-les à la main, puis « Payé ».</p>
+        {% endif %}
+        {% else %}
+        <p class="text-muted">Aucun reversement à virer.</p>
+        {% endif %}
+    </form>
+
+    {% if recent %}
+    <div class="card">
+        <h2 style="font-size: 1.05rem; margin: 0">Derniers payés</h2>
+        <table>
+            <tbody>
+            {% for p in recent %}<tr><td>{{ p.reference }}</td><td>{{ p.mandator.name }}</td><td>payé le {{ p.paidOn|format_date('short') }}{% if p.paidReference %} <small class="text-muted">({{ p.paidReference }})</small>{% endif %}</td><td class="num">{{ p.amount|euros }}</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -124,4 +124,27 @@ final class ActivityMenuTest extends TestCase
         self::assertFalse($menu->allows(MenuItem::block('estate_todo', 'estate_widget.todo')));
         self::assertTrue($menu->allows(MenuItem::linkToCrud(Unit::class, 'Biens')));
     }
+
+    public function testTheManagementScreensBelongToTheManagement(): void
+    {
+        $items = [
+            MenuItem::section('Gérance', 'fa-solid fa-user-tie')->setSubItems([
+                MenuItem::linkToCrud(\Base\Estate\Entity\Mandator::class, 'Propriétaires', 'fa-solid fa-user-tie'),
+                MenuItem::linkToCrud(\Base\Estate\Entity\Mandate::class, 'Mandats', 'fa-solid fa-file-signature'),
+                MenuItem::linkToCrud(\Base\Estate\Entity\MandateExpense::class, 'Dépenses', 'fa-solid fa-receipt'),
+                MenuItem::linkToCrud(\Base\Estate\Entity\MandatePayout::class, 'Reversements', 'fa-solid fa-money-bill-transfer'),
+                MenuItem::linkToRoute('estate_admin_management_statements', [], 'Comptes rendus', 'fa-solid fa-file-invoice'),
+                MenuItem::linkToRoute('estate_admin_management_payouts', [], 'Fichier SEPA', 'fa-solid fa-file-export'),
+            ]),
+            MenuItem::block('estate_management', 'estate_widget.management', 'fa-solid fa-user-tie')->setSize(2),
+            MenuItem::linkToRoute('admin_settings', [], 'Réglages', 'fa-solid fa-sliders'),
+        ];
+
+        self::assertSame(['Réglages'], self::labels((new ActivityMenu(new Activities(['assets', 'ownership'])))->filter($items)), 'Meyers & Associée: no management, its section and card go');
+        self::assertSame([
+            ['Gérance', ['Propriétaires', 'Mandats', 'Dépenses', 'Reversements', 'Comptes rendus', 'Fichier SEPA']],
+            'estate_widget.management',
+            'Réglages',
+        ], self::labels((new ActivityMenu(new Activities(['management', 'transaction'])))->filter($items)), 'an agency');
+    }
 }

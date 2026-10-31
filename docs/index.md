@@ -25,6 +25,9 @@ from what they are to the organisation, never from a role stored on the account.
   form to give a date, a quote, an invoice and a report.
 - **Co-owners** (`/indivision`, with the `ownership` activity): their shared ownership, their
   account, calls for funds, the invoices shared, their statements, its cloud folder.
+- **Owners under management** (`/proprietaire`, with the `management` activity): their homes and
+  tenants, their account, their statements (comptes rendus de gérance), their payouts, their
+  cloud folder.
 - **The public**: the published homes (`/biens`), a visit request, an application form.
 
 ## How this manual is organised
@@ -38,6 +41,9 @@ from what they are to the organisation, never from a role stored on the account.
 - [Shared ownership](usage-ownership.md): indivisions, co-owners' shares over time, shared
   invoices, calls for funds, statements, the co-owner's space, the cloud folder, and how it is
   kept in the books.
+- [Property management for third parties](usage-management.md): owners, mandates, rents to the
+  owners' accounts, fees with VAT, expenses, statements, payouts and the SEPA file, the escrow
+  account, the owner's space and folder, and how it is kept in the books.
 - [Works, documents and messages](usage-works.md): work orders, files, the tenants' messages,
   notices.
 - [The public site and applications](usage-applications.md): the homes, visits, applications.

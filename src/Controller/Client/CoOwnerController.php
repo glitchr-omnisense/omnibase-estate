@@ -7,7 +7,7 @@ use Base\Entity\User;
 use Base\Estate\Entity\Ownership;
 use Base\Estate\Entity\OwnershipCall;
 use Base\Estate\Entity\OwnershipInvoice;
-use Base\Estate\Model\OwnershipPeriod;
+use Base\Estate\Model\Period;
 use Base\Estate\Security\Voter\EstateVoter;
 use Base\Estate\Service\Ownerships;
 use Base\Estate\Service\Spaces;
@@ -57,7 +57,7 @@ class CoOwnerController extends AbstractController
         $holders = $this->spaces->holdersIn($user, $ownership);
         $holder = $holders[0];
         $today = new \DateTimeImmutable('today');
-        $year = OwnershipPeriod::parse($today->format('Y'));
+        $year = Period::parse($today->format('Y'));
         $statement = $this->ownerships->statement($ownership, $holder, $year[0], $today);
         $calls = array_values(array_filter(
             $this->entityManager->getRepository(OwnershipCall::class)->findBy(['ownership' => $ownership], ['issuedOn' => 'DESC', 'id' => 'DESC']),
@@ -72,7 +72,7 @@ class CoOwnerController extends AbstractController
             'statement' => $statement,
             'calls' => $calls,
             'invoices' => $this->entityManager->getRepository(OwnershipInvoice::class)->findBy(['ownership' => $ownership], ['date' => 'DESC']),
-            'periods' => array_map(fn (string $key) => ['key' => $key] + array_combine(['from', 'to'], OwnershipPeriod::parse($key)), OwnershipPeriod::recent($today)),
+            'periods' => array_map(fn (string $key) => ['key' => $key] + array_combine(['from', 'to'], Period::parse($key)), Period::recent($today)),
             'folder' => $this->ownerships->hasCloud() ? $ownership->getFolder() : null,
         ]);
     }
@@ -86,7 +86,7 @@ class CoOwnerController extends AbstractController
         if (!$holders) {
             throw $this->createAccessDeniedException('Not a co-owner of this ownership.');
         }
-        [$from, $to] = OwnershipPeriod::parse($period);
+        [$from, $to] = Period::parse($period);
         $statement = $this->ownerships->statement($ownership, $holders[0], $from, $to);
         if ($pdf = $this->ownerships->statementPdf($statement)) {
             return new Response($pdf, 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$this->ownerships->statementFilename($statement).'"']);

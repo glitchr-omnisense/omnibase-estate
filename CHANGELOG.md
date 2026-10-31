@@ -2,7 +2,40 @@
 
 ## [Unreleased]
 
+### Changed
+- `Model\OwnershipPeriod` is `Model\Period`: the statements' periods, the co-owners' and the
+  owners'.
+
 ### Added
+- Property management for third parties, the `management` activity: `Entity\Mandator` (an
+  owner, a person or a company, their IBAN and BIC, their account, their cloud folder),
+  `Entity\Mandate` (the owner, the agency, the homes - `estate_mandate_unit`, nothing changes on
+  the home -, the fee in basis points before tax and its VAT code, `V20` by default, from / until,
+  `Enum\StatementFrequency`, the reserve; numbered `MG-<year>-<n>`). In the agency's book, the
+  owners' money apart (loi Hoguet, `Ledger\ManagementBooks`): a managed home's rent called on 411 /
+  4672 (no 706), collected to the owner's account 4672 / 4671 (`PartyKind::MANDATOR`), its cash on
+  the escrow account (omnibase/ledger's `BankAccount::$escrow`, 512 otherwise); the agency's fee
+  on each rent collected (`Entity\MandateFee`, kept as charged) 4671 / 7061 + 44571 when the book
+  is liable; a work order's invoice charged to the owner when it is closed, or an expense entered
+  by hand (`Entity\MandateExpense`, 4671 / 401); every line marked `owner=<id>` and `unit=<id>`
+  (`Ledger\OwnerDimensionLabeler`). `Payments::record()` and `cancel()`, `Books` and
+  `WorkOrders::close()` hand a managed home to `Service\Management`; `estate:management:income`
+  for the rents collected before a mandate was entered. The owner's statement (compte rendu de
+  gérance, `Model\MandateStatement`: opening balance, each home's rents called and collected, fees
+  and VAT, expenses, payouts, closing balance, what a payout would be, what the tenants still
+  owe), its PDF and e-mail, filed in the owner's folder; the payouts (`Entity\MandatePayout`,
+  `Enum\PayoutStatus`, `RV-<year>-<n>`): what each owner is due at a day less the reserve, issued
+  (4671 / 4678), a SEPA credit transfer file pain.001.001.03 from the escrow account through
+  omnibank/files' `Pain001Writer` (optional), paid by hand (4678 / escrow) or by the bank line
+  the reconciliation matches by their reference (`Ledger\ManagementSettlement` on
+  `BankLineReconciled`). The owner's space `/proprietaire` (`Controller\Client\OwnerController`,
+  `Spaces::mandators()`, `owner` in `Spaces::of()`, `EstateVoter::MANDATE_VIEW`); with
+  omnibase/drive, optional, the folder `Propriétaires/<name>` shared with the owner read-only
+  (`Drive\MandatorFolders`). The back office: owners, mandates, expenses, payouts, the statements
+  page (each one's PDF, send one or all, those to send), the payouts page (issue, SEPA file, paid,
+  cancel), the dashboard card `estate_management`; all of it only with the activity
+  (`ActivityMenu`). Six tables (a migration in the application). `docs/usage-management.md`.
+- `RentCallRepository::forUnits()`.
 - Shared ownership, the `ownership` activity: `Entity\Ownership` (an indivision, its homes, its
   managing organisation, its cloud folder), `Entity\OwnershipShare` (a co-owner - a person, an
   associate or the company itself -, an exact fraction, an IBAN, from `startsOn` until `endsOn`),
@@ -16,7 +49,7 @@
   `Payments::cancel()`, `estate:ownership:income` for those received before); payments by hand
   or by the bank reconciliation (`Ledger\OwnershipSettlement` on `BankLineReconciled`,
   `Entity\OwnershipPayment`). The co-owner's statement for a month, a quarter or a year
-  (`Model\OwnershipStatement`, `Model\OwnershipPeriod`), its PDF and e-mail; the co-owner's space
+  (`Model\OwnershipStatement`, `Model\Period`), its PDF and e-mail; the co-owner's space
   `/indivision` (`Controller\Client\CoOwnerController`, `Spaces::coOwnerships()`, `coowner` in
   `Spaces::of()`, `EstateVoter::OWNERSHIP_VIEW`); with omnibase/drive, optional, the folder
   `Indivisions/<name>` shared with the co-owners by name, deposit allowed, the invoices posted in

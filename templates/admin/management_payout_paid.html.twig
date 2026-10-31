@@ -1,0 +1,33 @@
+{% extends '@Admin/layout.html.twig' %}
+
+{% block page_title %}Reversement {{ payout.reference }} payé{% endblock %}
+
+{% block content_header %}
+<div class="admin-header">
+    <span class="admin-header-icon"><i class="fa-solid fa-money-bill-transfer"></i></span>
+    <div class="admin-header-titles">
+        <h1>Reversement {{ payout.reference }}</h1>
+        <div class="admin-header-subtitle">{{ payout.mandator.name }} · {{ payout.mandate.number }} · solde au {{ payout.balanceOn|format_date('long') }}</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{{ include('@Estate/admin/_ownership_style.html.twig') }}
+<div class="estate-own" style="max-width: 40rem">
+    <div class="card"><dl>
+        <dt>Montant</dt><dd>{{ payout.amount|euros }}</dd>
+        <dt>IBAN</dt><dd>{{ payout.iban ?: '—' }}</dd>
+        <dt>État</dt><dd>{{ payout.status.label }}</dd>
+    </dl></div>
+    <form method="post" class="card">
+        <input type="hidden" name="_token" value="{{ csrf_token('estate_management_payout_' ~ payout.id) }}">
+        <div class="row2">
+            <label>Viré le<input class="form-control" type="date" name="paidOn" value="{{ 'now'|date('Y-m-d') }}"></label>
+            <label>Référence (facultatif)<input class="form-control" name="reference" placeholder="libellé au relevé"></label>
+        </div>
+        <p class="text-muted">Passé en banque : « reversements à payer » (4678) contre le compte séquestre. Un virement vu au relevé se rapproche seul du reversement, par sa référence : n'utilisez ce bouton que s'il n'est pas venu.</p>
+        <div><button class="btn btn-success" type="submit"><i class="fa-solid fa-check"></i> Marquer payé</button></div>
+    </form>
+</div>
+{% endblock %}

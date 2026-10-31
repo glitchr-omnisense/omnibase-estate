@@ -138,11 +138,11 @@ final class OwnershipStatement
     /** "2026-T3", "2026-10", "2026": a file name's part. */
     public function getPeriodKey(): string
     {
-        return OwnershipPeriod::key($this->from, $this->to);
+        return Period::key($this->from, $this->to);
     }
 
     public function getPeriodLabel(): string
     {
-        return OwnershipPeriod::label($this->from, $this->to);
+        return Period::label($this->from, $this->to);
     }
 }

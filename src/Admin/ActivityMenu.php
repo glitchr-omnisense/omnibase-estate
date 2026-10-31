@@ -9,6 +9,11 @@ use Base\Estate\Entity\Contractor;
 use Base\Estate\Entity\Document;
 use Base\Estate\Entity\Lease;
 use Base\Estate\Entity\LeaseParty;
+use Base\Estate\Entity\Mandate;
+use Base\Estate\Entity\MandateExpense;
+use Base\Estate\Entity\MandateFee;
+use Base\Estate\Entity\MandatePayout;
+use Base\Estate\Entity\Mandator;
 use Base\Estate\Entity\Notice;
 use Base\Estate\Entity\Ownership;
 use Base\Estate\Entity\OwnershipCall;
@@ -35,7 +40,9 @@ use Base\Estate\Service\Activities;
  * belong to the activities that let homes: assets, ownership, management;
  * the associates to assets; the shared ownerships - their shares, shared
  * invoices, calls for funds, statements and their dashboard card - to
- * ownership. The rest - homes, buildings, the company, its team,
+ * ownership; the owners under management - their mandates, the expenses
+ * charged to them, their payouts, statements and dashboard card - to
+ * management. The rest - homes, buildings, the company, its team,
  * deadlines, the books - to every activity. A section left without items
  * is left out.
  */
@@ -58,12 +65,19 @@ class ActivityMenu
         OwnershipInvoice::class => [Activity::OWNERSHIP],
         OwnershipCall::class => [Activity::OWNERSHIP],
         OwnershipPayment::class => [Activity::OWNERSHIP],
+        Mandator::class => [Activity::MANAGEMENT],
+        Mandate::class => [Activity::MANAGEMENT],
+        MandateFee::class => [Activity::MANAGEMENT],
+        MandateExpense::class => [Activity::MANAGEMENT],
+        MandatePayout::class => [Activity::MANAGEMENT],
     ];
 
     /** Route => the activities it belongs to. */
     private const ROUTES = [
         'estate_admin_messages' => Activity::RENTAL,
         'estate_admin_ownership_statements' => [Activity::OWNERSHIP],
+        'estate_admin_management_statements' => [Activity::MANAGEMENT],
+        'estate_admin_management_payouts' => [Activity::MANAGEMENT],
     ];
 
     /** Dashboard card (block name) => the activities it belongs to. */
@@ -76,6 +90,7 @@ class ActivityMenu
         'estate_todo' => Activity::RENTAL,
         'estate_payments' => Activity::RENTAL,
         'estate_ownership' => [Activity::OWNERSHIP],
+        'estate_management' => [Activity::MANAGEMENT],
     ];
 
     public function __construct(private readonly Activities $activities)

@@ -25,6 +25,10 @@ use Doctrine\ORM\EntityManagerInterface;
  * posting carries its source, so nothing is posted twice, and its unit as
  * an analytic dimension on every line (unit=<id>, named by
  * Ledger\UnitDimensionLabeler): the books give each home's result.
+ * A home managed for its owner (the `management` activity) is posted the
+ * owner's way instead: its rent called for them, its money on the escrow
+ * account, its work invoices charged to them (Service\Management,
+ * Ledger\ManagementBooks).
  * Only loaded when omnibase/ledger is installed (config/services.php).
  */
 class Books
@@ -34,6 +38,7 @@ class Books
         private readonly Posting $posting,
         private readonly Parties $parties,
         private readonly Lettering $lettering,
+        private readonly ?Management $management = null,
     ) {
     }
 
@@ -45,6 +50,10 @@ class Books
     public function rentCalled(RentCall $call): void
     {
         $lease = $call->getLease();
+        // A home managed for its owner: the rent is theirs, not the company's income.
+        if ($this->management?->rentCalled($call)) {
+            return;
+        }
         if (!$book = $this->bookFor($lease->getOrganisation())) {
             return;
         }
@@ -72,7 +81,9 @@ class Books
 
         $unit = self::unit($lease->getUnit());
         $draft = new EntryDraft($book, 'BQ', $payment->getPaidOn(), sprintf('Règlement %s', $call->getReference()), 'estate:payment:'.$payment->getId(), $call->getReference());
-        $draft->line($payment->getMethod()->isOnline() ? '5112' : '512', $payment->getAmount(), 0, dimensions: $unit);
+        // A managed home's money lands on the escrow account (the owners' money, loi Hoguet).
+        $cash = $payment->getMethod()->isOnline() ? '5112' : ($this->management?->cashAccount($lease->getUnit(), $payment->getPaidOn()) ?? '512');
+        $draft->line($cash, $payment->getAmount(), 0, dimensions: $unit);
         $draft->line($party->getAccountNumber(), 0, $payment->getAmount(), $party, dimensions: $unit);
         $this->posting->post($draft);
 
@@ -98,6 +109,10 @@ class Books
     public function workInvoiced(WorkOrder $order): void
     {
         if (!$order->getInvoiceAmount() || !$order->getContractor() || !$book = $this->bookFor($order->getOrganisation())) {
+            return;
+        }
+        // A managed home's work is its owner's: Management::workInvoiced() charges it to them.
+        if ($this->management?->isManaged($order->getUnit(), $order->getClosedAt() ?? new \DateTimeImmutable('today'))) {
             return;
         }
         $contractor = $order->getContractor();

@@ -1,0 +1,62 @@
+{% extends '@Admin/layout.html.twig' %}
+
+{% block page_title %}Comptes rendus de gérance{% endblock %}
+
+{% block content_header %}
+<div class="admin-header">
+    <span class="admin-header-icon"><i class="fa-solid fa-file-invoice"></i></span>
+    <div class="admin-header-titles">
+        <h1>Comptes rendus de gérance</h1>
+        <div class="admin-header-subtitle">{{ label|capitalize }} · {{ statements|length }} mandat(s)</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{{ include('@Estate/admin/_ownership_style.html.twig') }}
+<div class="estate-own" style="max-width: 80rem">
+    <div class="card">
+        <nav class="periods">{% for p in periods %}<a href="{{ path('estate_admin_management_statements', {period: p.key} + (only ? {mandate: only} : {})) }}" {{ p.key == period ? 'aria-current="true"' }}>{{ p.label|capitalize }}</a>{% endfor %}</nav>
+        {% if toSend|length %}<p class="is-bad" style="margin: .6rem 0 0"><i class="fa-solid fa-paper-plane"></i> À envoyer : {{ toSend|map(t => t.mandate.mandator.name ~ ' (' ~ t.period ~ ')')|join(', ') }}</p>{% endif %}
+    </div>
+    {% if not statements %}
+        <div class="card"><p>Aucun mandat sur la période.</p><p><a class="btn btn-success" href="{{ path('admin_crud_mandates_new') }}">Créer un mandat de gestion</a></p></div>
+    {% else %}
+    <div class="card" style="overflow-x: auto">
+        <table>
+            <thead><tr><th>Propriétaire</th><th>Mandat</th><th class="num">Solde d'ouverture</th><th class="num">Loyers appelés</th><th class="num">Encaissés</th><th class="num">Honoraires TTC</th><th class="num">Dépenses</th><th class="num">Reversements</th><th class="num">Solde de clôture</th><th class="num">À reverser</th><th></th></tr></thead>
+            <tbody>
+            {% for s in statements %}
+                <tr>
+                    <td><strong>{{ s.name }}</strong>{% if s.mandate.isStatementSent(period) %} <small class="is-good">envoyé</small>{% endif %}</td>
+                    <td>{{ s.mandate.number }}<br><small class="text-muted">{{ s.mandate.unitsSummary }}</small></td>
+                    <td class="num">{{ s.opening|euros }}</td>
+                    <td class="num">{{ s.called|euros }}</td>
+                    <td class="num">{{ s.collected|euros }}</td>
+                    <td class="num">{{ (0 - s.fees)|euros }}</td>
+                    <td class="num">{{ (0 - s.expenses)|euros }}</td>
+                    <td class="num">{{ (0 - s.payouts)|euros }}</td>
+                    <td class="num {{ s.closing < 0 ? 'is-bad' : '' }}"><strong>{{ s.closing|euros }}</strong></td>
+                    <td class="num">{{ s.available|euros }}</td>
+                    <td class="actions" style="justify-content: flex-end">
+                        <a class="btn btn-sm btn-secondary" href="{{ path('estate_admin_management_statement', {id: s.mandate.id, period: period}) }}" target="_blank" rel="noopener"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+                        {% if s.mandate.mandator.email %}
+                        <form method="post" action="{{ path('estate_admin_management_statements_send') }}" style="display: inline">
+                            <input type="hidden" name="_token" value="{{ csrf_token('estate_management_statements') }}"><input type="hidden" name="period" value="{{ period }}"><input type="hidden" name="mandate" value="{{ s.mandate.id }}">
+                            <button class="btn btn-sm btn-secondary" type="submit"><i class="fa-solid fa-paper-plane"></i> Envoyer</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <p class="text-muted" style="margin-top: .75rem">Du côté du propriétaire : un solde positif, l'agence le lui doit. Les loyers sont à lui une fois encaissés ; les honoraires sont pris sur les encaissements, TVA comprise ; « À reverser » est le solde de clôture moins la réserve du mandat.</p>
+        <form method="post" action="{{ path('estate_admin_management_statements_send') }}" class="actions">
+            <input type="hidden" name="_token" value="{{ csrf_token('estate_management_statements') }}"><input type="hidden" name="period" value="{{ period }}">{% if only %}<input type="hidden" name="mandate" value="{{ only }}">{% endif %}
+            <button class="btn btn-success" type="submit"><i class="fa-solid fa-paper-plane"></i> Envoyer les comptes rendus de {{ label }} à chaque propriétaire</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

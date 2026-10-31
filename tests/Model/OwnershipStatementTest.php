@@ -13,7 +13,7 @@ use Base\Estate\Entity\Payment;
 use Base\Estate\Entity\RentCall;
 use Base\Estate\Entity\Unit;
 use Base\Estate\Enum\PaymentMethod;
-use Base\Estate\Model\OwnershipPeriod;
+use Base\Estate\Model\Period;
 use Base\Estate\Model\OwnershipStatement;
 use PHPUnit\Framework\TestCase;
 
@@ -49,7 +49,7 @@ final class OwnershipStatementTest extends TestCase
         $old = (new OwnershipCall($before, 'Provision travaux', 30000, new \DateTimeImmutable('2026-03-31'), new \DateTimeImmutable('2026-03-01')))->setReference('AF-2026-0000');
         new OwnershipPayment($old, 30000, new \DateTimeImmutable('2026-03-20'));
 
-        [$from, $to] = OwnershipPeriod::parse('2026-Q3');
+        [$from, $to] = Period::parse('2026-Q3');
         $statement = OwnershipStatement::of($ownership, 'email:claire@example.org', $from, $to, [$invoice], [$call, $old], $rents);
 
         self::assertSame(80000 + 30000, $statement->opening, 'May\'s rent at 1/2, and the provision she paid in March');
@@ -64,7 +64,7 @@ final class OwnershipStatementTest extends TestCase
         self::assertSame('2026-Q3', $statement->getPeriodKey());
 
         // The next quarter opens where this one closed.
-        [$from, $to] = OwnershipPeriod::parse('2026-Q4');
+        [$from, $to] = Period::parse('2026-Q4');
         $next = OwnershipStatement::of($ownership, 'email:claire@example.org', $from, $to, [$invoice], [$call, $old], $rents);
         self::assertSame($statement->getClosing(), $next->opening);
         self::assertSame(50000, $next->getPaid());

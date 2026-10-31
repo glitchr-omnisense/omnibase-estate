@@ -5,6 +5,9 @@ namespace Base\Estate\Security\Voter;
 use Base\Entity\User;
 use Base\Estate\Entity\Document;
 use Base\Estate\Entity\Lease;
+use Base\Estate\Entity\Mandate;
+use Base\Estate\Entity\MandatePayout;
+use Base\Estate\Entity\Mandator;
 use Base\Estate\Entity\Organisation;
 use Base\Estate\Entity\Ownership;
 use Base\Estate\Entity\OwnershipCall;
@@ -22,7 +25,8 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  * (Spaces): its management everything of it; an associate its figures and
  * feed; a tenant their lease, its rents and the problems they reported; a
  * contractor the work orders given to them; a co-owner their shared
- * ownership, its invoices and their own calls for funds - nothing else.
+ * ownership, its invoices and their own calls for funds; an owner under
+ * management their mandates, their statements and payouts - nothing else.
  */
 final class EstateVoter extends Voter
 {
@@ -35,6 +39,7 @@ final class EstateVoter extends Voter
     public const WORK_DO = 'ESTATE_WORK_DO';
     public const DOCUMENT_VIEW = 'ESTATE_DOCUMENT_VIEW';
     public const OWNERSHIP_VIEW = 'ESTATE_OWNERSHIP_VIEW';
+    public const MANDATE_VIEW = 'ESTATE_MANDATE_VIEW';
 
     public function __construct(private readonly Spaces $spaces)
     {
@@ -50,6 +55,7 @@ final class EstateVoter extends Voter
             self::WORK_VIEW, self::WORK_DO => $subject instanceof WorkOrder,
             self::DOCUMENT_VIEW => $subject instanceof Document,
             self::OWNERSHIP_VIEW => $subject instanceof Ownership || $subject instanceof OwnershipCall || $subject instanceof OwnershipInvoice,
+            self::MANDATE_VIEW => $subject instanceof Mandator || $subject instanceof Mandate || $subject instanceof MandatePayout,
             default => false,
         };
     }
@@ -59,6 +65,14 @@ final class EstateVoter extends Voter
         $user = $token->getUser();
         if (!$user instanceof User) {
             return false;
+        }
+        // An owner sees their own mandates, statements and payouts; the agency's management all of them.
+        if (self::MANDATE_VIEW === $attribute) {
+            $mandator = $subject instanceof Mandator ? $subject : ($subject instanceof Mandate ? $subject->getMandator() : $subject->getMandate()->getMandator());
+            $organisation = $subject instanceof Mandate ? $subject->getOrganisation() : ($subject instanceof MandatePayout ? $subject->getMandate()->getOrganisation() : null);
+
+            return (null !== $organisation ? $this->spaces->manages($user, $organisation) : [] !== $this->spaces->managed($user))
+                || $this->spaces->isMandator($user, $mandator);
         }
 
         $organisation = match (true) {

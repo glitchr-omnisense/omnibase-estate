@@ -18,6 +18,8 @@ What it suggests, each loaded only when present (`config/services.php`):
 | `omnibase/ledger` | rent calls, payments and work invoices posted to the organisation's book (`Service\Books`); bank lines reconciled with rent calls pay them (`Ledger\BankSettlement`), and no longer once taken back (`Ledger\BankUnsettlement`); associates read the books (`Ledger\AssociateBookAccess`) and their accounts in their space (`Ledger\CompanyAccounts`) |
 | `omnisense/omnitrade` with `omnitrade/stripe` | rents paid online by card or SEPA debit (`Service\OnlinePayments`) |
 | `dompdf/dompdf` | notices, receipts and certificates as PDF (without it, printable pages) |
+| `omnibase/drive` | a shared ownership's folder, shared with its co-owners (`Drive\OwnershipFolders`); an owner's folder under management, shared with them read-only (`Drive\MandatorFolders`) |
+| `omnibank/files` | the owners' payouts as a SEPA credit transfer file, pain.001.001.03 (`Management::sepa()`) |
 | `omnisense/omnistate` (with `omnistate/annuaire-entreprises`, `omnistate/vies`) | a company's identity read from the registers (`Service\CompanyRecords`, `estate:company:refresh`) |
 
 ## The bundle
@@ -60,6 +62,10 @@ estate_controller:
 | `estate_tenant_attestation` | `/locataire/bail/{id}/attestation` | a tenant of the lease |
 | `estate_contractor` | `/artisan` | a contractor |
 | `estate_work_order` | `/artisan/intervention/{id}` (GET, POST) | the work order's contractor |
+| `estate_coowner` | `/indivision` (`?indivision=<id>`) | a co-owner (the `ownership` activity) |
+| `estate_coowner_statement` | `/indivision/{id}/releve/{period}` | a co-owner of the ownership |
+| `estate_owner` | `/proprietaire` (`?mandat=<id>`) | an owner under management (the `management` activity) |
+| `estate_owner_statement` | `/proprietaire/{id}/compte-rendu/{period}` | the mandate's owner |
 | `estate_document` | `/fichier/{id}` | whoever may see the document |
 | `estate_admin_*` | `/admin/estate/...` | `ROLE_ADMIN` ([The back office](back-office.md)) |
 
@@ -90,7 +96,10 @@ Tables `estate_*`: organisation, building, unit, unit_photo, associate, member, 
 lease_party, rent_call, payment, contractor, work_order, work_order_event, document, notice,
 deadline, activity, application, message, invitation; with the shared ownerships (read only when
 the site runs `ownership`, but mapped: migrate them anyway) ownership, ownership_unit,
-ownership_share, ownership_invoice, ownership_call, ownership_payment.
+ownership_share, ownership_invoice, ownership_call, ownership_payment; with property management
+(read only when the site runs `management`, mapped all the same) mandator, mandate, mandate_unit,
+mandate_fee, mandate_expense, mandate_payout. omnibase/ledger's `ledger_bank_account` has an
+`escrow` column (the escrow account).
 
 ## The crons
 

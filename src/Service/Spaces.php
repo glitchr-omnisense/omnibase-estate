@@ -6,6 +6,8 @@ use Base\Entity\User;
 use Base\Estate\Entity\Associate;
 use Base\Estate\Entity\Contractor;
 use Base\Estate\Entity\Lease;
+use Base\Estate\Entity\Mandate;
+use Base\Estate\Entity\Mandator;
 use Base\Estate\Entity\Member;
 use Base\Estate\Entity\Organisation;
 use Base\Estate\Entity\Ownership;
@@ -20,7 +22,8 @@ use Symfony\Contracts\Service\ResetInterface;
  * Who someone is to the organisations: their management (a Member, or any
  * ROLE_ADMIN), an associate, a tenant (a party of a lease), a contractor,
  * a co-owner of a shared ownership (its share's account; only while the
- * site runs the `ownership` activity).
+ * site runs the `ownership` activity), an owner whose homes the agency
+ * manages (only while it runs `management`).
  * What each space shows, and what EstateVoter allows, comes from here -
  * from the relations, never from a role stored on the account.
  */
@@ -140,6 +143,37 @@ class Spaces implements ResetInterface
     }
 
     /**
+     * The owners their account is (a Mandator's user); none while the site
+     * does not run the `management` activity (its tables are not read).
+     *
+     * @return list<Mandator>
+     */
+    public function mandators(?User $user): array
+    {
+        if (!$user || !$this->activities?->has(Activity::MANAGEMENT)) {
+            return [];
+        }
+
+        return $this->memo['mandator'.$user->getId()] ??= $this->entityManager->getRepository(Mandator::class)->findBy(['user' => $user], ['name' => 'ASC', 'id' => 'ASC']);
+    }
+
+    public function isMandator(?User $user, Mandator $mandator): bool
+    {
+        return \in_array($mandator->getId(), array_map(fn (Mandator $m) => $m->getId(), $this->mandators($user)), true);
+    }
+
+    /** @return list<Mandate> the mandates of the owners they are, the latest started first */
+    public function mandates(?User $user): array
+    {
+        $mandators = $this->mandators($user);
+        if ([] === $mandators) {
+            return [];
+        }
+
+        return $this->memo['mandate'.$user->getId()] ??= $this->entityManager->getRepository(Mandate::class)->findBy(['mandator' => $mandators], ['startsOn' => 'DESC', 'id' => 'DESC']);
+    }
+
+    /**
      * The spaces the header and "Mon accès" offer, in this order.
      *
      * @return list<array{key: string, route: string}>
@@ -158,6 +192,9 @@ class Spaces implements ResetInterface
         }
         if ($this->coOwnerships($user)) {
             $spaces[] = ['key' => 'coowner', 'route' => 'estate_coowner'];
+        }
+        if ($this->mandators($user)) {
+            $spaces[] = ['key' => 'owner', 'route' => 'estate_owner'];
         }
 
         return $spaces;

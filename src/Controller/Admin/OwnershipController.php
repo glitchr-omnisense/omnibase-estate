@@ -7,7 +7,7 @@ use Base\Estate\Entity\OwnershipCall;
 use Base\Estate\Entity\OwnershipInvoice;
 use Base\Estate\Entity\OwnershipShare;
 use Base\Estate\Enum\SplitMode;
-use Base\Estate\Model\OwnershipPeriod;
+use Base\Estate\Model\Period;
 use Base\Estate\Service\Ownerships;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -120,12 +120,12 @@ class OwnershipController extends AbstractController
         $ownerships = $this->entityManager->getRepository(Ownership::class)->findBy([], ['name' => 'ASC']);
         $ownership = $this->entityManager->find(Ownership::class, $request->query->getInt('ownership')) ?? $ownerships[0] ?? null;
         $today = new \DateTimeImmutable('today');
-        $periods = OwnershipPeriod::recent($today);
+        $periods = Period::recent($today);
         $period = (string) $request->query->get('period', $periods[3] ?? $today->format('Y'));
         try {
-            [$from, $to] = OwnershipPeriod::parse($period);
+            [$from, $to] = Period::parse($period);
         } catch (\InvalidArgumentException) {
-            [$from, $to] = OwnershipPeriod::parse($period = $today->format('Y'));
+            [$from, $to] = Period::parse($period = $today->format('Y'));
         }
 
         return $this->render('@Estate/admin/ownership_statements.html.twig', [
@@ -133,8 +133,8 @@ class OwnershipController extends AbstractController
             'ownership' => $ownership,
             'statements' => $ownership ? $this->ownerships->statements($ownership, $from, $to) : [],
             'period' => $period,
-            'periods' => array_map(fn (string $key) => ['key' => $key, 'label' => OwnershipPeriod::label(...OwnershipPeriod::parse($key))], $periods),
-            'label' => OwnershipPeriod::label($from, $to),
+            'periods' => array_map(fn (string $key) => ['key' => $key, 'label' => Period::label(...Period::parse($key))], $periods),
+            'label' => Period::label($from, $to),
         ]);
     }
 
@@ -143,7 +143,7 @@ class OwnershipController extends AbstractController
     public function statement(OwnershipShare $share, string $period): Response
     {
         $this->assertActive();
-        [$from, $to] = OwnershipPeriod::parse($period);
+        [$from, $to] = Period::parse($period);
         $statement = $this->ownerships->statement($share->getOwnership(), $share->holder(), $from, $to);
         if ($pdf = $this->ownerships->statementPdf($statement)) {
             return new Response($pdf, 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$this->ownerships->statementFilename($statement).'"']);
@@ -161,7 +161,7 @@ class OwnershipController extends AbstractController
             throw $this->createAccessDeniedException();
         }
         $period = (string) $request->request->get('period');
-        [$from, $to] = OwnershipPeriod::parse($period);
+        [$from, $to] = Period::parse($period);
         $only = $request->request->getInt('share');
         $sent = [];
         foreach ($this->ownerships->statements($ownership, $from, $to) as $statement) {
@@ -173,7 +173,7 @@ class OwnershipController extends AbstractController
             }
         }
         $sent
-            ? $this->addFlash('success', sprintf('Relevé %s envoyé à %s.', OwnershipPeriod::label($from, $to), implode(', ', $sent)))
+            ? $this->addFlash('success', sprintf('Relevé %s envoyé à %s.', Period::label($from, $to), implode(', ', $sent)))
             : $this->addFlash('warning', 'Aucun relevé envoyé : pas d\'adresse e-mail.');
 
         return $this->redirectToRoute('estate_admin_ownership_statements', ['ownership' => $ownership->getId(), 'period' => $period]);

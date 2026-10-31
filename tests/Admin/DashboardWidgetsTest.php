@@ -200,4 +200,30 @@ class DashboardWidgetsTest extends TestCase
         self::assertSame(4, substr_count($html, 'class="dash-row-action"'), 'each row its action, a button, not an underlined link');
         self::assertStringContainsString('token-estate_rents_call_0', $html);
     }
+
+    public function testManagementPayoutsStatementsAndEndingMandates(): void
+    {
+        $mandator = new \Base\Estate\Entity\Mandator('Hélène Roth');
+        $mandate = (new \Base\Estate\Entity\Mandate($this->organisation, $mandator, new \DateTimeImmutable('2024-01-01')))->setNumber('MG-2024-0002')->setEndsOn(new \DateTimeImmutable('+20 days'));
+        (new \ReflectionProperty($mandate, 'id'))->setValue($mandate, 3);
+        $management = $this->createStub(\Base\Estate\Service\Management::class);
+        $management->method('payoutsDue')->willReturn([['mandate' => $mandate, 'balance' => 72440, 'reserve' => 20000, 'amount' => 52440]]);
+        $management->method('statementsToSend')->willReturn([['mandate' => $mandate, 'period' => '2026-10']]);
+        $mandates = $this->createStub(\Base\Estate\Repository\MandateRepository::class);
+        $mandates->method('ending')->willReturn([$mandate]);
+        $payouts = $this->createStub(\Base\Estate\Repository\MandatePayoutRepository::class);
+        $payouts->method('findUnpaid')->willReturn([(new \Base\Estate\Entity\MandatePayout($mandate, new \DateTimeImmutable('2026-09-30'), 30000, 0, 30000))->setReference('RV-2026-0003')]);
+
+        $html = $this->render(new Dashboard\ManagementWidgetType($this->entityManager(), $management, $mandates, $payouts, new \Base\Estate\Service\Activities(['management'])));
+
+        self::assertStringContainsString('<h2 class="dash-card-title">Gérance</h2>', $html);
+        self::assertMatchesRegularExpression('/524\s€/u', $html, 'what the owners are due at the end of last month');
+        self::assertStringContainsString('à reverser à 1 propriétaire', $html);
+        self::assertStringContainsString('1 reversement à virer', $html);
+        self::assertStringContainsString('1 compte rendu à envoyer', $html);
+        self::assertStringContainsString('MG-2024-0002 prend fin le', $html);
+
+        $off = $this->render(new Dashboard\ManagementWidgetType($this->entityManager(), $management, $mandates, $payouts, new \Base\Estate\Service\Activities(['assets'])));
+        self::assertStringContainsString('aucun compte rendu à envoyer', $off, 'the activity off: nothing read');
+    }
 }

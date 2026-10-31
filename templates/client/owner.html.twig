@@ -1,0 +1,105 @@
+{% extends '@Estate/client/layout.html.twig' %}
+
+{% block estate_title %}{{ '@estate.owner.title'|trans }}{% endblock %}
+{% block estate_eyebrow %}<p class="estate-eyebrow">{{ mandate.organisation.name }} · {{ '@estate.owner.mandate'|trans({number: mandate.number ?? '—', date: mandate.startsOn|format_date('long')}) }}</p>{% endblock %}
+{% block estate_lead %}{{ mandator.name }} — {{ mandate.unitsSummary }}{% endblock %}
+{% block estate_class %}estate-space estate-owner{% endblock %}
+{% block estate_actions %}
+    {% if mandates|length > 1 %}<nav class="estate-filters">{% for m in mandates %}<a href="{{ path('estate_owner', {mandat: m.id}) }}" {{ m == mandate ? 'aria-current="true"' }}>{{ m.number ?? m.unitsSummary }}</a>{% endfor %}</nav>{% endif %}
+    {% if folder %}<a class="estate-button is-ghost" href="{{ path('app_share', {path: folder}) }}"><i class="fa-solid fa-folder-open" aria-hidden="true"></i> {{ '@estate.owner.folder'|trans }}</a>{% endif %}
+{% endblock %}
+
+{% block estate_content %}
+<div class="estate-tiles">
+    <div class="estate-tile{{ statement.closing < 0 ? ' is-alert' }}">
+        <span>{{ '@estate.owner.balance'|trans }}</span>
+        <strong>{{ statement.closing|euros }}</strong>
+        <small>{{ statement.closing < 0 ? '@estate.owner.balance_owed'|trans : '@estate.owner.balance_held'|trans }}</small>
+    </div>
+    <div class="estate-tile">
+        <span>{{ '@estate.owner.next_payout'|trans }}</span>
+        <strong>{{ available.amount|euros }}</strong>
+        <small>{{ mandate.reserve ? '@estate.owner.reserve'|trans({amount: mandate.reserve|euros}) : ('@estate.owner.frequency.' ~ mandate.frequency.value)|trans }}</small>
+    </div>
+    <div class="estate-tile">
+        <span>{{ '@estate.owner.collected'|trans({year: 'now'|date('Y')}) }}</span>
+        <strong>{{ statement.collected|euros }}</strong>
+        <small>{{ '@estate.owner.called'|trans({amount: statement.called|euros}) }}</small>
+    </div>
+    <div class="estate-tile">
+        <span>{{ '@estate.owner.fees'|trans({year: 'now'|date('Y')}) }}</span>
+        <strong>{{ statement.fees|euros }}</strong>
+        <small>{{ '@estate.owner.fees_detail'|trans({rate: mandate.feeLabel}) }}</small>
+    </div>
+</div>
+
+<div class="estate-columns">
+<section class="estate-panel">
+    <h2>{{ '@estate.owner.units'|trans }}</h2>
+    <table class="estate-table">
+        <thead><tr><th>{{ '@estate.owner.unit'|trans }}</th><th>{{ '@estate.owner.lease'|trans }}</th><th class="is-num">{{ '@estate.owner.rent'|trans }}</th><th class="is-num">{{ '@estate.owner.collected_short'|trans }}</th></tr></thead>
+        <tbody>
+        {% for row in statement.units %}
+            {% set lease = leases[row.unit.id] ?? null %}
+            <tr>
+                <td><strong>{{ row.unit.name }}</strong><small>{{ row.unit.address }}{% if row.unit.door %}, {{ row.unit.door }}{% endif %}</small></td>
+                <td>{% if lease %}{{ lease.tenantNames ?: lease.reference }}<small>{{ '@estate.owner.since'|trans({date: lease.startOn|format_date('short')}) }}{% if lease.endOn %} · {{ '@estate.owner.until'|trans({date: lease.endOn|format_date('short')}) }}{% endif %}</small>{% else %}<span class="estate-muted">{{ '@estate.owner.vacant'|trans }}</span>{% endif %}</td>
+                <td class="is-num">{{ lease ? lease.monthly|euros : '—' }}</td>
+                <td class="is-num">{{ row.collected|euros }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% if statement.unpaid %}<p class="estate-muted">{{ '@estate.owner.unpaid'|trans({amount: statement.unpaid|reduce((sum, r) => sum + r.remaining, 0)|euros}) }}</p>{% endif %}
+
+    <h2>{{ '@estate.owner.payouts'|trans }}</h2>
+    {% if payouts|length %}
+    <table class="estate-table">
+        <thead><tr><th>{{ '@estate.owner.payout'|trans }}</th><th>{{ '@estate.owner.balance_on'|trans }}</th><th class="is-num">{{ '@estate.owner.amount'|trans }}</th><th>{{ '@estate.owner.state'|trans }}</th></tr></thead>
+        <tbody>
+        {% for payout in payouts %}
+            <tr>
+                <td><strong>{{ payout.reference }}</strong>{% if payout.iban %}<small>{{ '@estate.owner.to_account'|trans({end: payout.iban|slice(-4)}) }}</small>{% endif %}</td>
+                <td>{{ payout.balanceOn|format_date('short') }}</td>
+                <td class="is-num">{{ payout.amount|euros }}</td>
+                <td><span class="estate-status is-{{ payout.isPaid ? 'paid' : 'called' }}">{{ payout.isPaid ? '@estate.owner.paid_on'|trans({date: payout.paidOn|format_date('short')}) : '@estate.owner.pending'|trans }}</span></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="estate-muted">{{ '@estate.owner.no_payout'|trans }}</p>
+    {% endif %}
+</section>
+
+<div class="estate-stack">
+    <section class="estate-panel">
+        <h2>{{ '@estate.owner.statements'|trans }}</h2>
+        <ul class="estate-list">
+            {% for p in periods %}
+            <li><strong><a href="{{ path('estate_owner_statement', {id: mandate.id, period: p.key}) }}" target="_blank" rel="noopener"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i> {{ ('@estate.coowner.period.' ~ (p.key matches '/^\\d{4}$/' ? 'year' : (p.key matches '/Q/' ? 'quarter' : 'month')))|trans({month: p.from|format_date(pattern: 'MMMM yyyy')|capitalize, quarter: ((p.from|date('n')) + 2) // 3, year: p.from|date('Y')}) }}</a></strong></li>
+            {% else %}
+            <li class="estate-muted">{{ '@estate.owner.no_statement'|trans }}</li>
+            {% endfor %}
+        </ul>
+        <p class="estate-muted is-small">{{ '@estate.owner.statements_hint'|trans }}</p>
+    </section>
+    {% if statement.expenseLines %}
+    <section class="estate-panel">
+        <h2>{{ '@estate.owner.expenses'|trans({year: 'now'|date('Y')}) }}</h2>
+        <ul class="estate-list">
+            {% for line in statement.expenseLines|reverse|slice(0, 5) %}<li><strong>{{ line.label }}</strong><span>{{ line.date|format_date('short') }} · {{ line.amount|euros }}</span></li>{% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+    <section class="estate-panel">
+        <h2>{{ '@estate.owner.agency'|trans }}</h2>
+        <ul class="estate-list">
+            <li><strong>{{ mandate.organisation.name }}</strong><span>{{ mandate.organisation.fullAddress }}</span></li>
+            {% if mandate.organisation.email %}<li><a href="mailto:{{ mandate.organisation.email }}">{{ mandate.organisation.email }}</a></li>{% endif %}
+            <li><span>{{ '@estate.owner.mandate_terms'|trans({rate: mandate.feeLabel, frequency: ('@estate.owner.frequency.' ~ mandate.frequency.value)|trans}) }}</span></li>
+        </ul>
+    </section>
+</div>
+</div>
+{% endblock %}

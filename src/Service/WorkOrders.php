@@ -26,6 +26,7 @@ class WorkOrders
         private readonly ActivityLog $activities,
         private readonly EstateMailer $mailer,
         private readonly ?Books $books = null,
+        private readonly ?Management $management = null,
     ) {
     }
 
@@ -99,13 +100,14 @@ class WorkOrders
         $this->entityManager->flush();
     }
 
-    /** Closed by the management: the invoice, if any, goes to the books. */
+    /** Closed by the management: the invoice, if any, goes to the books - a managed home's to its owner's account. */
     public function close(WorkOrder $order, ?User $by, string $byName = 'Gestion'): void
     {
         $order->setStatus(WorkOrderStatus::CLOSED)->setClosedAt(new \DateTimeImmutable());
         $order->addEvent(new WorkOrderEvent($byName, 'Clôturée.', $by));
         $this->entityManager->flush();
         $this->books?->workInvoiced($order);
+        $this->management?->workInvoiced($order);
     }
 
     /** @return list<string> */

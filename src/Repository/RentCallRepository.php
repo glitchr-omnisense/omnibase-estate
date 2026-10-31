@@ -4,6 +4,7 @@ namespace Base\Estate\Repository;
 
 use Base\Estate\Entity\Organisation;
 use Base\Estate\Entity\RentCall;
+use Base\Estate\Entity\Unit;
 use Base\Estate\Enum\RentStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -48,6 +49,25 @@ class RentCallRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('c')
             ->where('c.onlineReference IS NOT NULL')->andWhere('c.status != :paid')->setParameter('paid', RentStatus::PAID)
+            ->getQuery()->getResult();
+    }
+
+    /**
+     * @param list<Unit> $units
+     *
+     * @return list<RentCall> the rent calls of these homes, their leases and payments with them, oldest first
+     */
+    public function forUnits(array $units): array
+    {
+        $units = array_values(array_filter($units, fn (Unit $unit) => null !== $unit->getId()));
+        if ([] === $units) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('r')->select('r', 'l', 'p')
+            ->join('r.lease', 'l')->leftJoin('r.payments', 'p')
+            ->where('l.unit IN (:units)')->setParameter('units', $units)
+            ->orderBy('r.period', 'ASC')->addOrderBy('r.id', 'ASC')
             ->getQuery()->getResult();
     }
 

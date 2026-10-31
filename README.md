@@ -7,7 +7,9 @@ orders, invitations, and a private space for each of those people - posting to
 [omnibase/ledger](https://github.com/glitchr-omnisense/omnibase-ledger) when the organisation
 keeps its books there. With the `ownership` activity, shared ownerships (indivisions): co-owners'
 shares over time, shared invoices divided and called for funds, each co-owner's statement and
-space. Its words on the pages and in the e-mails are French: it was written for French
+space. With the `management` activity, property management for third parties (gérance):
+owners and their mandates, rents collected to the owners' accounts, the agency's fees with VAT,
+expenses, owners' statements, payouts and their SEPA file, the escrow account, the owner's space. Its words on the pages and in the e-mails are French: it was written for French
 residential lettings (the loi du 6 juillet 1989, the IRL revision, the quittance).
 
 Nobody signs up: the management invites an associate, a tenant, a contractor or a member of its
@@ -21,7 +23,8 @@ role stored on the account.
 - Symfony 7 or 8 (`config`, `dependency-injection`, `form`, `http-kernel`, `mailer`, `security-bundle`)
 - Suggested: `omnibase/ledger` (the books), `omnisense/omnitrade` with `omnitrade/stripe` (rents
   paid online), `dompdf/dompdf` (PDF notices, receipts and statements), `omnisense/omnistate`
-  (companies read from the public registers), `omnibase/drive` (a shared ownership's cloud folder)
+  (companies read from the public registers), `omnibase/drive` (a shared ownership's and an owner's
+  cloud folders), `omnibank/files` (the owners' payouts as a SEPA file)
 
 ## Installation
 
@@ -56,6 +59,7 @@ Then the schema (`doctrine:migrations:diff`, `doctrine:migrations:migrate`) and 
 
 The manual is in [docs/](docs/index.md): [installation](docs/installation.md),
 [organisations, homes and leases](docs/concepts.md), [rents](docs/usage-rents.md),
+[shared ownership](docs/usage-ownership.md), [property management](docs/usage-management.md),
 [works, documents and messages](docs/usage-works.md),
 [the public site and applications](docs/usage-applications.md),
 [invitations](docs/invitations.md), [spaces and access](docs/usage-spaces.md),
