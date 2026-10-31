@@ -45,17 +45,25 @@ class OnlinePayments
         return $this->methods;
     }
 
-    /** Where to send the tenant: the provider's page. */
-    public function start(RentCall $call, string $method, string $returnUrl, string $cancelUrl, ?string $email = null): string
+    /**
+     * Where to send the tenant: the provider's page. The idempotency key is
+     * the rent, what is paid of it, the method and the ten minutes the
+     * request falls in: a second click opens the same page, while another
+     * method, or a new try after a failure, asks again - a provider keeps a
+     * key's answer, a refusal too (Stripe for 24 hours).
+     */
+    public function start(RentCall $call, string $method, string $returnUrl, string $cancelUrl, ?string $email = null, ?\DateTimeImmutable $now = null): string
     {
+        $method = \in_array($method, $this->methods, true) ? $method : null;
+        $now ??= new \DateTimeImmutable();
         $transaction = $this->registry->get($this->gateway)->purchase(new OmnitradePayment(
             amount: Money::of($call->getRemaining(), 'EUR'),
             reference: $call->getReference(),
             description: sprintf('Loyer %s — %s', $call->getPeriod()->format('m/Y'), $call->getLease()->getUnit()->getName()),
             returnUrl: $returnUrl,
             cancelUrl: $cancelUrl,
-            idempotencyKey: $call->getReference().'-'.$call->getPaid(),
-            method: \in_array($method, $this->methods, true) ? $method : null,
+            idempotencyKey: sprintf('%s-%d-%s-%s%d', $call->getReference(), $call->getPaid(), $method ?? 'any', $now->format('YmdH'), intdiv((int) $now->format('i'), 10)),
+            method: $method,
             metadata: ['rent_call' => (string) $call->getId()],
             locale: 'fr',
         ));

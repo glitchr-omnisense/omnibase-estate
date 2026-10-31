@@ -56,7 +56,8 @@
                     {% else %}
                         <a href="{{ path('estate_rent_document', {id: call.id, kind: 'avis'}) }}" target="_blank"><i class="fa-solid fa-file-invoice" aria-hidden="true"></i> {{ '@estate.tenant.notice'|trans }}</a>
                         {% if online %}
-                        <form method="post" action="{{ path('estate_rent_pay', {id: call.id}) }}" class="estate-pay">
+                        {# "reload": a full page load, not flowjs' in-place one - the answer is a redirect to the provider's page, on another origin, which a background request cannot follow. #}
+                        <form method="post" action="{{ path('estate_rent_pay', {id: call.id}) }}" class="estate-pay reload">
                             <input type="hidden" name="_token" value="{{ csrf_token('rent_pay_' ~ call.id) }}">
                             {% for method in methods %}
                                 <button type="submit" name="method" value="{{ method }}" class="estate-button is-small">{{ ('@estate.pay.' ~ method)|trans }}</button>

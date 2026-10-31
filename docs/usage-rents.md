@@ -54,11 +54,14 @@ certificate only when nothing past due is owed.
 `Base\Estate\Service\OnlinePayments`, through omnisense/omnitrade's `Registry` and the gateway
 `estate.payment_gateway` (`stripe`): available when the registry has that gateway.
 
-- `start(RentCall $call, string $method, string $returnUrl, string $cancelUrl, ?string $email = null)` -
+- `start(RentCall $call, string $method, string $returnUrl, string $cancelUrl, ?string $email = null, ?\DateTimeImmutable $now = null)` -
   a purchase of the remaining amount in EUR, referenced by the call, described "Loyer 10/2026 —
-  <home>", idempotent per call and amount already paid, the method among
-  `estate.payment_methods` (`card`, `sepa_debit`), metadata `rent_call`, locale `fr`: the
-  provider's page.
+  <home>", the method among `estate.payment_methods` (`card`, `sepa_debit`), metadata
+  `rent_call`, locale `fr`: the provider's page. Idempotent per call, amount already paid, method
+  and ten minutes (`<reference>-<paid>-<method>-<YmdH><minutes / 10>`): a second click opens the
+  same page; another method, or a new try after a refusal, asks again (the provider keeps a key's
+  answer, a refusal too). The tenant's page posts it with a full page load (`reload`): the answer
+  is a redirect to the provider's origin.
 - `complete(RentCall $call, string $reference)` - back from the provider (`?session=`): recorded
   as a card or SEPA payment once the transaction is paid. A SEPA debit is paid later.
 
