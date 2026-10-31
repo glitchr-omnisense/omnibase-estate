@@ -73,11 +73,18 @@ certificate only when nothing past due is owed.
   for a paid session (Stripe's `checkout.session.completed` or `async_payment_succeeded`) whose
   metadata names a rent call, null for anything else.
 
+- `catchUp(int $days = 15, ?\DateTimeImmutable $now = null)` - the online payments started and
+  not seen paid, read again from the provider: those paid since are recorded, those started more
+  than `$days` ago given up. `start()` keeps the session on the call (`RentCall::getOnlineReference()`,
+  `getOnlineStartedAt()`); a payment recorded clears it. `estate:payment:check [--days=15]` runs it:
+  schedule it every 15 minutes (the site's crontab), and no webhook is needed - in development
+  either, where the provider cannot reach the site.
+
 `POST /estate/payments/webhook` (`estate_payment_webhook`, public) takes it: a rent call not paid
 yet is recorded through `complete()`, under the session's reference - the tenant's return records
 nothing twice. 204; 400 for a signature that does not match; 404 without a gateway. The rent is
-paid even when the tenant never came back: a page closed, a SEPA debit through days later. The
-endpoint is declared at the provider (Stripe: Developers → Webhooks, the four
+paid even when the tenant never came back: a page closed, a SEPA debit through days later - the
+webhook only records it sooner than `estate:payment:check` does. The endpoint is declared at the provider (Stripe: Developers → Webhooks, the four
 `checkout.session.*` events) with its signing secret in the gateway's `webhook_secret`
 (`STRIPE_WEBHOOK_SECRET`); locally, `stripe listen --forward-to
 https://localhost:<port>/estate/payments/webhook --skip-verify` prints that secret.

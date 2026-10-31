@@ -14,6 +14,12 @@
   `ESTATE_AUTOLOAD`), as omnibase/ledger's.
 
 ### Fixed
+- A rent paid online is recorded without any webhook: `start()` keeps the provider's session on
+  the rent call (`onlineReference`, `onlineStartedAt`; a migration in the application), and
+  `estate:payment:check` (`OnlinePayments::catchUp()`, `RentCallRepository::findOnlinePending()`),
+  scheduled every 15 minutes, reads the open ones again and records those paid - a page closed, a
+  SEPA debit through days later. A development machine, which no provider can reach, needs no
+  tunnel nor `stripe listen`.
 - A rent paid online is recorded even when the tenant never comes back to the site (a page
   closed, a SEPA debit through days later): `POST /estate/payments/webhook`
   (`PaymentWebhookController`, `OnlinePayments::paidBy()`), Stripe's paid Checkout sessions

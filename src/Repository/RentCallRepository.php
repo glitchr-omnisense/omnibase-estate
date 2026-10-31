@@ -43,6 +43,14 @@ class RentCallRepository extends ServiceEntityRepository
             ->getQuery()->getResult();
     }
 
+    /** @return list<RentCall> the calls an online payment was started for and not seen paid (estate:payment:check) */
+    public function findOnlinePending(): array
+    {
+        return $this->createQueryBuilder('c')
+            ->where('c.onlineReference IS NOT NULL')->andWhere('c.status != :paid')->setParameter('paid', RentStatus::PAID)
+            ->getQuery()->getResult();
+    }
+
     public function lastReceiptNumber(string $prefix): ?string
     {
         return $this->createQueryBuilder('r')

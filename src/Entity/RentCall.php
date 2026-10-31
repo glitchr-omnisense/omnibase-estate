@@ -57,6 +57,13 @@ class RentCall
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $remindedAt = null;
 
+    /** The latest online payment started for it (the provider's session), until it is paid or given up: estate:payment:check reads it again. */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $onlineReference = null;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $onlineStartedAt = null;
+
     /** "Q-2026-0042", given when it is paid in full. */
     #[ORM\Column(length: 32, nullable: true, unique: true)]
     private ?string $receiptNumber = null;
@@ -99,6 +106,9 @@ class RentCall
     public function getPaidAt(): ?\DateTimeImmutable { return $this->paidAt; }
     public function getRemindedAt(): ?\DateTimeImmutable { return $this->remindedAt; }
     public function setRemindedAt(?\DateTimeImmutable $remindedAt): self { $this->remindedAt = $remindedAt; return $this; }
+    public function getOnlineReference(): ?string { return $this->onlineReference; }
+    public function getOnlineStartedAt(): ?\DateTimeImmutable { return $this->onlineStartedAt; }
+    public function setOnline(?string $reference, ?\DateTimeImmutable $startedAt = null): self { $this->onlineReference = $reference; $this->onlineStartedAt = null === $reference ? null : ($startedAt ?? new \DateTimeImmutable()); return $this; }
     public function getReceiptNumber(): ?string { return $this->receiptNumber; }
     public function setReceiptNumber(?string $receiptNumber): self { $this->receiptNumber = $receiptNumber; return $this; }
     /** @return Collection<int, Payment> */
