@@ -13,7 +13,7 @@
 </div>
 {% if latest is not empty %}
 <ul class="dash-rows">
-    {% for p in latest|slice(0, 6) %}
+    {% for p in latest %}
     <li><div class="dash-row">
         <i class="fa-solid {{ p.method.value == 'card' ? 'fa-credit-card' : (p.method.value == 'sepa_debit' ? 'fa-building-columns' : 'fa-right-left') }} dash-row-icon" aria-hidden="true"></i>
         <span class="dash-row-label">{{ p.rentCall.lease.tenantNames }}<small>{{ p.paidOn|format_date('short') }} · {{ methods[p.method.value] }} · {{ p.rentCall.lease.unit.name }}</small></span>

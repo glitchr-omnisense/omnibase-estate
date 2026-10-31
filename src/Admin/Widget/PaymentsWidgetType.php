@@ -58,7 +58,7 @@ final class PaymentsWidgetType implements PaletteDashboardWidgetTypeInterface
         return [
             'card' => 'payments',
             'compact' => false,
-            'latest' => $this->entityManager->getRepository(Payment::class)->findBy([], ['paidOn' => 'DESC', 'id' => 'DESC'], 8),
+            'latest' => $this->entityManager->getRepository(Payment::class)->findBy([], ['paidOn' => 'DESC', 'id' => 'DESC'], 4),
             'byMethod' => array_filter($byMethod),
             'total' => array_sum($byMethod),
             'online' => $this->online->isAvailable(),

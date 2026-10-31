@@ -21,6 +21,11 @@
   `ESTATE_AUTOLOAD`), as omnibase/ledger's.
 
 ### Fixed
+- The rent calls' list fits a laptop's width: the reference moves to the detail page (the lease and
+  the due date say which call it is), and « Reçu », « État » and « Quittance » no longer sit under
+  the pinned actions.
+- The dashboard's « Encaissements » lists the 4 latest payments, not 6, so the card stands level
+  with « Comptabilité » beside it.
 - A rent paid online is recorded without any webhook: `start()` keeps the provider's session on
   the rent call (`onlineReference`, `onlineStartedAt`; a migration in the application), and
   `estate:payment:check` (`OnlinePayments::catchUp()`, `RentCallRepository::findOnlinePending()`),

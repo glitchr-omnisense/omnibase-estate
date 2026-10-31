@@ -32,7 +32,7 @@ class RentCallCrudController extends AbstractEstateCrudController
 
     public function configureFields(string $pageName): iterable
     {
-        yield TextField::new('reference', 'Référence');
+        yield TextField::new('reference', 'Référence')->onlyOnDetail();
         yield AssociationField::new('lease', 'Bail');
         yield DateField::new('dueOn', 'Échéance');
         yield $this->euros('total', 'Montant');
