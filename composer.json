@@ -21,10 +21,10 @@
         "symfony/security-bundle": "^7.0|^8.0"
     },
     "suggest": {
-        "omnibase/ledger": "Rent calls, payments and work invoices posted to the company's books",
+        "omnibase/ledger": "Rent calls, payments and work invoices posted to the company's books; an agency's management and sale fees",
         "omnisense/omnitrade": "Rent paid online (omnitrade/stripe: card and SEPA debit)",
         "dompdf/dompdf": "Rent notices, receipts, co-owners' and owners' statements as PDF",
-        "omnibase/drive": "A shared ownership's cloud folder, shared with its co-owners; an owner's folder under management",
+        "omnibase/drive": "A shared ownership's cloud folder, shared with its co-owners; an owner's folder under management; a sale's folder, shared with its seller and buyer",
         "omnibank/files": "The owners' payouts as a SEPA credit transfer file (pain.001) for the bank"
     },
     "config": {"sort-packages": true, "allow-plugins": {"omnibridge/composer": true, "php-http/discovery": true}},

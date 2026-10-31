@@ -263,6 +263,76 @@ owner:
   agency: "Votre agence"
   mandate_terms: "Honoraires {rate} HT des encaissements ; compte rendu et reversement {frequency}."
 
+seller:
+  title: "Ma vente"
+  mandate: "mandat {number}, {kind}, jusqu'au {until}"
+  exclusive: "exclusif"
+  simple: "simple"
+  folder: "Le dossier de la vente"
+  price: "Prix"
+  agreed: "accepté, pour {asked} demandés"
+  asked: "demandé"
+  visits: "Visites"
+  last_visit: "dernière le {date}"
+  no_visit: "Aucune visite pour l'instant."
+  offers: "Offres"
+  offers_open: "{count, plural, =0 {aucune en attente} one {# en attente de réponse} other {# en attente de réponse}}"
+  step: "Où en est la vente"
+  next_on: "{step} : {date}"
+  fee: "honoraires {fee}, à la charge {payer}"
+  offer: "Offre du"
+  amount: "Montant"
+  conditions: "Conditions"
+  state: "État"
+  countered: "contre-proposition {amount}"
+  loan: "Sous condition de prêt"
+  no_loan: "Sans condition de prêt"
+  valid_until: "valable jusqu'au {date}"
+  no_offer: "Aucune offre pour l'instant."
+  no_feedback: "pas de retour noté"
+  agency: "Votre agence"
+  terms: "Honoraires {fee}, à la charge {payer} ; mandat du {from} au {until}."
+
+buyer:
+  title: "Mon achat"
+  folder: "Le dossier de la vente"
+  price: "Prix convenu : {price}"
+  fee: "honoraires à votre charge : {fee}"
+  no_sale: "Aucune offre acceptée pour l'instant : les étapes de la vente s'afficheront ici."
+  offers: "Mes offres"
+  no_offer: "Aucune offre."
+
+sale:
+  title: "Les étapes de la vente"
+  cancelled: "Vente annulée le {date} : {reason}"
+  notary: "notaire : {notary}"
+  deposit: "dépôt de garantie {amount}"
+  withdrawal_until: "rétractation possible jusqu'au {date} inclus"
+  loan_by: "prêt à obtenir avant le {date}"
+  deed_planned: "prévu le {date}"
+  document: "document"
+
+sale_step:
+  none: "En vente"
+  accepted: "Offre acceptée"
+  compromise: "Compromis signé"
+  withdrawal: "Délai de rétractation purgé"
+  conditions: "Conditions suspensives levées"
+  deed: "Acte authentique signé"
+  closed: "Dossier clos"
+  cancelled: "Vente annulée"
+
+offer_status:
+  made: "En attente"
+  countered: "Contre-proposition"
+  accepted: "Acceptée"
+  refused: "Refusée"
+  withdrawn: "Retirée"
+
+fee_payer:
+  seller: "du vendeur"
+  buyer: "de l'acquéreur"
+
 contractor:
   title: "Mes interventions"
   lead: "Les interventions qui vous sont confiées : l'adresse, l'accès, les personnes sur place - et de quoi indiquer votre passage, votre devis et votre compte rendu."
@@ -458,6 +528,14 @@ dashboard:
     unpaid_hint: "le fichier SEPA est prêt"
     to_send: "{count, plural, =0 {aucun compte rendu à envoyer} one {# compte rendu à envoyer} other {# comptes rendus à envoyer}}"
     all_sent: "tous envoyés"
+    ending: "{number} prend fin le {date}"
+  transaction:
+    sub: "trimestre {quarter}"
+    sales: "Ventes en cours"
+    fees: "{count, plural, =0 {d'honoraires ce trimestre} one {d'honoraires ce trimestre, # vente} other {d'honoraires ce trimestre, # ventes}}"
+    next_on: "{step} : {date}"
+    no_sale: "Aucune vente en cours"
+    offers: "{count, plural, one {# offre à répondre} other {# offres à répondre}}"
     ending: "{number} prend fin le {date}"
   todo:
     sub: "{count, plural, one {# chose à faire} other {# choses à faire}}"

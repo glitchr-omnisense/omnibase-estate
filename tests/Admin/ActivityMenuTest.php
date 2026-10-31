@@ -147,4 +147,29 @@ final class ActivityMenuTest extends TestCase
             'Réglages',
         ], self::labels((new ActivityMenu(new Activities(['management', 'transaction'])))->filter($items)), 'an agency');
     }
+
+    public function testTheSalesScreensBelongToTheTransaction(): void
+    {
+        $items = [
+            MenuItem::section('Transactions', 'fa-solid fa-sign-hanging')->setSubItems([
+                MenuItem::linkToCrud(\Base\Estate\Entity\Mandator::class, 'Propriétaires', 'fa-solid fa-user-tie'),
+                MenuItem::linkToCrud(\Base\Estate\Entity\SaleMandate::class, 'Mandats de vente', 'fa-solid fa-sign-hanging'),
+                MenuItem::linkToCrud(\Base\Estate\Entity\Buyer::class, 'Acquéreurs', 'fa-solid fa-user-check'),
+                MenuItem::linkToCrud(\Base\Estate\Entity\Visit::class, 'Visites', 'fa-solid fa-door-open'),
+                MenuItem::linkToCrud(\Base\Estate\Entity\Offer::class, 'Offres', 'fa-solid fa-hand-holding-dollar'),
+                MenuItem::linkToRoute('estate_admin_transaction_sales', [], 'Ventes en cours', 'fa-solid fa-route'),
+            ]),
+            MenuItem::block('estate_transaction', 'estate_widget.transaction', 'fa-solid fa-sign-hanging')->setSize(2),
+            MenuItem::linkToCrud(\Base\Estate\Entity\Mandate::class, 'Mandats de gestion', 'fa-solid fa-file-signature'),
+            MenuItem::linkToRoute('admin_settings', [], 'Réglages', 'fa-solid fa-sliders'),
+        ];
+
+        self::assertSame(['Réglages'], self::labels((new ActivityMenu(new Activities(['assets', 'ownership'])))->filter($items)), 'Meyers & Associée: no sales, their section and card go');
+        self::assertSame([
+            ['Transactions', ['Propriétaires', 'Mandats de vente', 'Acquéreurs', 'Visites', 'Offres', 'Ventes en cours']],
+            'estate_widget.transaction',
+            'Réglages',
+        ], self::labels((new ActivityMenu(new Activities(['transaction'])))->filter($items)), 'sales alone: the owners as sellers, no management mandates');
+        self::assertSame(['Propriétaires'], self::labels((new ActivityMenu(new Activities(['management'])))->filter([MenuItem::linkToCrud(\Base\Estate\Entity\Mandator::class, 'Propriétaires')])), 'the owners are management\'s too');
+    }
 }

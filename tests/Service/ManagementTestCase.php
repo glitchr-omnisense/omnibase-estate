@@ -116,14 +116,28 @@ abstract class ManagementTestCase extends TestCase
 
     protected function books(EntityManagerInterface $entityManager, ?BankAccount $escrow = null): ManagementBooks
     {
-        $taxes = $this->createStub(TaxRepository::class);
-        $taxes->method('findOneByCode')->willReturnCallback(fn (Book $book, string $code) => 'V20' === $code ? new Tax($book, 'V20', 'TVA collectée 20 %', 2000, TaxKind::COLLECTED, new Account($book, '44571', 'TVA collectée', AccountType::LIABILITY)) : null);
-        $accounts = $this->createStub(AccountRepository::class);
-        $accounts->method('findOneByNumber')->willReturnCallback(fn (Book $book, string $number) => new Account($book, $number, $number));
         $bankAccounts = $this->createStub(BankAccountRepository::class);
         $bankAccounts->method('escrowFor')->willReturn($escrow);
 
-        return new ManagementBooks($entityManager, $this->posting(), $this->parties(), $this->createStub(Lettering::class), $taxes, $accounts, $bankAccounts);
+        return new ManagementBooks($entityManager, $this->posting(), $this->parties(), $this->createStub(Lettering::class), $this->taxes(), $this->accounts(), $bankAccounts);
+    }
+
+    /** The book's VAT codes: V20, collected, on 44571. */
+    protected function taxes(): TaxRepository
+    {
+        $taxes = $this->createStub(TaxRepository::class);
+        $taxes->method('findOneByCode')->willReturnCallback(fn (Book $book, string $code) => 'V20' === $code ? new Tax($book, 'V20', 'TVA collectée 20 %', 2000, TaxKind::COLLECTED, new Account($book, '44571', 'TVA collectée', AccountType::LIABILITY)) : null);
+
+        return $taxes;
+    }
+
+    /** Every account the book is asked for exists. */
+    protected function accounts(): AccountRepository
+    {
+        $accounts = $this->createStub(AccountRepository::class);
+        $accounts->method('findOneByNumber')->willReturnCallback(fn (Book $book, string $number) => new Account($book, $number, $number));
+
+        return $accounts;
     }
 
     /** The agency's escrow account at the bank: 5121, its IBAN the payouts' debtor. */

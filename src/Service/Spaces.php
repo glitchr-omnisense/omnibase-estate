@@ -4,6 +4,7 @@ namespace Base\Estate\Service;
 
 use Base\Entity\User;
 use Base\Estate\Entity\Associate;
+use Base\Estate\Entity\Buyer;
 use Base\Estate\Entity\Contractor;
 use Base\Estate\Entity\Lease;
 use Base\Estate\Entity\Mandate;
@@ -12,6 +13,7 @@ use Base\Estate\Entity\Member;
 use Base\Estate\Entity\Organisation;
 use Base\Estate\Entity\Ownership;
 use Base\Estate\Entity\OwnershipShare;
+use Base\Estate\Entity\SaleMandate;
 use Base\Estate\Enum\Activity;
 use Base\Estate\Repository\LeaseRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -23,7 +25,8 @@ use Symfony\Contracts\Service\ResetInterface;
  * ROLE_ADMIN), an associate, a tenant (a party of a lease), a contractor,
  * a co-owner of a shared ownership (its share's account; only while the
  * site runs the `ownership` activity), an owner whose homes the agency
- * manages (only while it runs `management`).
+ * manages (only while it runs `management`), a seller or a buyer (only
+ * while it runs `transaction`).
  * What each space shows, and what EstateVoter allows, comes from here -
  * from the relations, never from a role stored on the account.
  */
@@ -174,6 +177,76 @@ class Spaces implements ResetInterface
     }
 
     /**
+     * The owners their account is who sell through the agency (a Mandator's
+     * user, as under management); none while the site does not run the
+     * `transaction` activity (its tables are not read).
+     *
+     * @return list<Mandator>
+     */
+    public function sellers(?User $user): array
+    {
+        if (!$user || !$this->activities?->has(Activity::TRANSACTION)) {
+            return [];
+        }
+
+        return $this->memo['seller'.$user->getId()] ??= $this->entityManager->getRepository(Mandator::class)->findBy(['user' => $user], ['name' => 'ASC', 'id' => 'ASC']);
+    }
+
+    /** @return list<SaleMandate> the sale mandates the sellers they are signed, the latest started first */
+    public function saleMandates(?User $user): array
+    {
+        $sellers = $this->sellers($user);
+        if ([] === $sellers) {
+            return [];
+        }
+        if (!isset($this->memo['sale'.$user->getId()])) {
+            $mandates = [];
+            foreach ($this->entityManager->getRepository(SaleMandate::class)->findBy([], ['startsOn' => 'DESC', 'id' => 'DESC']) as $mandate) {
+                foreach ($sellers as $seller) {
+                    if ($mandate->hasSeller($seller)) {
+                        $mandates[] = $mandate;
+                        break;
+                    }
+                }
+            }
+            $this->memo['sale'.$user->getId()] = $mandates;
+        }
+
+        return $this->memo['sale'.$user->getId()];
+    }
+
+    public function isSellerOf(?User $user, SaleMandate $mandate): bool
+    {
+        foreach ($this->sellers($user) as $seller) {
+            if ($mandate->hasSeller($seller)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The buyers their account is; none while the site does not run the
+     * `transaction` activity.
+     *
+     * @return list<Buyer>
+     */
+    public function buyers(?User $user): array
+    {
+        if (!$user || !$this->activities?->has(Activity::TRANSACTION)) {
+            return [];
+        }
+
+        return $this->memo['buyer'.$user->getId()] ??= $this->entityManager->getRepository(Buyer::class)->findBy(['user' => $user], ['id' => 'ASC']);
+    }
+
+    public function isBuyer(?User $user, Buyer $buyer): bool
+    {
+        return \in_array($buyer->getId(), array_map(fn (Buyer $b) => $b->getId(), $this->buyers($user)), true);
+    }
+
+    /**
      * The spaces the header and "Mon accès" offer, in this order.
      *
      * @return list<array{key: string, route: string}>
@@ -195,6 +268,12 @@ class Spaces implements ResetInterface
         }
         if ($this->mandators($user)) {
             $spaces[] = ['key' => 'owner', 'route' => 'estate_owner'];
+        }
+        if ($this->saleMandates($user)) {
+            $spaces[] = ['key' => 'seller', 'route' => 'estate_seller'];
+        }
+        if ($this->buyers($user)) {
+            $spaces[] = ['key' => 'buyer', 'route' => 'estate_buyer'];
         }
 
         return $spaces;

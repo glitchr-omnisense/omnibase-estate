@@ -1,0 +1,56 @@
+{% extends '@Admin/layout.html.twig' %}
+
+{% block page_title %}Ventes en cours{% endblock %}
+
+{% block content_header %}
+<div class="admin-header">
+    <span class="admin-header-icon"><i class="fa-solid fa-route"></i></span>
+    <div class="admin-header-titles">
+        <h1>Ventes en cours</h1>
+        <div class="admin-header-subtitle">{{ sales|length }} vente(s) · {{ offers|length }} offre(s) en attente · honoraires {{ fees.period }} : {{ fees.total|euros }} TTC</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{{ include('@Estate/admin/_ownership_style.html.twig') }}
+<div class="estate-own" style="max-width: 72rem">
+    <div class="card" style="overflow-x: auto">
+        {% if sales %}
+        <table>
+            <thead><tr><th>Mandat</th><th>Acquéreur</th><th class="num">Prix</th><th>Étape</th><th>Ensuite</th><th class="num">Honoraires TTC</th></tr></thead>
+            <tbody>
+            {% for sale in sales %}
+                {% set next = sale.nextDate %}
+                <tr>
+                    <td><a href="{{ path('estate_admin_transaction_mandate', {id: sale.mandate.id}) }}"><strong>{{ sale.mandate.number }}</strong></a><br><small class="text-muted">{{ sale.mandate.propertyName }}</small></td>
+                    <td>{{ sale.buyer.name }}</td>
+                    <td class="num">{{ sale.price|euros }}</td>
+                    <td>{{ sale.step.label }}</td>
+                    <td>{% if next %}{{ next.step.label }}{% if next.date %} <small class="text-muted">{{ next.step.value == 'withdrawal' ? 'après le' : 'le' }} {{ next.date|format_date('short') }}</small>{% endif %}{% endif %}</td>
+                    <td class="num">{{ (sale.step.concluded ? sale.feeTotal : transactions.fee(sale.mandate, sale.price)[0])|euros }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}<p>Aucune vente en cours.</p>{% endif %}
+    </div>
+    <div class="card">
+        <h2 class="h5">Honoraires du trimestre {{ fees.period }}</h2>
+        <dl><dt>Facturés (actes signés)</dt><dd>{{ fees.invoiced|euros }}</dd><dt>Attendus (actes prévus)</dt><dd>{{ fees.expected|euros }}</dd></dl>
+        <p class="text-muted" style="margin: .5rem 0 0">Rien n'est un produit avant l'acte authentique (loi Hoguet).</p>
+    </div>
+    {% if offers %}
+    <div class="card">
+        <h2 class="h5">Offres en attente de réponse</h2>
+        <table><tbody>{% for offer in offers %}<tr><td><a href="{{ path('estate_admin_transaction_mandate', {id: offer.mandate.id}) }}">{{ offer.mandate.number }}</a></td><td>{{ offer.buyer.name }}</td><td>{{ offer.madeOn|format_date('short') }}</td><td class="num">{{ offer.price|euros }}</td><td>{{ offer.status.label }}</td></tr>{% endfor %}</tbody></table>
+    </div>
+    {% endif %}
+    {% if ending %}
+    <div class="card">
+        <h2 class="h5">Mandats sans vente qui prennent fin</h2>
+        <table><tbody>{% for mandate in ending %}<tr><td><a href="{{ path('estate_admin_transaction_mandate', {id: mandate.id}) }}">{{ mandate.number }}</a></td><td>{{ mandate.propertyName }}</td><td>{{ mandate.sellersSummary }}</td><td>le {{ mandate.endsOn|format_date('short') }}</td></tr>{% endfor %}</tbody></table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

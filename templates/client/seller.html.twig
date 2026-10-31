@@ -1,0 +1,81 @@
+{% extends '@Estate/client/layout.html.twig' %}
+
+{% block estate_title %}{{ '@estate.seller.title'|trans }}{% endblock %}
+{% block estate_eyebrow %}<p class="estate-eyebrow">{{ mandate.organisation.name }} · {{ '@estate.seller.mandate'|trans({number: mandate.number ?? '—', kind: mandate.exclusive ? '@estate.seller.exclusive'|trans : '@estate.seller.simple'|trans, until: mandate.endsOn|format_date('long')}) }}</p>{% endblock %}
+{% block estate_lead %}{{ mandate.propertyName }}{% if mandate.fullAddress %} — {{ mandate.fullAddress }}{% endif %}{% endblock %}
+{% block estate_class %}estate-space estate-seller{% endblock %}
+{% block estate_actions %}
+    {% if mandates|length > 1 %}<nav class="estate-filters">{% for m in mandates %}<a href="{{ path('estate_seller', {mandat: m.id}) }}" {{ m == mandate ? 'aria-current="true"' }}>{{ m.number ?? m.propertyName }}</a>{% endfor %}</nav>{% endif %}
+    {% if folder %}<a class="estate-button is-ghost" href="{{ path('app_share', {path: folder|estate_folder}) }}"><i class="fa-solid fa-folder-open" aria-hidden="true"></i> {{ '@estate.seller.folder'|trans }}</a>{% endif %}
+{% endblock %}
+
+{% block estate_content %}
+<div class="estate-tiles">
+    <div class="estate-tile">
+        <span>{{ '@estate.seller.price'|trans }}</span>
+        <strong>{{ (sale ? sale.price : mandate.price)|euros }}</strong>
+        <small>{{ sale ? '@estate.seller.agreed'|trans({asked: mandate.price|euros}) : '@estate.seller.asked'|trans }}</small>
+    </div>
+    <div class="estate-tile">
+        <span>{{ '@estate.seller.visits'|trans }}</span>
+        <strong>{{ visits|length }}</strong>
+        <small>{{ visits|length ? '@estate.seller.last_visit'|trans({date: visits[0].visitedAt|format_date('short')}) : '@estate.seller.no_visit'|trans }}</small>
+    </div>
+    <div class="estate-tile">
+        <span>{{ '@estate.seller.offers'|trans }}</span>
+        <strong>{{ offers|length }}</strong>
+        <small>{{ '@estate.seller.offers_open'|trans({count: offers|filter(o => o.status.open)|length}) }}</small>
+    </div>
+    <div class="estate-tile">
+        <span>{{ '@estate.seller.step'|trans }}</span>
+        <strong>{{ ('@estate.sale_step.' ~ (sale ? sale.step.value : 'none'))|trans }}</strong>
+        <small>{% set next = sale ? sale.nextDate : null %}{{ next and next.date ? '@estate.seller.next_on'|trans({step: ('@estate.sale_step.' ~ next.step.value)|trans, date: next.date|format_date('short')}) : '@estate.seller.fee'|trans({fee: mandate.feeLabel, payer: ('@estate.fee_payer.' ~ mandate.feePayer.value)|trans}) }}</small>
+    </div>
+</div>
+
+<div class="estate-columns">
+<section class="estate-panel">
+    {{ include('@Estate/client/_sale_steps.html.twig', {sale: sale}) }}
+
+    <h2>{{ '@estate.seller.offers'|trans }}</h2>
+    {% if offers|length %}
+    <table class="estate-table">
+        <thead><tr><th>{{ '@estate.seller.offer'|trans }}</th><th class="is-num">{{ '@estate.seller.amount'|trans }}</th><th>{{ '@estate.seller.conditions'|trans }}</th><th>{{ '@estate.seller.state'|trans }}</th></tr></thead>
+        <tbody>
+        {% for offer in offers %}
+            <tr>
+                <td><strong>{{ offer.madeOn|format_date('short') }}</strong>{% if offer.status.value == 'accepted' %}<small>{{ offer.buyer.name }}</small>{% endif %}</td>
+                <td class="is-num">{{ offer.amount|euros }}{% if offer.counterAmount %}<small>{{ '@estate.seller.countered'|trans({amount: offer.counterAmount|euros}) }}</small>{% endif %}</td>
+                <td>{{ offer.loanCondition ? '@estate.seller.loan'|trans : '@estate.seller.no_loan'|trans }}{% if offer.validUntil %}<small>{{ '@estate.seller.valid_until'|trans({date: offer.validUntil|format_date('short')}) }}</small>{% endif %}</td>
+                <td><span class="estate-status is-{{ offer.status.value == 'accepted' ? 'paid' : (offer.status.open ? 'called' : 'late') }}">{{ ('@estate.offer_status.' ~ offer.status.value)|trans }}</span></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="estate-muted">{{ '@estate.seller.no_offer'|trans }}</p>
+    {% endif %}
+</section>
+
+<div class="estate-stack">
+    <section class="estate-panel">
+        <h2>{{ '@estate.seller.visits'|trans }}</h2>
+        <ul class="estate-list">
+            {% for visit in visits %}
+            <li><strong>{{ visit.visitedAt|format_date('long') }}</strong><span>{{ visit.feedback ?: '@estate.seller.no_feedback'|trans }}</span></li>
+            {% else %}
+            <li class="estate-muted">{{ '@estate.seller.no_visit'|trans }}</li>
+            {% endfor %}
+        </ul>
+    </section>
+    <section class="estate-panel">
+        <h2>{{ '@estate.seller.agency'|trans }}</h2>
+        <ul class="estate-list">
+            <li><strong>{{ mandate.organisation.name }}</strong><span>{{ mandate.organisation.fullAddress }}</span></li>
+            {% if mandate.organisation.email %}<li><a href="mailto:{{ mandate.organisation.email }}">{{ mandate.organisation.email }}</a></li>{% endif %}
+            <li><span>{{ '@estate.seller.terms'|trans({fee: mandate.feeLabel, payer: ('@estate.fee_payer.' ~ mandate.feePayer.value)|trans, from: mandate.startsOn|format_date('short'), until: mandate.endsOn|format_date('short')}) }}</span></li>
+        </ul>
+    </section>
+</div>
+</div>
+{% endblock %}

@@ -19,7 +19,8 @@ account, what a user is to the organisations (memoised per request, reset betwee
 | `contractorships(?User)` | their `Contractor` records |
 | `coOwnerships(?User)`, `ownerships(?User)`, `isCoOwnerOf(?User, Ownership)`, `holdersIn(?User, Ownership)` | their `OwnershipShare` records and the ownerships they name - none, and nothing read, while the site does not run `ownership` |
 | `mandators(?User)`, `isMandator(?User, Mandator)`, `mandates(?User)` | the owners their account is (`Mandator::$user`) and their mandates - none, and nothing read, while the site does not run `management` |
-| `of(?User)` | the spaces to offer, in order: `associate` (`estate_associate`), `tenant` (`estate_tenant`), `contractor` (`estate_contractor`), `coowner` (`estate_coowner`, [Shared ownership](usage-ownership.md#the-co-owners-space)), `owner` (`estate_owner`, [Property management](usage-management.md#the-owners-space)) |
+| `sellers(?User)`, `saleMandates(?User)`, `isSellerOf(?User, SaleMandate)`, `buyers(?User)`, `isBuyer(?User, Buyer)` | the sellers and buyers their account is, the sale mandates they sign - none, and nothing read, while the site does not run `transaction` |
+| `of(?User)` | the spaces to offer, in order: `associate` (`estate_associate`), `tenant` (`estate_tenant`), `contractor` (`estate_contractor`), `coowner` (`estate_coowner`, [Shared ownership](usage-ownership.md#the-co-owners-space)), `owner` (`estate_owner`, [Property management](usage-management.md#the-owners-space)), `seller` (`estate_seller`), `buyer` (`estate_buyer`, [Sales](usage-transaction.md#the-spaces)) |
 
 ## `EstateVoter`
 
@@ -35,6 +36,7 @@ account, what a user is to the organisations (memoised per request, reset betwee
 | `ESTATE_DOCUMENT_VIEW` | `Document` | see below |
 | `ESTATE_OWNERSHIP_VIEW` | `Ownership`, `OwnershipInvoice`, `OwnershipCall` | the ownership's co-owners; of the calls, only the co-owner called |
 | `ESTATE_MANDATE_VIEW` | `Mandator`, `Mandate`, `MandatePayout` | the owner (their account); the mandate's agency's management - for an owner, any organisation's |
+| `ESTATE_SALE_VIEW` | `SaleMandate`, `Visit`, `Offer`, `Sale`, `SaleEvent` | the mandate's sellers; of the offers and sales, their buyer too ([Sales](usage-transaction.md#the-spaces)) |
 
 ### Documents
 
@@ -59,6 +61,8 @@ they live there.
   certificate form, the messages, the work orders of the unit and a form to report one, the five
   last notices.
 - **Contractors** (`/artisan`): the work orders given to them, each at `/artisan/intervention/{id}`.
+- **Sellers** (`/vendeur`) and **buyers** (`/acquereur`), with the `transaction` activity: see
+  [Sales for third parties](usage-transaction.md#the-spaces).
 - **The management**: the back office.
 
 A user who is none of these gets a 403 on that space.
@@ -72,3 +76,4 @@ A user who is none of these gets a 403 on that space.
 | `estate_spaces()` | the signed-in user's spaces (`{key, route}`), for the header and "Mon accès" |
 | `estate_online_payment()` | whether online payment is on |
 | `x\|euros(round = false)` | cents as the pages write money: `1 234,56 €` (narrow no-break spaces), `—` for `null`; `round` drops the cents |
+| `path\|estate_folder` | a cloud folder's path as the cloud's links write it: omnibase/drive's `drive_slug` when the site has it (`drive.slugs`), the path as it is otherwise |

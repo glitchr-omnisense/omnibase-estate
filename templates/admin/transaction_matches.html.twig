@@ -1,0 +1,38 @@
+{% extends '@Admin/layout.html.twig' %}
+
+{% block page_title %}Biens pour {{ buyer.name }}{% endblock %}
+
+{% block content_header %}
+<div class="admin-header">
+    <span class="admin-header-icon"><i class="fa-solid fa-magnifying-glass-location"></i></span>
+    <div class="admin-header-titles">
+        <h1>Biens pour {{ buyer.name }}</h1>
+        <div class="admin-header-subtitle">{{ buyer.budget ? 'budget ' ~ buyer.budget|euros : 'budget non précisé' }}{% if buyer.kind %} · {{ ('kind.' ~ buyer.kind.value)|trans({}, 'estate') }}{% endif %}{% if buyer.minSurface %} · {{ buyer.minSurface }} m² et plus{% endif %}{% if buyer.minRooms %} · {{ buyer.minRooms }} pièces et plus{% endif %}{% if buyer.area %} · {{ buyer.area }}{% endif %} · {{ buyer.financing.label|lower }}</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{{ include('@Estate/admin/_ownership_style.html.twig') }}
+<div class="estate-own" style="max-width: 64rem">
+    <div class="card">
+        {% if matches %}
+        <table>
+            <thead><tr><th>Mandat</th><th>Bien</th><th class="num">Prix</th><th>Pourquoi</th><th></th></tr></thead>
+            <tbody>
+            {% for match in matches %}
+                <tr>
+                    <td><a href="{{ path('estate_admin_transaction_mandate', {id: match.mandate.id}) }}"><strong>{{ match.mandate.number }}</strong></a>{% if match.mandate.exclusive %} <small class="text-muted">exclusif</small>{% endif %}</td>
+                    <td>{{ match.mandate.propertyName }}{% if match.mandate.fullAddress %}<br><small class="text-muted">{{ match.mandate.fullAddress }}</small>{% endif %}</td>
+                    <td class="num">{{ match.mandate.price|euros }}</td>
+                    <td><small>{{ match.reasons|join(' · ') ?: 'rien ne l\'exclut' }}</small></td>
+                    <td class="actions" style="justify-content: flex-end"><a class="btn btn-sm btn-secondary" href="{{ path('admin_crud_visits_new', {mandate: match.mandate.id, buyer: buyer.id}) }}"><i class="fa-solid fa-door-open"></i> Visite</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}<p>Aucun mandat en cours ne correspond.</p>{% endif %}
+        <p class="text-muted" style="margin-top: .75rem">Les mandats en cours, ni sous offre acceptée ni vendus : au budget (jusqu'à 5 % au-dessus, à négocier), du type, de la surface et des pièces cherchés, dans le secteur. Ce que le mandat ne dit pas n'exclut rien.</p>
+    </div>
+</div>
+{% endblock %}

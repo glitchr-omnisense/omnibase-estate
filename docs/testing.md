@@ -29,7 +29,12 @@ rent called and collected for its owner with the dimensions owner and unit, the 
 an expense charged, the escrow account, the activity off: nothing), `Service/PayoutsTest` (what an
 owner is due, a payout issued, its SEPA file checked against the pain.001.001.03 schema, paid by
 hand or by the bank line), `Model/MandateStatementTest` (a month's statement's balances),
-`Service/OwnerSpacesTest`, `Admin/ManagementStatementPdfTest`, `Service/BooksTest` (a rent call and a work invoice posted with their unit on
+`Service/OwnerSpacesTest`, `Admin/ManagementStatementPdfTest`, `Service/TransactionsTest` (a sale mandate's
+number, an offer accepted and the steps in order - a step skipped refused -, the withdrawal
+period's end and the French holidays, the fee posted at the acte with its VAT by the party the
+mandate names and nothing before, a cancellation and the deposit the agency holds, a buyer
+matched, the activity off: nothing), `Service/TransactionSpacesTest` (the seller's and the buyer's
+spaces and what each may see), `Service/BooksTest` (a rent call and a work invoice posted with their unit on
 every line), the online payments, the webhook and the dashboard cards. In meyers' container:
 
 ```bash

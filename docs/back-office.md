@@ -32,6 +32,8 @@ public function configureWidgetItems(): iterable
 | assets | the associates |
 | ownership | the indivisions, their shares, shared invoices, calls for funds (`Ownership*`), the statements page (`estate_admin_ownership_statements`), the card `estate_ownership` ([Shared ownership](usage-ownership.md#the-back-office)) |
 | management | the owners, their mandates, the expenses charged to them, their payouts (`Mandator`, `Mandate*`), the statements and payouts pages (`estate_admin_management_statements`, `estate_admin_management_payouts`), the card `estate_management` ([Property management](usage-management.md#the-back-office)) |
+| transaction | the sale mandates, buyers, visits, offers (`SaleMandate`, `Buyer`, `Visit`, `Offer`, `Sale*`), the sales page (`estate_admin_transaction_sales`), the card `estate_transaction` ([Sales](usage-transaction.md#the-back-office)) |
+| management, transaction | the owners (`Mandator`: owners under management, sellers) |
 | every activity | the homes, their photos, the buildings, the company, the team, deadlines, invitations, the activity log, and everything not estate's (the books, the site) |
 
 A section left without items is left out. `ActivityMenu::allows($item)` and `activitiesOf($item)`

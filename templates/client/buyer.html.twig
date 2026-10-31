@@ -1,0 +1,36 @@
+{% extends '@Estate/client/layout.html.twig' %}
+
+{% block estate_title %}{{ '@estate.buyer.title'|trans }}{% endblock %}
+{% block estate_lead %}{{ buyer.name }}{% endblock %}
+{% block estate_class %}estate-space estate-buyer{% endblock %}
+{% block estate_actions %}
+    {% if folder %}<a class="estate-button is-ghost" href="{{ path('app_share', {path: folder|estate_folder}) }}"><i class="fa-solid fa-folder-open" aria-hidden="true"></i> {{ '@estate.buyer.folder'|trans }}</a>{% endif %}
+{% endblock %}
+
+{% block estate_content %}
+<div class="estate-columns">
+<section class="estate-panel">
+    {% if sale %}
+        <p class="estate-eyebrow">{{ sale.mandate.organisation.name }} · {{ sale.mandate.number }}</p>
+        <h2>{{ sale.mandate.propertyName }}{% if sale.mandate.fullAddress %} — {{ sale.mandate.fullAddress }}{% endif %}</h2>
+        <p>{{ '@estate.buyer.price'|trans({price: sale.price|euros}) }}{% if sale.mandate.feePayer.value == 'buyer' %} · {{ '@estate.buyer.fee'|trans({fee: sale.step.concluded ? sale.feeTotal|euros : sale.mandate.feeLabel}) }}{% endif %}</p>
+        {{ include('@Estate/client/_sale_steps.html.twig', {sale: sale}) }}
+    {% else %}
+        <p class="estate-muted">{{ '@estate.buyer.no_sale'|trans }}</p>
+    {% endif %}
+</section>
+
+<div class="estate-stack">
+    <section class="estate-panel">
+        <h2>{{ '@estate.buyer.offers'|trans }}</h2>
+        <ul class="estate-list">
+            {% for offer in offers %}
+            <li><strong>{{ offer.mandate.propertyName }} — {{ offer.amount|euros }}</strong><span>{{ offer.madeOn|format_date('short') }} · {{ ('@estate.offer_status.' ~ offer.status.value)|trans }}{% if offer.counterAmount and offer.status.open %} · {{ '@estate.seller.countered'|trans({amount: offer.counterAmount|euros}) }}{% endif %}</span></li>
+            {% else %}
+            <li class="estate-muted">{{ '@estate.buyer.no_offer'|trans }}</li>
+            {% endfor %}
+        </ul>
+    </section>
+</div>
+</div>
+{% endblock %}

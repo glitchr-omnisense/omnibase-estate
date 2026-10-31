@@ -1,0 +1,24 @@
+{# A sale's steps for the seller's and the buyer's spaces: each one's date, its details, its documents; nothing about the other party but their name on the accepted offer. #}
+{% if sale %}
+<h2>{{ '@estate.sale.title'|trans }}</h2>
+{% if sale.step.value == 'cancelled' %}
+<p class="estate-flash is-warning">{{ '@estate.sale.cancelled'|trans({date: sale.cancelledOn|format_date('long'), reason: sale.cancelReason}) }}</p>
+{% endif %}
+<table class="estate-table">
+    <tbody>
+    {% for step in constant('Base\\Estate\\Enum\\SaleStep::PATH') %}
+        {% set date = sale.dateOf(step) %}
+        <tr{{ date ? '' : ' class="estate-muted"' }}>
+            <td><strong>{{ ('@estate.sale_step.' ~ step.value)|trans }}</strong>
+                {% if step.value == 'compromise' and date %}<small>{{ sale.notary ? '@estate.sale.notary'|trans({notary: sale.notary}) ~ ' · ' }}{{ '@estate.sale.deposit'|trans({amount: sale.deposit|euros}) }}</small>{% endif %}
+                {% if step.value == 'withdrawal' and sale.withdrawalEndsOn and not date %}<small>{{ '@estate.sale.withdrawal_until'|trans({date: sale.withdrawalEndsOn|format_date('long')}) }}</small>{% endif %}
+                {% if step.value == 'conditions' and sale.loanDeadline and not date %}<small>{{ '@estate.sale.loan_by'|trans({date: sale.loanDeadline|format_date('long')}) }}</small>{% endif %}
+                {% if step.value == 'deed' and sale.deedPlannedOn and not date %}<small>{{ '@estate.sale.deed_planned'|trans({date: sale.deedPlannedOn|format_date('long')}) }}</small>{% endif %}
+                {% for event in sale.events|filter(e => e.step == step and e.hasFile) %}<small><a href="{{ path('estate_transaction_document', {id: event.id}) }}" target="_blank" rel="noopener"><i class="fa-solid fa-paperclip" aria-hidden="true"></i> {{ event.fileName ?? ('@estate.sale.document'|trans) }}</a></small>{% endfor %}
+            </td>
+            <td class="is-num">{{ date ? date|format_date('short') : '—' }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endif %}

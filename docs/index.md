@@ -28,6 +28,9 @@ from what they are to the organisation, never from a role stored on the account.
 - **Owners under management** (`/proprietaire`, with the `management` activity): their homes and
   tenants, their account, their statements (comptes rendus de gérance), their payouts, their
   cloud folder.
+- **Sellers and buyers** (`/vendeur`, `/acquereur`, with the `transaction` activity): a seller's
+  mandate, its visits and offers, the sale's steps and documents; a buyer's offers and, once one
+  is accepted, the sale's steps; the sale's cloud folder.
 - **The public**: the published homes (`/biens`), a visit request, an application form.
 
 ## How this manual is organised
@@ -44,6 +47,9 @@ from what they are to the organisation, never from a role stored on the account.
 - [Property management for third parties](usage-management.md): owners, mandates, rents to the
   owners' accounts, fees with VAT, expenses, statements, payouts and the SEPA file, the escrow
   account, the owner's space and folder, and how it is kept in the books.
+- [Sales for third parties](usage-transaction.md): sellers, sale mandates, buyers matched,
+  visits, offers, the sale's French steps and the withdrawal period, the fee at the acte with its
+  VAT, the deposit, the seller's and the buyer's spaces and folder, and how it is kept in the books.
 - [Works, documents and messages](usage-works.md): work orders, files, the tenants' messages,
   notices.
 - [The public site and applications](usage-applications.md): the homes, visits, applications.

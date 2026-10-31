@@ -74,8 +74,8 @@ default, `[assets]`, keeps a site as it was. `Base\Estate\Service\Activities` an
 
 What the back office shows follows it ([The back office](back-office.md#activities)). Ownership
 has its screens, postings and space ([Shared ownership](usage-ownership.md)), management too
-([Property management for third parties](usage-management.md)); transaction has none of its own
-yet: it comes in the next step.
+([Property management for third parties](usage-management.md)), and transaction
+([Sales for third parties](usage-transaction.md)).
 
 ## Services
 

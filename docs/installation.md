@@ -18,7 +18,7 @@ What it suggests, each loaded only when present (`config/services.php`):
 | `omnibase/ledger` | rent calls, payments and work invoices posted to the organisation's book (`Service\Books`); bank lines reconciled with rent calls pay them (`Ledger\BankSettlement`), and no longer once taken back (`Ledger\BankUnsettlement`); associates read the books (`Ledger\AssociateBookAccess`) and their accounts in their space (`Ledger\CompanyAccounts`) |
 | `omnisense/omnitrade` with `omnitrade/stripe` | rents paid online by card or SEPA debit (`Service\OnlinePayments`) |
 | `dompdf/dompdf` | notices, receipts and certificates as PDF (without it, printable pages) |
-| `omnibase/drive` | a shared ownership's folder, shared with its co-owners (`Drive\OwnershipFolders`); an owner's folder under management, shared with them read-only (`Drive\MandatorFolders`) |
+| `omnibase/drive` | a shared ownership's folder, shared with its co-owners (`Drive\OwnershipFolders`); an owner's folder under management, shared with them read-only (`Drive\MandatorFolders`); a sale mandate's folder, shared read-only with its sellers and its buyer (`Drive\SaleFolders`) |
 | `omnibank/files` | the owners' payouts as a SEPA credit transfer file, pain.001.001.03 (`Management::sepa()`) |
 | `omnisense/omnistate` (with `omnistate/annuaire-entreprises`, `omnistate/vies`) | a company's identity read from the registers (`Service\CompanyRecords`, `estate:company:refresh`) |
 
@@ -66,6 +66,9 @@ estate_controller:
 | `estate_coowner_statement` | `/indivision/{id}/releve/{period}` | a co-owner of the ownership |
 | `estate_owner` | `/proprietaire` (`?mandat=<id>`) | an owner under management (the `management` activity) |
 | `estate_owner_statement` | `/proprietaire/{id}/compte-rendu/{period}` | the mandate's owner |
+| `estate_seller` | `/vendeur` (`?mandat=<id>`) | a seller of a sale mandate (the `transaction` activity) |
+| `estate_buyer` | `/acquereur` | a buyer (the `transaction` activity) |
+| `estate_transaction_document` | `/vente/document/{id}` | the sale's sellers and buyer |
 | `estate_document` | `/fichier/{id}` | whoever may see the document |
 | `estate_admin_*` | `/admin/estate/...` | `ROLE_ADMIN` ([The back office](back-office.md)) |
 
@@ -98,7 +101,8 @@ deadline, activity, application, message, invitation; with the shared ownerships
 the site runs `ownership`, but mapped: migrate them anyway) ownership, ownership_unit,
 ownership_share, ownership_invoice, ownership_call, ownership_payment; with property management
 (read only when the site runs `management`, mapped all the same) mandator, mandate, mandate_unit,
-mandate_fee, mandate_expense, mandate_payout. omnibase/ledger's `ledger_bank_account` has an
+mandate_fee, mandate_expense, mandate_payout; with sales (read only when the site runs
+`transaction`) sale_mandate, sale_mandate_seller, buyer, visit, offer, sale, sale_event. omnibase/ledger's `ledger_bank_account` has an
 `escrow` column (the escrow account).
 
 ## The crons

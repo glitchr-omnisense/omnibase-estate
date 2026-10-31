@@ -3,10 +3,42 @@
 ## [Unreleased]
 
 ### Changed
+- The owners' screen (« Propriétaires », `MandatorCrudController`) serves management and
+  transaction: its management actions and folder only while the site runs management.
 - `Model\OwnershipPeriod` is `Model\Period`: the statements' periods, the co-owners' and the
   owners'.
 
 ### Added
+- Sales for third parties, the `transaction` activity: the seller is an owner (`Entity\Mandator`,
+  shared with management: one record, one account), `Entity\SaleMandate` (its sellers -
+  `estate_sale_mandate_seller` -, the agency, one of the homes or a property described in place,
+  the asking price, simple or exclusive, from / until, the fee - `Enum\FeeBasis`, a percentage of
+  the price or a fixed amount, all taxes included -, `Enum\FeePayer`, its VAT code, `V20` by
+  default, who holds the deposit; numbered `VT-<year>-<n>`), `Entity\Buyer` (what they look for,
+  `Enum\Financing`), `Entity\Visit`, `Entity\Offer` (`Enum\OfferStatus`: made, countered,
+  accepted, refused, withdrawn), `Entity\Sale` and its steps (`Enum\SaleStep`: offer accepted,
+  compromis signed, withdrawal period over, conditions lifted, acte signed, closed, or cancelled
+  with its reason), each dated with its documents (`Entity\SaleEvent`), moved one at a time by
+  `Service\Transactions::advance()` (a step skipped refused); the withdrawal period's end
+  (`Model\WithdrawalPeriod`: ten days from the day after the notification, the next working day,
+  the French public holidays with Easter's, Alsace-Moselle's on demand). In the agency's book
+  (`Ledger\TransactionBooks`, loi Hoguet): nothing before the acte; at the acte the fee invoiced
+  (`FH-<year>-<n>`) to the seller or the buyer, 411 (omnibase/ledger's `PartyKind::CUSTOMER`) /
+  7062 + 44571 when the book is liable; the deposit recorded, posted only when the agency holds it
+  (escrow account / 467 the buyer, out at the acte or the cancellation); every line marked
+  `transaction=<id>` (`Ledger\TransactionDimensionLabeler`) and `unit=<id>`. A buyer matched
+  against the mandates (`Transactions::matches()`). The seller's space `/vendeur` and the buyer's
+  `/acquereur` (`Controller\Client\TransactionController`, `Spaces::sellers()`, `saleMandates()`,
+  `buyers()`, `seller` and `buyer` in `Spaces::of()`, `EstateVoter::SALE_VIEW`); with
+  omnibase/drive, optional, the folder `Transactions/<number>` shared read-only with the sellers
+  and the accepted offer's buyer, each step's document in it (`Drive\SaleFolders`). The back
+  office: sale mandates, buyers, visits, offers, a mandate's page (its visits, offers - accept,
+  counter, refuse, withdrawn -, the sale's steps and the next one's form, cancel), the sales page,
+  a buyer's matches, the dashboard card `estate_transaction`; all only with the activity
+  (`ActivityMenu`; the owners' screen with management or transaction). Seven tables (a migration
+  in the application). `docs/usage-transaction.md`.
+- The Twig filter `estate_folder`: a cloud folder's link through omnibase/drive's `drive_slug` when
+  the site has it.
 - Property management for third parties, the `management` activity: `Entity\Mandator` (an
   owner, a person or a company, their IBAN and BIC, their account, their cloud folder),
   `Entity\Mandate` (the owner, the agency, the homes - `estate_mandate_unit`, nothing changes on

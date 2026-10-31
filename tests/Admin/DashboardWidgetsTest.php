@@ -226,4 +226,39 @@ class DashboardWidgetsTest extends TestCase
         $off = $this->render(new Dashboard\ManagementWidgetType($this->entityManager(), $management, $mandates, $payouts, new \Base\Estate\Service\Activities(['assets'])));
         self::assertStringContainsString('aucun compte rendu à envoyer', $off, 'the activity off: nothing read');
     }
+
+    public function testTransactionFeesSalesOffersAndEndingMandates(): void
+    {
+        $seller = new \Base\Estate\Entity\Mandator('Hélène Roth');
+        $mandate = (new \Base\Estate\Entity\SaleMandate($this->organisation, new \DateTimeImmutable('2026-09-01')))->setNumber('VT-2026-0001')->addSeller($seller)
+            ->setKind(\Base\Estate\Enum\UnitKind::APARTMENT)->setRooms(3)->setCity('Strasbourg')->setPrice(31000000);
+        (new \ReflectionProperty($mandate, 'id'))->setValue($mandate, 9);
+        $ending = (new \Base\Estate\Entity\SaleMandate($this->organisation, new \DateTimeImmutable('2026-08-01')))->setNumber('VT-2026-0004')->setKind(\Base\Estate\Enum\UnitKind::HOUSE)->setCity('Obernai')->setEndsOn(new \DateTimeImmutable('2026-11-20'));
+        (new \ReflectionProperty($ending, 'id'))->setValue($ending, 12);
+        $offer = new \Base\Estate\Entity\Offer($mandate, new \Base\Estate\Entity\Buyer('Lucas Martin'), 30000000);
+        $sale = (new \Base\Estate\Entity\Sale($offer, new \DateTimeImmutable('2026-10-08')))->setStep(\Base\Estate\Enum\SaleStep::COMPROMISE)->setWithdrawalEndsOn(new \DateTimeImmutable('2026-11-02'));
+        $transactions = $this->createStub(\Base\Estate\Service\Transactions::class);
+        $transactions->method('isActive')->willReturn(true);
+        $transactions->method('feesOfQuarter')->willReturn(['period' => '2026-Q4', 'invoiced' => 800000, 'expected' => 1500000, 'total' => 2300000, 'count' => 2]);
+        $transactions->method('salesInProgress')->willReturn([$sale]);
+        $transactions->method('offersWaiting')->willReturn([new \Base\Estate\Entity\Offer($ending, new \Base\Estate\Entity\Buyer('Inès Roux'), 41000000)]);
+        $transactions->method('ending')->willReturn([$ending]);
+
+        $html = $this->render(new Dashboard\TransactionWidgetType($this->entityManager(), $transactions));
+
+        self::assertStringContainsString('<h2 class="dash-card-title">Transactions</h2>', $html);
+        self::assertStringContainsString('trimestre 2026-Q4', $html);
+        self::assertMatchesRegularExpression('/23\s000\s€/u', $html, 'the quarter\'s fees, invoiced and expected');
+        self::assertStringContainsString('ce trimestre, 2 ventes', $html);
+        self::assertStringContainsString('Appartement 3 pièces, Strasbourg', $html);
+        self::assertStringContainsString('Délai de rétractation purgé : 02/11/2026', $html, 'the sale\'s next step and its date');
+        self::assertStringContainsString('1 offre à répondre', $html);
+        self::assertStringContainsString('VT-2026-0004 prend fin le', $html);
+
+        $off = $this->createStub(\Base\Estate\Service\Transactions::class);
+        $off->method('feesOfQuarter')->willReturn(['period' => '2026-Q4', 'invoiced' => 0, 'expected' => 0, 'total' => 0, 'count' => 0]);
+        $html = $this->render(new Dashboard\TransactionWidgetType($this->entityManager(), $off));
+        self::assertStringContainsString('Aucune vente en cours', $html, 'the activity off: Transactions answers nothing');
+        self::assertStringNotContainsString('estate_admin_transaction_sales', $html, 'and no link to its pages');
+    }
 }

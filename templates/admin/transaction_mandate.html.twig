@@ -1,0 +1,149 @@
+{% extends '@Admin/layout.html.twig' %}
+
+{% block page_title %}{{ mandate.number }} — {{ mandate.propertyName }}{% endblock %}
+
+{% block content_header %}
+<div class="admin-header">
+    <span class="admin-header-icon"><i class="fa-solid fa-sign-hanging"></i></span>
+    <div class="admin-header-titles">
+        <h1>{{ mandate.number ?? 'Mandat de vente' }} — {{ mandate.propertyName }}</h1>
+        <div class="admin-header-subtitle">{{ mandate.sellersSummary }} · {{ mandate.exclusive ? 'exclusif' : 'simple' }} · du {{ mandate.startsOn|format_date('short') }} au {{ mandate.endsOn|format_date('short') }}{% if not mandate.covers(today) and not sale %} · <strong>expiré</strong>{% endif %}</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{{ include('@Estate/admin/_ownership_style.html.twig') }}
+<style>
+    .estate-sale-steps { display: grid; gap: .25rem; list-style: none; margin: 0; padding: 0; }
+    .estate-sale-steps li { display: grid; grid-template-columns: 1.5rem 1fr auto; gap: .5rem; align-items: baseline; padding: .35rem 0; border-bottom: 1px solid rgba(0,0,0,.06); }
+    .estate-sale-steps li.is-todo { opacity: .5; }
+    .estate-sale-steps small { display: block; opacity: .75; }
+    .estate-own .row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    @media (max-width: 640px) { .estate-own .row3 { grid-template-columns: 1fr; } }
+</style>
+<div class="estate-own" style="max-width: 72rem">
+    <div class="card"><dl>
+        <dt>Bien</dt><dd>{{ mandate.propertyName }}{% if mandate.fullAddress %} <small class="text-muted">— {{ mandate.fullAddress }}</small>{% endif %}{% if mandate.surface %} · {{ mandate.surface|number_format(0, ',', ' ') }} m²{% endif %}{% if mandate.rooms %} · {{ mandate.rooms }} pièces{% endif %}</dd>
+        <dt>Prix demandé</dt><dd>{{ mandate.price|euros }}</dd>
+        <dt>Honoraires</dt><dd>{{ mandate.feeLabel }}, à la charge {{ mandate.feePayer.value == 'buyer' ? 'de l\'acquéreur' : 'du vendeur' }} · {{ fee[0]|euros }} TTC sur {{ (sale ? sale.price : mandate.price)|euros }}{% if fee[2] %} (dont {{ fee[2]|euros }} de TVA){% endif %}</dd>
+        <dt>Séquestre</dt><dd>{{ mandate.depositHeldByAgency ? 'détenu par l\'agence (compte séquestre)' : 'détenu par le notaire' }}</dd>
+        {% if mandate.folder and cloud %}<dt>Dossier</dt><dd><a href="{{ path('app_share', {path: mandate.folder|estate_folder}) }}"><i class="fa-solid fa-folder-open"></i> {{ mandate.folder }}</a></dd>{% endif %}
+    </dl>
+    <p class="actions" style="margin-top: .75rem">
+        <a class="btn btn-sm btn-secondary" href="{{ path('admin_crud_sale_mandates_edit', {entityId: mandate.id}) }}"><i class="fa-solid fa-pen"></i> Modifier le mandat</a>
+        <a class="btn btn-sm btn-secondary" href="{{ path('admin_crud_visits_new', {mandate: mandate.id}) }}"><i class="fa-solid fa-door-open"></i> Noter une visite</a>
+        <a class="btn btn-sm btn-secondary" href="{{ path('admin_crud_offers_new', {mandate: mandate.id}) }}"><i class="fa-solid fa-hand-holding-dollar"></i> Saisir une offre</a>
+    </p></div>
+
+    {% if sale %}
+    <div class="card">
+        <h2 class="h5">Vente à {{ sale.buyer.name }} — {{ sale.price|euros }}</h2>
+        <ol class="estate-sale-steps">
+            {% for step in steps %}
+                {% set date = sale.dateOf(step) %}
+                <li class="{{ date ? '' : 'is-todo' }}">
+                    <i class="fa-solid {{ date ? 'fa-circle-check is-good' : 'fa-circle' }}"></i>
+                    <span><strong>{{ step.label }}</strong>
+                        {% if step.value == 'compromise' and date %}<small>{{ sale.notary ? 'Notaire : ' ~ sale.notary ~ ' · ' }}dépôt {{ sale.deposit|euros }} ({{ sale.depositHeldByAgency ? 'séquestre de l\'agence' : 'chez le notaire' }}) · notifié le {{ sale.compromiseNotifiedOn|format_date('short') }}</small>{% endif %}
+                        {% if step.value == 'withdrawal' and sale.withdrawalEndsOn %}<small>Délai de rétractation jusqu'au {{ sale.withdrawalEndsOn|format_date('long') }} inclus</small>{% endif %}
+                        {% if step.value == 'conditions' and sale.loanDeadline %}<small>Prêt à obtenir avant le {{ sale.loanDeadline|format_date('long') }}</small>{% endif %}
+                        {% if step.value == 'deed' %}<small>{% if sale.deedSignedOn %}Honoraires {{ sale.invoiceNumber }} : {{ sale.feeTotal|euros }} TTC ({{ sale.feeAmount|euros }} HT{% if sale.feeVat %} + {{ sale.feeVat|euros }} TVA{% endif %}), à la charge {{ sale.feePayer.value == 'buyer' ? 'de l\'acquéreur' : 'du vendeur' }}{% elseif sale.deedPlannedOn %}Prévu le {{ sale.deedPlannedOn|format_date('long') }}{% endif %}</small>{% endif %}
+                        {% for event in sale.events|filter(e => e.step == step) %}{% if event.note or event.hasFile %}<small>{{ event.note }}{% if event.hasFile %} <a href="{{ path('estate_transaction_document', {id: event.id}) }}" target="_blank" rel="noopener"><i class="fa-solid fa-paperclip"></i> {{ event.fileName ?? 'document' }}</a>{% endif %}</small>{% endif %}{% endfor %}
+                    </span>
+                    <span class="num">{{ date ? date|format_date('short') }}</span>
+                </li>
+            {% endfor %}
+        </ol>
+
+        {% set next = sale.step.next %}
+        {% if next %}
+        <form method="post" enctype="multipart/form-data" action="{{ path('estate_admin_transaction_advance', {id: sale.id}) }}" style="margin-top: 1rem">
+            <input type="hidden" name="_token" value="{{ csrf_token('estate_transaction_sale_' ~ sale.id) }}"><input type="hidden" name="step" value="{{ next.value }}">
+            <h3 class="h6">Étape suivante : {{ next.label }}</h3>
+            {% set defaultOn = next.value == 'withdrawal' and sale.withdrawalEndsOn ? max(sale.withdrawalEndsOn|date_modify('+1 day'), today) : today %}
+            <div class="row3">
+                <label>{{ {compromise: 'Signé le', withdrawal: 'Purgé le', conditions: 'Levées le', deed: 'Signé le', closed: 'Clos le'}[next.value] }}<input class="form-control" type="date" name="on" value="{{ defaultOn|date('Y-m-d') }}" required></label>
+                {% if next.value == 'compromise' %}
+                    <label>Notifié à l'acquéreur le<input class="form-control" type="date" name="notifiedOn" value="{{ today|date('Y-m-d') }}"><small class="text-muted">remise en main propre, ou 1re présentation du recommandé</small></label>
+                    <label>Notaire<input class="form-control" name="notary" placeholder="Me …"></label>
+                    <label>Dépôt de garantie (€)<input class="form-control" name="deposit" inputmode="decimal" value="{{ (sale.price * 5 / 10000)|round }}"><small class="text-muted">{{ mandate.depositHeldByAgency ? (books ? 'sur le compte séquestre de l\'agence : comptabilisé' : 'détenu par l\'agence') : 'chez le notaire : noté, pas comptabilisé' }}</small></label>
+                    <label>Prêt à obtenir avant le<input class="form-control" type="date" name="loanDeadline"></label>
+                    <label>Acte prévu le<input class="form-control" type="date" name="deedPlannedOn"></label>
+                {% elseif next.value == 'conditions' %}
+                    <label>Acte prévu le<input class="form-control" type="date" name="deedPlannedOn" value="{{ sale.deedPlannedOn ? sale.deedPlannedOn|date('Y-m-d') }}"></label>
+                {% endif %}
+            </div>
+            {% if next.value == 'withdrawal' and sale.withdrawalEndsOn and sale.withdrawalEndsOn >= today %}<p class="text-muted"><i class="fa-solid fa-hourglass-half"></i> L'acquéreur peut se rétracter jusqu'au {{ sale.withdrawalEndsOn|format_date('long') }} inclus.</p>{% endif %}
+            {% if next.value == 'deed' %}<p class="text-muted">À l'acte, la vente est conclue (loi Hoguet) : les honoraires, {{ fee[0]|euros }} TTC, sont facturés {{ mandate.feePayer.value == 'buyer' ? 'à l\'acquéreur' : 'au vendeur' }}{{ books ? ' et comptabilisés en produit' }}{% if sale.depositHeldByAgency and sale.deposit %} ; le séquestre de {{ sale.deposit|euros }} est versé au notaire{% endif %}.</p>{% endif %}
+            <div class="row2">
+                <label>Note<input class="form-control" name="note" placeholder="Quelques mots"></label>
+                <label>Document<input class="form-control" type="file" name="file" accept="application/pdf,image/*"></label>
+            </div>
+            <div class="actions"><button class="btn btn-success" type="submit"><i class="fa-solid fa-forward-step"></i> {{ next.label }}</button></div>
+        </form>
+        {% endif %}
+
+        {% if sale.step.live and not sale.step.concluded %}
+        <details style="margin-top: 1rem"><summary class="text-muted">Annuler la vente</summary>
+            <form method="post" action="{{ path('estate_admin_transaction_cancel', {id: sale.id}) }}" style="margin-top: .5rem">
+                <input type="hidden" name="_token" value="{{ csrf_token('estate_transaction_sale_' ~ sale.id) }}">
+                <div class="row2">
+                    <label>Motif<input class="form-control" name="reason" required placeholder="Rétractation, prêt refusé, préemption…"></label>
+                    <label>Le<input class="form-control" type="date" name="on" value="{{ today|date('Y-m-d') }}"></label>
+                </div>
+                {% if sale.depositHeldByAgency and sale.deposit %}<label style="display: flex; gap: .5rem; align-items: center; font-weight: 500"><input type="checkbox" name="forfeited" value="1"> Le dépôt de {{ sale.deposit|euros }} reste acquis au vendeur (sinon restitué à l'acquéreur)</label>{% endif %}
+                <div class="actions"><button class="btn btn-danger" type="submit"><i class="fa-solid fa-ban"></i> Annuler la vente</button></div>
+            </form>
+        </details>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <h2 class="h5">Offres</h2>
+        {% if offers %}
+        <table>
+            <thead><tr><th>Acquéreur</th><th>Faite le</th><th class="num">Montant</th><th>Conditions</th><th>État</th><th></th></tr></thead>
+            <tbody>
+            {% for offer in offers %}
+                <tr>
+                    <td><strong>{{ offer.buyer.name }}</strong><br><small class="text-muted">{{ offer.buyer.financing.label }}{% if offer.buyer.loanAmount %} · prêt {{ offer.buyer.loanAmount|euros }}{% endif %}</small></td>
+                    <td>{{ offer.madeOn|format_date('short') }}</td>
+                    <td class="num">{{ offer.amount|euros }}{% if offer.counterAmount %}<br><small class="text-muted">contre-proposition {{ offer.counterAmount|euros }}</small>{% endif %}</td>
+                    <td><small>{{ offer.loanCondition ? 'Prêt' ~ (offer.loanAmount ? ' de ' ~ offer.loanAmount|euros) : 'Sans condition de prêt' }}{% if offer.validUntil %} · jusqu'au {{ offer.validUntil|format_date('short') }}{% endif %}{% if offer.conditions %} · {{ offer.conditions }}{% endif %}</small></td>
+                    <td>{{ offer.status.label }}{% if offer.decidedOn %} <small class="text-muted">le {{ offer.decidedOn|format_date('short') }}</small>{% endif %}</td>
+                    <td class="actions" style="justify-content: flex-end">
+                        {% if offer.status.open %}
+                        <form method="post" action="{{ path('estate_admin_transaction_offer', {id: offer.id}) }}" class="actions" style="display: flex">
+                            <input type="hidden" name="_token" value="{{ csrf_token('estate_transaction_offer_' ~ offer.id) }}">
+                            {% if not sale %}<button class="btn btn-sm btn-success" name="do" value="accept"><i class="fa-solid fa-check"></i> Accepter{{ offer.counterAmount ? ' à ' ~ offer.counterAmount|euros }}</button>{% endif %}
+                            <input class="form-control form-control-sm" name="amount" inputmode="decimal" placeholder="Contre-proposition (€)" style="max-width: 11rem">
+                            <button class="btn btn-sm btn-secondary" name="do" value="counter">Contre-proposer</button>
+                            <button class="btn btn-sm btn-secondary" name="do" value="refuse">Refuser</button>
+                            <button class="btn btn-sm btn-secondary" name="do" value="withdraw" title="L'acquéreur retire son offre">Retirée</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}<p class="text-muted">Aucune offre pour l'instant.</p>{% endif %}
+    </div>
+
+    <div class="card">
+        <h2 class="h5">Visites ({{ visits|length }})</h2>
+        {% if visits %}
+        <table>
+            <thead><tr><th>Le</th><th>Acquéreur</th><th>Retour</th></tr></thead>
+            <tbody>{% for visit in visits %}<tr><td>{{ visit.visitedAt|format_datetime('short', 'short') }}</td><td>{{ visit.buyer.name }}</td><td>{{ visit.feedback ?: '—' }}</td></tr>{% endfor %}</tbody>
+        </table>
+        {% else %}<p class="text-muted">Aucune visite notée.</p>{% endif %}
+    </div>
+
+    {% for old in cancelled %}
+    <div class="card"><p class="text-muted" style="margin: 0"><i class="fa-solid fa-ban"></i> Vente à {{ old.buyer.name }} ({{ old.price|euros }}) annulée le {{ old.cancelledOn|format_date('short') }} : {{ old.cancelReason }}{% if old.depositHeldByAgency and old.deposit %} — dépôt {{ old.depositForfeited ? 'versé au vendeur' : 'restitué' }}{% endif %}</p></div>
+    {% endfor %}
+</div>
+{% endblock %}

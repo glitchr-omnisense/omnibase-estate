@@ -8,3 +8,4 @@ estate_widget:
   payments: "Money in"
   ownership: "Shared ownerships"
   management: "Property management"
+  transaction: "Sales"

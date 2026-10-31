@@ -10,7 +10,7 @@ use Symfony\Contracts\Service\ResetInterface;
 use Twig\Attribute\AsTwigFilter;
 use Twig\Attribute\AsTwigFunction;
 
-/** The spaces the header offers, money in euros as the pages write it, estate_once() (a style shared by the dashboard's cards, written once a page), and the activities the site runs (estate_activity('ownership'), estate_activities()). */
+/** The spaces the header offers, money in euros as the pages write it, a cloud folder's link (estate_folder), estate_once() (a style shared by the dashboard's cards, written once a page), and the activities the site runs (estate_activity('ownership'), estate_activities()). */
 class EstateExtension implements ResetInterface
 {
     /** @var array<string, true> */
@@ -79,5 +79,18 @@ class EstateExtension implements ResetInterface
         $formatted = number_format($cents / 100, $round ? 0 : 2, ',', ' ');
 
         return str_replace(' ', "\u{202F}", $formatted)."\u{00A0}€";
+    }
+
+    /**
+     * A cloud folder's path as the cloud's links write it: through
+     * omnibase/drive's drive_slug filter when the site has it (drive.slugs),
+     * as it is otherwise - estate does not require omnibase/drive.
+     */
+    #[AsTwigFilter('estate_folder', needsEnvironment: true)]
+    public function folder(\Twig\Environment $twig, ?string $path): string
+    {
+        $slug = $twig->getFilter('drive_slug')?->getCallable();
+
+        return \is_callable($slug) ? (string) $slug((string) $path) : (string) $path;
     }
 }

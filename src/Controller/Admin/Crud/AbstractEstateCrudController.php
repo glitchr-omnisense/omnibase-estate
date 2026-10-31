@@ -34,8 +34,9 @@ abstract class AbstractEstateCrudController extends AbstractCrudController
         'Document' => ['Document', 'Documents des biens'], 'Application' => ['Candidature', 'Candidatures'],
         'Ownership' => ['Indivision', 'Indivisions'], 'OwnershipShare' => ['Quote-part', 'Quotes-parts des indivisaires'],
         'OwnershipInvoice' => ['Facture partagée', 'Factures partagées'], 'OwnershipCall' => ['Appel de fonds', 'Appels de fonds'],
-        'Mandator' => ['Propriétaire', 'Propriétaires en gérance'], 'Mandate' => ['Mandat de gestion', 'Mandats de gestion'],
+        'Mandator' => ['Propriétaire', 'Propriétaires'], 'Mandate' => ['Mandat de gestion', 'Mandats de gestion'],
         'MandateExpense' => ['Dépense pour un propriétaire', 'Dépenses des propriétaires'], 'MandatePayout' => ['Reversement', 'Reversements aux propriétaires'],
+        'SaleMandate' => ['Mandat de vente', 'Mandats de vente'], 'Buyer' => ['Acquéreur', 'Acquéreurs'], 'Visit' => ['Visite', 'Visites'], 'Offer' => ['Offre d\'achat', 'Offres d\'achat'],
     ];
 
     public function configureCrud(Crud $crud): Crud
@@ -95,6 +96,37 @@ abstract class AbstractEstateCrudController extends AbstractCrudController
         }
 
         return $reflection->newInstanceArgs($arguments);
+    }
+
+    /**
+     * A new visit or offer opened from a mandate's page or a buyer's matches
+     * (?mandate=<id>, ?buyer=<id>), on the latest mandate and buyer
+     * otherwise: ordinary fields to change.
+     *
+     * @template T of \Base\Estate\Entity\Visit|\Base\Estate\Entity\Offer
+     *
+     * @param T $record
+     *
+     * @return T
+     */
+    protected function prefillSale(\Base\Estate\Entity\Visit|\Base\Estate\Entity\Offer $record): object
+    {
+        if (null === $this->estateEntityManager) {
+            return $record;
+        }
+        $query = $this->container->has('request_stack') ? $this->container->get('request_stack')->getCurrentRequest()?->query : null;
+        $mandate = ($id = $query?->getInt('mandate')) ? $this->estateEntityManager->find(\Base\Estate\Entity\SaleMandate::class, $id) : null;
+        $buyer = ($id = $query?->getInt('buyer')) ? $this->estateEntityManager->find(\Base\Estate\Entity\Buyer::class, $id) : null;
+        $mandate ??= $this->estateEntityManager->getRepository(\Base\Estate\Entity\SaleMandate::class)->findOneBy([], ['id' => 'DESC']);
+        $buyer ??= $this->estateEntityManager->getRepository(\Base\Estate\Entity\Buyer::class)->findOneBy([], ['id' => 'DESC']);
+        if (null !== $mandate) {
+            $record->setMandate($mandate);
+        }
+        if (null !== $buyer) {
+            $record->setBuyer($buyer);
+        }
+
+        return $record;
     }
 
     /** A token in the action's link: a link from elsewhere, a prefetch, does nothing (ActionController checks it). */

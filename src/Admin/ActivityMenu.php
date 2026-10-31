@@ -5,6 +5,7 @@ namespace Base\Estate\Admin;
 use Base\Admin\Config\Menu\MenuItem;
 use Base\Estate\Entity\Application;
 use Base\Estate\Entity\Associate;
+use Base\Estate\Entity\Buyer;
 use Base\Estate\Entity\Contractor;
 use Base\Estate\Entity\Document;
 use Base\Estate\Entity\Lease;
@@ -15,6 +16,7 @@ use Base\Estate\Entity\MandateFee;
 use Base\Estate\Entity\MandatePayout;
 use Base\Estate\Entity\Mandator;
 use Base\Estate\Entity\Notice;
+use Base\Estate\Entity\Offer;
 use Base\Estate\Entity\Ownership;
 use Base\Estate\Entity\OwnershipCall;
 use Base\Estate\Entity\OwnershipInvoice;
@@ -22,6 +24,10 @@ use Base\Estate\Entity\OwnershipPayment;
 use Base\Estate\Entity\OwnershipShare;
 use Base\Estate\Entity\Payment;
 use Base\Estate\Entity\RentCall;
+use Base\Estate\Entity\Sale;
+use Base\Estate\Entity\SaleEvent;
+use Base\Estate\Entity\SaleMandate;
+use Base\Estate\Entity\Visit;
 use Base\Estate\Entity\WorkOrder;
 use Base\Estate\Enum\Activity;
 use Base\Estate\Service\Activities;
@@ -42,7 +48,9 @@ use Base\Estate\Service\Activities;
  * invoices, calls for funds, statements and their dashboard card - to
  * ownership; the owners under management - their mandates, the expenses
  * charged to them, their payouts, statements and dashboard card - to
- * management. The rest - homes, buildings, the company, its team,
+ * management; the sales - sale mandates, buyers, visits, offers, sales and
+ * their dashboard card - to transaction, the owners (sellers too) to
+ * management and transaction. The rest - homes, buildings, the company, its team,
  * deadlines, the books - to every activity. A section left without items
  * is left out.
  */
@@ -65,11 +73,17 @@ class ActivityMenu
         OwnershipInvoice::class => [Activity::OWNERSHIP],
         OwnershipCall::class => [Activity::OWNERSHIP],
         OwnershipPayment::class => [Activity::OWNERSHIP],
-        Mandator::class => [Activity::MANAGEMENT],
+        Mandator::class => [Activity::MANAGEMENT, Activity::TRANSACTION],
         Mandate::class => [Activity::MANAGEMENT],
         MandateFee::class => [Activity::MANAGEMENT],
         MandateExpense::class => [Activity::MANAGEMENT],
         MandatePayout::class => [Activity::MANAGEMENT],
+        SaleMandate::class => [Activity::TRANSACTION],
+        Buyer::class => [Activity::TRANSACTION],
+        Visit::class => [Activity::TRANSACTION],
+        Offer::class => [Activity::TRANSACTION],
+        Sale::class => [Activity::TRANSACTION],
+        SaleEvent::class => [Activity::TRANSACTION],
     ];
 
     /** Route => the activities it belongs to. */
@@ -78,6 +92,7 @@ class ActivityMenu
         'estate_admin_ownership_statements' => [Activity::OWNERSHIP],
         'estate_admin_management_statements' => [Activity::MANAGEMENT],
         'estate_admin_management_payouts' => [Activity::MANAGEMENT],
+        'estate_admin_transaction_sales' => [Activity::TRANSACTION],
     ];
 
     /** Dashboard card (block name) => the activities it belongs to. */
@@ -91,6 +106,7 @@ class ActivityMenu
         'estate_payments' => Activity::RENTAL,
         'estate_ownership' => [Activity::OWNERSHIP],
         'estate_management' => [Activity::MANAGEMENT],
+        'estate_transaction' => [Activity::TRANSACTION],
     ];
 
     public function __construct(private readonly Activities $activities)

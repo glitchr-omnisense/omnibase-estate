@@ -12,8 +12,13 @@ use Base\Estate\Entity\Organisation;
 use Base\Estate\Entity\Ownership;
 use Base\Estate\Entity\OwnershipCall;
 use Base\Estate\Entity\OwnershipInvoice;
+use Base\Estate\Entity\Offer;
 use Base\Estate\Entity\RentCall;
+use Base\Estate\Entity\Sale;
+use Base\Estate\Entity\SaleEvent;
+use Base\Estate\Entity\SaleMandate;
 use Base\Estate\Entity\Unit;
+use Base\Estate\Entity\Visit;
 use Base\Estate\Entity\WorkOrder;
 use Base\Estate\Service\Spaces;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -26,7 +31,9 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  * feed; a tenant their lease, its rents and the problems they reported; a
  * contractor the work orders given to them; a co-owner their shared
  * ownership, its invoices and their own calls for funds; an owner under
- * management their mandates, their statements and payouts - nothing else.
+ * management their mandates, their statements and payouts; a seller their
+ * sale mandates, their visits, offers and sale; a buyer their offers and
+ * the sale of the one accepted - nothing else.
  */
 final class EstateVoter extends Voter
 {
@@ -40,6 +47,7 @@ final class EstateVoter extends Voter
     public const DOCUMENT_VIEW = 'ESTATE_DOCUMENT_VIEW';
     public const OWNERSHIP_VIEW = 'ESTATE_OWNERSHIP_VIEW';
     public const MANDATE_VIEW = 'ESTATE_MANDATE_VIEW';
+    public const SALE_VIEW = 'ESTATE_SALE_VIEW';
 
     public function __construct(private readonly Spaces $spaces)
     {
@@ -56,6 +64,7 @@ final class EstateVoter extends Voter
             self::DOCUMENT_VIEW => $subject instanceof Document,
             self::OWNERSHIP_VIEW => $subject instanceof Ownership || $subject instanceof OwnershipCall || $subject instanceof OwnershipInvoice,
             self::MANDATE_VIEW => $subject instanceof Mandator || $subject instanceof Mandate || $subject instanceof MandatePayout,
+            self::SALE_VIEW => $subject instanceof SaleMandate || $subject instanceof Visit || $subject instanceof Offer || $subject instanceof Sale || $subject instanceof SaleEvent,
             default => false,
         };
     }
@@ -73,6 +82,17 @@ final class EstateVoter extends Voter
 
             return (null !== $organisation ? $this->spaces->manages($user, $organisation) : [] !== $this->spaces->managed($user))
                 || $this->spaces->isMandator($user, $mandator);
+        }
+
+        // A seller sees their mandates and what happens on them; a buyer their offers and their sale; the agency's management all of them.
+        if (self::SALE_VIEW === $attribute) {
+            $sale = $subject instanceof SaleEvent ? $subject->getSale() : $subject;
+            $mandate = $sale instanceof SaleMandate ? $sale : $sale->getMandate();
+            if ($this->spaces->manages($user, $mandate->getOrganisation()) || $this->spaces->isSellerOf($user, $mandate)) {
+                return true;
+            }
+
+            return ($sale instanceof Offer || $sale instanceof Sale) && $this->spaces->isBuyer($user, $sale->getBuyer());
         }
 
         $organisation = match (true) {

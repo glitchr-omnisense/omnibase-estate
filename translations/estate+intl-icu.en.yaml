@@ -263,6 +263,76 @@ owner:
   agency: "Your agency"
   mandate_terms: "Fees {rate} of what is collected before tax; statement and payout {frequency}."
 
+seller:
+  title: "My sale"
+  mandate: "mandate {number}, {kind}, until {until}"
+  exclusive: "exclusive"
+  simple: "simple"
+  folder: "The sale's folder"
+  price: "Price"
+  agreed: "accepted, {asked} asked"
+  asked: "asked"
+  visits: "Visits"
+  last_visit: "latest on {date}"
+  no_visit: "No visit yet."
+  offers: "Offers"
+  offers_open: "{count, plural, =0 {none waiting} one {# waiting for an answer} other {# waiting for an answer}}"
+  step: "Where the sale stands"
+  next_on: "{step}: {date}"
+  fee: "fee {fee}, paid by {payer}"
+  offer: "Offer of"
+  amount: "Amount"
+  conditions: "Conditions"
+  state: "State"
+  countered: "counter-offer {amount}"
+  loan: "Subject to a loan"
+  no_loan: "No loan condition"
+  valid_until: "valid until {date}"
+  no_offer: "No offer yet."
+  no_feedback: "no feedback noted"
+  agency: "Your agency"
+  terms: "Fee {fee}, paid by {payer}; mandate from {from} until {until}."
+
+buyer:
+  title: "My purchase"
+  folder: "The sale's folder"
+  price: "Agreed price: {price}"
+  fee: "fee paid by you: {fee}"
+  no_sale: "No offer accepted yet: the sale's steps will show here."
+  offers: "My offers"
+  no_offer: "No offer."
+
+sale:
+  title: "The sale's steps"
+  cancelled: "Sale cancelled on {date}: {reason}"
+  notary: "notary: {notary}"
+  deposit: "deposit {amount}"
+  withdrawal_until: "withdrawal possible until {date} included"
+  loan_by: "loan to obtain by {date}"
+  deed_planned: "planned on {date}"
+  document: "document"
+
+sale_step:
+  none: "On sale"
+  accepted: "Offer accepted"
+  compromise: "Preliminary contract signed"
+  withdrawal: "Withdrawal period over"
+  conditions: "Conditions lifted"
+  deed: "Deed of sale signed"
+  closed: "File closed"
+  cancelled: "Sale cancelled"
+
+offer_status:
+  made: "Waiting"
+  countered: "Counter-offer"
+  accepted: "Accepted"
+  refused: "Refused"
+  withdrawn: "Withdrawn"
+
+fee_payer:
+  seller: "the seller"
+  buyer: "the buyer"
+
 contractor:
   title: "My jobs"
   lead: "The jobs entrusted to you: the address, how to get in, who is there - and where to say when you come, your quote and your report."
@@ -458,6 +528,14 @@ dashboard:
     unpaid_hint: "the SEPA file is ready"
     to_send: "{count, plural, =0 {no statement to send} one {# statement to send} other {# statements to send}}"
     all_sent: "all sent"
+    ending: "{number} ends on {date}"
+  transaction:
+    sub: "quarter {quarter}"
+    sales: "Sales in progress"
+    fees: "{count, plural, =0 {of fees this quarter} one {of fees this quarter, # sale} other {of fees this quarter, # sales}}"
+    next_on: "{step}: {date}"
+    no_sale: "No sale in progress"
+    offers: "{count, plural, one {# offer to answer} other {# offers to answer}}"
     ending: "{number} ends on {date}"
   todo:
     sub: "{count, plural, one {# thing to do} other {# things to do}}"

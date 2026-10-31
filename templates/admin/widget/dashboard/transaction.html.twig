@@ -1,0 +1,31 @@
+{# Base\Estate\Admin\Widget\Dashboard\TransactionWidgetType: the quarter's fees, the sales going on and their next date, the offers waiting, the mandates ending. #}
+{% extends '@Estate/admin/widget/dashboard/_card.html.twig' %}
+{% block subtitle %}{{ 'dashboard.transaction.sub'|trans({quarter: fees.period}, 'estate') }}{% endblock %}
+{% block actions %}{% if active %}<a class="dash-card-action" href="{{ path('estate_admin_transaction_sales') }}">{{ 'dashboard.transaction.sales'|trans({}, 'estate') }}</a>{% endif %}{% endblock %}
+{% block body %}
+<div class="es-hero"><span class="es-hero-value">{{ fees.total|euros(true) }}</span><span class="es-hero-unit">{{ 'dashboard.transaction.fees'|trans({count: fees.count}, 'estate') }}</span></div>
+<ul class="dash-rows">
+    {% for sale in sales|slice(0, 3) %}
+    {% set next = sale.nextDate %}
+    <li><a class="dash-row" href="{{ path('estate_admin_transaction_mandate', {id: sale.mandate.id}) }}">
+        <i class="fa-solid fa-route dash-row-icon" aria-hidden="true"></i>
+        <span class="dash-row-label">{{ sale.mandate.propertyName }}<small>{{ next ? (next.date ? 'dashboard.transaction.next_on'|trans({step: next.step.label, date: next.date|format_date('short')}, 'estate') : next.step.label) }}</small></span>
+        <span class="dash-row-value">{{ sale.price|euros(true) }}</span>
+    </a></li>
+    {% else %}
+    <li><span class="dash-row"><i class="fa-solid fa-route dash-row-icon" aria-hidden="true"></i><span class="dash-row-label">{{ 'dashboard.transaction.no_sale'|trans({}, 'estate') }}</span></span></li>
+    {% endfor %}
+    {% if offers|length %}
+    <li><a class="dash-row" href="{{ path('estate_admin_transaction_mandate', {id: offers[0].mandate.id}) }}">
+        <i class="fa-solid fa-hand-holding-dollar dash-row-icon es-bad" aria-hidden="true"></i>
+        <span class="dash-row-label">{{ 'dashboard.transaction.offers'|trans({count: offers|length}, 'estate') }}<small>{{ offers|slice(0, 3)|map(o => o.mandate.number)|join(', ') }}</small></span>
+    </a></li>
+    {% endif %}
+    {% for mandate in ending|slice(0, 2) %}
+    <li><a class="dash-row" href="{{ path('estate_admin_transaction_mandate', {id: mandate.id}) }}">
+        <i class="fa-solid fa-hourglass-half dash-row-icon" aria-hidden="true"></i>
+        <span class="dash-row-label">{{ mandate.propertyName }}<small>{{ 'dashboard.transaction.ending'|trans({number: mandate.number ?? '', date: mandate.endsOn|format_date('short')}, 'estate') }}</small></span>
+    </a></li>
+    {% endfor %}
+</ul>
+{% endblock %}
