@@ -25,6 +25,7 @@ class OnlinePayments
         #[Autowire('%estate.payment_gateway%')] private readonly ?string $gateway = 'stripe',
         #[Autowire('%estate.payment_methods%')] private readonly array $methods = ['card', 'sepa_debit'],
         private readonly ?EntityManagerInterface $entityManager = null,
+        private readonly ?PaymentWebhook $webhook = null,
     ) {
     }
 
@@ -123,13 +124,27 @@ class OnlinePayments
      */
     public function paidBy(string $body, array $headers): ?array
     {
-        $notification = $this->registry->get($this->gateway)->notify($body, $headers);
+        $notification = $this->notifier()->notify($body, $headers);
         $call = $notification->transaction?->metadata['rent_call'] ?? null;
         if (Status::PAID !== $notification->status || null === $notification->reference || !is_numeric($call)) {
             return null;
         }
 
         return ['call' => (int) $call, 'reference' => $notification->reference];
+    }
+
+    /**
+     * The gateway that checks a webhook: over the configured options, with
+     * the secret the application registered (PaymentWebhook, sealed in the
+     * settings) - unless a webhook_secret is configured, which wins.
+     */
+    private function notifier(): \Omnitrade\GatewayInterface
+    {
+        if (null === $this->webhook || null !== $this->webhook->configuredSecret() || null === $secret = $this->webhook->secret()) {
+            return $this->registry->get($this->gateway);
+        }
+
+        return $this->registry->create($this->gateway, ['webhook_secret' => $secret]);
     }
 
     /** Back from the provider, or told by its webhook: recorded when it is paid (SEPA debits come later, through the webhook or the next look). */

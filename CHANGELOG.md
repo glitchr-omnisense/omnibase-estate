@@ -3,6 +3,13 @@
 ## [Unreleased]
 
 ### Added
+- The payment provider's webhook registered by the application: `estate:payment:webhook [--force]`
+  (`Service\PaymentWebhook::ensure()`), run at each deploy, registers `estate_payment_webhook` at
+  the provider through omnitrade's `RegisterWebhook` and keeps the secret it answers sealed in
+  omnibase's settings (`api.webhook.estate_payment_webhook.<gateway>.secret`, `#[Vault]`, no new
+  table); `OnlinePayments::paidBy()` checks a webhook with it. Idempotent (kept when there), a
+  configured `webhook_secret` wins, nothing asked on a host no provider reaches (localhost,
+  `*.local`, `*.test`, a private IP), exit 0 always. `docs/usage-rents.md`.
 - The dashboard's cards, omnibase/admin palette cards in its dashboard card (`Admin\Widget\Dashboard\*`):
   `estate_occupancy` (a donut of the homes let and vacant), `estate_rents` (rents called and collected
   month by month, 6 or 12 months switched in the card, legend, axis, tooltip, a table for screen

@@ -84,10 +84,31 @@ certificate only when nothing past due is owed.
 yet is recorded through `complete()`, under the session's reference - the tenant's return records
 nothing twice. 204; 400 for a signature that does not match; 404 without a gateway. The rent is
 paid even when the tenant never came back: a page closed, a SEPA debit through days later - the
-webhook only records it sooner than `estate:payment:check` does. The endpoint is declared at the provider (Stripe: Developers → Webhooks, the four
-`checkout.session.*` events) with its signing secret in the gateway's `webhook_secret`
-(`STRIPE_WEBHOOK_SECRET`); locally, `stripe listen --forward-to
-https://localhost:<port>/estate/payments/webhook --skip-verify` prints that secret.
+webhook only records it sooner than `estate:payment:check` does.
+
+**Nobody registers the webhook by hand.** `estate:payment:webhook [--force]`
+(`Service\PaymentWebhook::ensure()`), run at each deploy, registers the endpoint at the provider
+on the address the router builds for `estate_payment_webhook` outside a request (omnibase's
+`base.router` hosts, `HTTP_DOMAIN`..., or `framework.router.default_uri`), through omnitrade's
+`RegisterWebhook` (Stripe: the four `checkout.session.*` events, in the gateway's `api_version`).
+The secret the provider answers is kept in omnibase's settings, sealed by its `#[Vault]` as
+`/admin/api-key` keeps the API keys: `api.webhook.estate_payment_webhook.<gateway>.secret`, with
+`.id` and `.url` beside it, no table of its own. `paidBy()` checks a webhook with that secret
+(`Registry::create($gateway, ['webhook_secret' => ...])` over the configured options). The run is
+idempotent:
+
+| Answer | When |
+|---|---|
+| registered | nothing kept, the address changed, the endpoint gone at the provider, or `--force` (the provider replaces the endpoint on the same address: a new secret) |
+| kept | the endpoint kept here is at the provider on this address: nothing done |
+| not reachable | the address is `localhost`, `*.local`, `*.test`, a private IP or plain HTTP: nothing asked, a sentence says that `estate:payment:check` covers it - a development machine |
+| configured | a `webhook_secret` is configured (`STRIPE_WEBHOOK_SECRET`): it wins, nothing registered, the endpoint it belongs to left alone |
+| cannot seal | the environment has no vault key pair (`bin/console secrets:generate-keys`, or `SYMFONY_DECRYPTION_SECRET` on the server): no secret asked for, never one kept in clear |
+| unsupported, off | the gateway cannot register its webhook, or no gateway |
+
+It exits 0 in every case, so a deploy never stops on it. A new site gets the webhook with no
+command typed: its deploy runs `estate:payment:webhook` after the cache is warmed (meyers: its web
+entrypoint), its public address comes from its hosts, and the Stripe secret key is all it sets.
 
 The tenant's "Payer" is a POST with the token `rent_pay_<id>`; refused for a paid call or when
 online payment is off.
