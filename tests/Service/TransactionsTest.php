@@ -11,6 +11,7 @@ use Base\Estate\Enum\FeePayer;
 use Base\Estate\Enum\OfferStatus;
 use Base\Estate\Enum\SaleStep;
 use Base\Estate\Enum\UnitKind;
+use Base\Estate\Model\PublicHolidays;
 use Base\Estate\Model\WithdrawalPeriod;
 use Base\Ledger\Enum\VatRegime;
 use Symfony\Component\HttpFoundation\File\File;
@@ -111,7 +112,16 @@ final class TransactionsTest extends TransactionTestCase
         self::assertSame('2026-04-07', WithdrawalPeriod::end(new \DateTimeImmutable('2026-03-27'))->format('Y-m-d'), 'Easter Monday');
         self::assertSame('2026-05-15', WithdrawalPeriod::end(new \DateTimeImmutable('2026-05-04'))->format('Y-m-d'), 'Ascension Day, 14 May');
         self::assertSame('2026-04-03', WithdrawalPeriod::end(new \DateTimeImmutable('2026-03-24'))->format('Y-m-d'), 'Good Friday is worked in most of France');
-        self::assertSame('2026-04-07', WithdrawalPeriod::end(new \DateTimeImmutable('2026-03-24'), true)->format('Y-m-d'), 'not in Alsace-Moselle');
+        self::assertSame('2026-04-07', WithdrawalPeriod::end(new \DateTimeImmutable('2026-03-24'), '67000')->format('Y-m-d'), 'not in Strasbourg: Good Friday, then Easter Monday');
+        self::assertSame('2026-04-07', WithdrawalPeriod::end(new \DateTimeImmutable('2026-03-24'), '57000')->format('Y-m-d'), 'nor in Metz');
+        self::assertSame('2026-04-03', WithdrawalPeriod::end(new \DateTimeImmutable('2026-03-24'), '75011')->format('Y-m-d'), 'in Paris it is worked');
+        self::assertSame('2026-12-28', WithdrawalPeriod::end(new \DateTimeImmutable('2026-12-15'), '68100')->format('Y-m-d'), 'Mulhouse: Christmas, then St Stephen\'s Day, then the weekend');
+        self::assertSame('2027-12-21', WithdrawalPeriod::end(new \DateTimeImmutable('2027-12-10'), '97400')->format('Y-m-d'), 'La Réunion: 20 December, a Monday');
+        self::assertSame('2027-12-20', WithdrawalPeriod::end(new \DateTimeImmutable('2027-12-10'), '67000')->format('Y-m-d'), 'worked in Strasbourg');
+        self::assertSame('2027-05-28', WithdrawalPeriod::end(new \DateTimeImmutable('2027-05-17'), '97100')->format('Y-m-d'), 'Guadeloupe: 27 May');
+        self::assertSame('2027-05-27', WithdrawalPeriod::end(new \DateTimeImmutable('2027-05-17'), '97150')->format('Y-m-d'), 'not in Saint-Martin, though its postcode is Guadeloupe\'s');
+        self::assertSame('2027-05-31', WithdrawalPeriod::end(new \DateTimeImmutable('2027-05-18'), '97150')->format('Y-m-d'), 'its own 28 May, then the weekend');
+        self::assertSame(['67', '974', '97133', null, null], array_map(PublicHolidays::place(...), ['67000', '97490', '97133', '75011', 'D-77694']));
     }
 
     public function testTheFeeIsPostedAtTheDeedWithItsVatByThePartyTheMandateNames(): void

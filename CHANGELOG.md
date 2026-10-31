@@ -3,6 +3,13 @@
 ## [Unreleased]
 
 ### Changed
+- The withdrawal period counts the property's place's public holidays, by the mandate's postcode
+  (Marco, 2026-11-01): `Model\PublicHolidays` (the nation's, plus Alsace-Moselle's Good Friday and
+  26 December, the overseas days of the abolition of slavery, Saint-Barthélemy's and Saint-Martin's
+  by their postcodes), `WithdrawalPeriod::end($notifiedOn, ?string $postcode)` in place of its
+  `alsaceMoselle` flag, `estate_local_holidays()`; the admin's sale says when they were counted.
+
+### Changed
 - The owners' screen (« Propriétaires », `MandatorCrudController`) serves management and
   transaction: its management actions and folder only while the site runs management.
 - `Model\OwnershipPeriod` is `Model\Period`: the statements' periods, the co-owners' and the

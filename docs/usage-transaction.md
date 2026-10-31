@@ -79,8 +79,13 @@ de l'habitation, the loi SRU's, ten days since the loi Macron): it runs from the
 compromis is notified to the buyer - handed over against a receipt, or the registered letter's first
 presentation - and ends on the tenth day at midnight; a period that would end on a Saturday, a
 Sunday or a public holiday runs until the next working day (art. 642 of the Code de procédure
-civile). The French public holidays are computed, Easter's included (no calendar extension needed);
-`end($notifiedOn, alsaceMoselle: true)` adds Good Friday and 26 December. Notified on Wednesday 21
+civile). The public holidays are the property's place's, by the mandate's postcode (its own, or its
+managed unit's): `Model\PublicHolidays` computes the nation's, Easter's included (no calendar
+extension needed), and adds its department's - Good Friday and 26 December in the Bas-Rhin,
+Haut-Rhin and Moselle (67, 68, 57), the day of the abolition of slavery overseas (Guadeloupe 27 May,
+Martinique 22 May, Guyane 10 June, La Réunion 20 December, Mayotte 27 April; Saint-Barthélemy
+9 October and Saint-Martin 28 May by their own postcodes, 97133 and 97150). `end($notifiedOn,
+$postcode)`; the admin's sale says when local holidays were counted. Notified on Wednesday 21
 October 2026, the tenth day is Saturday 31, then comes Sunday 1 November, a holiday: the buyer may
 withdraw until Monday 2 November included, and the step is taken from the 3rd.
 
@@ -212,10 +217,11 @@ Under « Transactions » (only with the activity, `ActivityMenu`):
   from the deposit with the seller's written agreement (not done here: the deposit leaves whole).
 - **A deposit forfeited** (the buyer's fault after the withdrawal period, the clause pénale) goes to
   the seller in full here; an agreement that gives the agency a share would need its own entry.
-- **Alsace-Moselle**: Good Friday and 26 December are local holidays; whether they extend the
-  withdrawal period for a property there is the notary's to confirm (`alsaceMoselle: true`, not
-  used by default).
+- **Local holidays** (Marco, 2026-11-01: by the property's place): Alsace-Moselle's Good Friday and
+  26 December, overseas the day of the abolition of slavery, extend the withdrawal period there
+  like the nation's. To confirm with a notary that art. 642 CPC counts them (a local public holiday
+  is a « jour férié » there), and the overseas dates against the décret n° 83-1003 as amended.
 - **The register of mandates** (loi Hoguet): the mandates' numbers in order, `VT-` for the sales and
-  `MG-` for the management, one sequence each; some keep one register for both.
+  `MG-` for the management, one sequence each - Marco's choice (2026-11-01).
 - **The professional card « transactions sur immeubles »** and the financial guarantee for the
   deposits held: out of the software.

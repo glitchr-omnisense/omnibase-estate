@@ -222,7 +222,7 @@ class Transactions
             case SaleStep::COMPROMISE:
                 $notifiedOn = $data['notifiedOn'] ?? $on;
                 $sale->setCompromiseSignedOn($on)->setCompromiseNotifiedOn($notifiedOn)
-                    ->setWithdrawalEndsOn(WithdrawalPeriod::end($notifiedOn))
+                    ->setWithdrawalEndsOn(WithdrawalPeriod::end($notifiedOn, $mandate->getPostcode()))
                     ->setNotary($data['notary'] ?? null)->setDeposit($data['deposit'] ?? 0)
                     ->setDepositHeldByAgency($mandate->isDepositHeldByAgency())
                     ->setLoanDeadline($data['loanDeadline'] ?? null)->setDeedPlannedOn($data['deedPlannedOn'] ?? null);

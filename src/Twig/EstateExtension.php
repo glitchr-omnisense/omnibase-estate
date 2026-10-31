@@ -63,6 +63,13 @@ class EstateExtension implements ResetInterface
         $this->once = [];
     }
 
+    /** Whether a place (its postcode) has public holidays of its own - Alsace-Moselle, overseas - counted in its periods. */
+    #[AsTwigFunction('estate_local_holidays')]
+    public function localHolidays(?string $postcode): bool
+    {
+        return \Base\Estate\Model\PublicHolidays::isLocal($postcode);
+    }
+
     #[AsTwigFunction('estate_online_payment')]
     public function onlinePayment(): bool
     {
