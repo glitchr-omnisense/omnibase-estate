@@ -10,6 +10,7 @@ use Omnitrade\Registry;
 use Omnitrade\Request\FetchWebhooks;
 use Omnitrade\Request\RegisterWebhook;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
@@ -41,6 +42,7 @@ class PaymentWebhook
         private readonly ?SettingBagInterface $settings = null,
         #[Autowire('%estate.payment_gateway%')] private readonly ?string $gateway = 'stripe',
         private readonly ?Vault $vault = null,
+        private readonly ?LockFactory $locks = null,
     ) {
     }
 
@@ -109,6 +111,20 @@ class PaymentWebhook
         if (null !== $this->configuredSecret()) {
             return self::CONFIGURED;
         }
+        // Two deploys at once (several web containers) would each replace the other's endpoint:
+        // one at a time, over the site's lock store (LOCK_DSN, shared between the hosts).
+        $lock = $this->locks?->createLock('estate.payment.webhook.'.$gateway, 120);
+        $lock?->acquire(true);
+        try {
+            return $this->register($provider, $url, $force);
+        } finally {
+            $lock?->release();
+        }
+    }
+
+    /** @return self::KEPT|self::NO_VAULT|self::REGISTERED */
+    private function register(\Omnitrade\GatewayInterface $provider, string $url, bool $force): string
+    {
         if (!$force && null !== $this->secret() && $url === $this->stored('url') && $this->isRegistered((string) $this->stored('id'), $url)) {
             return self::KEPT;
         }

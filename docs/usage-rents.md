@@ -106,7 +106,11 @@ idempotent:
 | cannot seal | the environment has no vault key pair (`bin/console secrets:generate-keys`, or `SYMFONY_DECRYPTION_SECRET` on the server): no secret asked for, never one kept in clear |
 | unsupported, off | the gateway cannot register its webhook, or no gateway |
 
-It exits 0 in every case, so a deploy never stops on it. A new site gets the webhook with no
+Two runs at once (several web containers starting) take turns over the site's lock store
+(symfony/lock, `LOCK_DSN`: shared between the hosts, or each could replace the other's endpoint).
+The secret is sealed with the environment's vault key pair: `php bin/console secrets:generate-keys
+--env=prod` once per environment (the private key never committed; a server can be given it as
+`SYMFONY_DECRYPTION_SECRET`). It exits 0 in every case, so a deploy never stops on it. A new site gets the webhook with no
 command typed: its deploy runs `estate:payment:webhook` after the cache is warmed (meyers: its web
 entrypoint), its public address comes from its hosts, and the Stripe secret key is all it sets.
 

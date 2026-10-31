@@ -14,6 +14,8 @@ use Omnitrade\Stripe\StripeGatewayFactory;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
+use Symfony\Component\Lock\LockFactory;
+use Symfony\Component\Lock\Store\InMemoryStore;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /** The Stripe webhook the application registers itself, its secret sealed in the settings, Stripe answered by a mock. */
@@ -99,7 +101,7 @@ final class PaymentWebhookTest extends TestCase
             }
         };
 
-        return new PaymentWebhook($router, $registry, $this->settings, 'stripe', $vault);
+        return new PaymentWebhook($router, $registry, $this->settings, 'stripe', $vault, class_exists(LockFactory::class) ? new LockFactory(new InMemoryStore()) : null);
     }
 
     public function testRegisteredOnceItsSecretSealedThenKept(): void
