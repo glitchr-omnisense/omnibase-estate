@@ -11,7 +11,9 @@ use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * Money received for a rent: recorded once per reference, posted to the
- * books, and - the rent paid in full - its receipt numbered and sent.
+ * books - for a home of a shared ownership, its co-owners' parts too
+ * (Ownerships::rentReceived()) - and, the rent paid in full, its receipt
+ * numbered and sent.
  */
 class Payments
 {
@@ -22,6 +24,7 @@ class Payments
         private readonly EstateMailer $mailer,
         private readonly Receipts $receipts,
         private readonly ?Books $books = null,
+        private readonly ?Ownerships $ownerships = null,
     ) {
     }
 
@@ -52,6 +55,8 @@ class Payments
         if ($post) {
             $this->books?->paymentReceived($payment);
         }
+        // A home of a shared ownership: its co-owners' parts, whoever posted the payment.
+        $this->ownerships?->rentReceived($payment);
 
         if ($notify && !$wasPaid && $call->isPaid()) {
             $this->mailer->send(
@@ -75,6 +80,7 @@ class Payments
      */
     public function cancel(Payment $payment): void
     {
+        $this->ownerships?->rentCancelled($payment);
         $payment->getRentCall()->removePayment($payment);
         $this->entityManager->remove($payment);
         $this->entityManager->flush();

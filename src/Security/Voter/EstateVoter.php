@@ -6,6 +6,9 @@ use Base\Entity\User;
 use Base\Estate\Entity\Document;
 use Base\Estate\Entity\Lease;
 use Base\Estate\Entity\Organisation;
+use Base\Estate\Entity\Ownership;
+use Base\Estate\Entity\OwnershipCall;
+use Base\Estate\Entity\OwnershipInvoice;
 use Base\Estate\Entity\RentCall;
 use Base\Estate\Entity\Unit;
 use Base\Estate\Entity\WorkOrder;
@@ -18,7 +21,8 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  * What each person may open, from what they are to the organisation
  * (Spaces): its management everything of it; an associate its figures and
  * feed; a tenant their lease, its rents and the problems they reported; a
- * contractor the work orders given to them - nothing else.
+ * contractor the work orders given to them; a co-owner their shared
+ * ownership, its invoices and their own calls for funds - nothing else.
  */
 final class EstateVoter extends Voter
 {
@@ -30,6 +34,7 @@ final class EstateVoter extends Voter
     public const WORK_VIEW = 'ESTATE_WORK_VIEW';
     public const WORK_DO = 'ESTATE_WORK_DO';
     public const DOCUMENT_VIEW = 'ESTATE_DOCUMENT_VIEW';
+    public const OWNERSHIP_VIEW = 'ESTATE_OWNERSHIP_VIEW';
 
     public function __construct(private readonly Spaces $spaces)
     {
@@ -44,6 +49,7 @@ final class EstateVoter extends Voter
             self::UNIT_REPORT => $subject instanceof Unit,
             self::WORK_VIEW, self::WORK_DO => $subject instanceof WorkOrder,
             self::DOCUMENT_VIEW => $subject instanceof Document,
+            self::OWNERSHIP_VIEW => $subject instanceof Ownership || $subject instanceof OwnershipCall || $subject instanceof OwnershipInvoice,
             default => false,
         };
     }
@@ -59,6 +65,8 @@ final class EstateVoter extends Voter
             $subject instanceof Organisation => $subject,
             $subject instanceof Lease, $subject instanceof WorkOrder, $subject instanceof Unit, $subject instanceof Document => $subject->getOrganisation(),
             $subject instanceof RentCall => $subject->getLease()->getOrganisation(),
+            $subject instanceof Ownership => $subject->getOrganisation(),
+            $subject instanceof OwnershipCall, $subject instanceof OwnershipInvoice => $subject->getOwnership()->getOrganisation(),
         };
         if ($this->spaces->manages($user, $organisation)) {
             return true;
@@ -75,6 +83,10 @@ final class EstateVoter extends Voter
                 || $this->spaces->isAssociateOf($user, $organisation),
             self::WORK_DO => $this->isContractorOf($user, $subject),
             self::DOCUMENT_VIEW => $this->canSeeDocument($user, $subject, $organisation),
+            // A co-owner sees their ownership and its invoices, and of the calls only their own.
+            self::OWNERSHIP_VIEW => $subject instanceof OwnershipCall
+                ? \in_array($subject->getHolder(), $this->spaces->holdersIn($user, $subject->getOwnership()), true)
+                : $this->spaces->isCoOwnerOf($user, $subject instanceof Ownership ? $subject : $subject->getOwnership()),
         };
     }
 

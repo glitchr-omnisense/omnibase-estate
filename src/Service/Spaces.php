@@ -8,6 +8,9 @@ use Base\Estate\Entity\Contractor;
 use Base\Estate\Entity\Lease;
 use Base\Estate\Entity\Member;
 use Base\Estate\Entity\Organisation;
+use Base\Estate\Entity\Ownership;
+use Base\Estate\Entity\OwnershipShare;
+use Base\Estate\Enum\Activity;
 use Base\Estate\Repository\LeaseRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -15,7 +18,9 @@ use Symfony\Contracts\Service\ResetInterface;
 
 /**
  * Who someone is to the organisations: their management (a Member, or any
- * ROLE_ADMIN), an associate, a tenant (a party of a lease), a contractor.
+ * ROLE_ADMIN), an associate, a tenant (a party of a lease), a contractor,
+ * a co-owner of a shared ownership (its share's account; only while the
+ * site runs the `ownership` activity).
  * What each space shows, and what EstateVoter allows, comes from here -
  * from the relations, never from a role stored on the account.
  */
@@ -28,6 +33,7 @@ class Spaces implements ResetInterface
         private readonly EntityManagerInterface $entityManager,
         private readonly LeaseRepository $leases,
         private readonly Security $security,
+        private readonly ?Activities $activities = null,
     ) {
     }
 
@@ -90,6 +96,50 @@ class Spaces implements ResetInterface
     }
 
     /**
+     * The shares their account holds or held, oldest first; none while the
+     * site does not run the `ownership` activity (its tables are not read).
+     *
+     * @return list<OwnershipShare>
+     */
+    public function coOwnerships(?User $user): array
+    {
+        if (!$user || !$this->activities?->has(Activity::OWNERSHIP)) {
+            return [];
+        }
+
+        return $this->memo['coowner'.$user->getId()] ??= $this->entityManager->getRepository(OwnershipShare::class)->findBy(['user' => $user], ['startsOn' => 'ASC', 'id' => 'ASC']);
+    }
+
+    /** @return list<Ownership> the ownerships they hold a share of, each once */
+    public function ownerships(?User $user): array
+    {
+        $ownerships = [];
+        foreach ($this->coOwnerships($user) as $share) {
+            $ownerships[$share->getOwnership()->getId()] = $share->getOwnership();
+        }
+
+        return array_values($ownerships);
+    }
+
+    public function isCoOwnerOf(?User $user, Ownership $ownership): bool
+    {
+        return \in_array($ownership->getId(), array_map(fn (Ownership $o) => $o->getId(), $this->ownerships($user)), true);
+    }
+
+    /** @return list<string> the holders they are (OwnershipShare::holder()) in an ownership */
+    public function holdersIn(?User $user, Ownership $ownership): array
+    {
+        $holders = [];
+        foreach ($this->coOwnerships($user) as $share) {
+            if ($share->getOwnership()->getId() === $ownership->getId()) {
+                $holders[$share->holder()] = true;
+            }
+        }
+
+        return array_keys($holders);
+    }
+
+    /**
      * The spaces the header and "Mon accès" offer, in this order.
      *
      * @return list<array{key: string, route: string}>
@@ -105,6 +155,9 @@ class Spaces implements ResetInterface
         }
         if ($this->contractorships($user)) {
             $spaces[] = ['key' => 'contractor', 'route' => 'estate_contractor'];
+        }
+        if ($this->coOwnerships($user)) {
+            $spaces[] = ['key' => 'coowner', 'route' => 'estate_coowner'];
         }
 
         return $spaces;

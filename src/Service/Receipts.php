@@ -58,13 +58,21 @@ class Receipts
         return $this->render($this->attestationHtml($lease, $on));
     }
 
+    /** Any of the bundle's printable pages as a PDF (a co-owner's statement), or null without dompdf. */
+    public function htmlToPdf(string $html): ?string
+    {
+        return $this->render($html);
+    }
+
     private function render(string $html): ?string
     {
         if (!class_exists(\Dompdf\Dompdf::class)) {
             return null;
         }
         $dompdf = new \Dompdf\Dompdf(['isRemoteEnabled' => false, 'defaultFont' => 'Helvetica']);
-        $dompdf->loadHtml($html);
+        // Helvetica (PDF's own font) has no narrow no-break space - the thousands separator of French
+        // amounts, "1 500,00 €" - nor a minus sign: their nearest it has, rather than a "?".
+        $dompdf->loadHtml(str_replace(["\u{202F}", "\u{2212}"], ["\u{00A0}", '-'], $html));
         $dompdf->setPaper('A4');
         $dompdf->render();
 

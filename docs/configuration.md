@@ -72,8 +72,9 @@ default, `[assets]`, keeps a site as it was. `Base\Estate\Service\Activities` an
 `any()` and `all()` (in the enum's order); in Twig, `estate_activity('ownership')` and
 `estate_activities()`.
 
-What the back office shows follows it ([The back office](back-office.md#activities)). Ownership,
-management and transaction have no screens of their own yet: they come in the next steps.
+What the back office shows follows it ([The back office](back-office.md#activities)). Ownership
+has its screens, postings and space ([Shared ownership](usage-ownership.md)); management and
+transaction have none of their own yet: they come in the next steps.
 
 ## Services
 

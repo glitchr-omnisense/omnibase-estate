@@ -1,0 +1,108 @@
+{% extends '@Estate/client/layout.html.twig' %}
+
+{% block estate_title %}{{ '@estate.coowner.title'|trans }}{% endblock %}
+{% block estate_eyebrow %}<p class="estate-eyebrow">{{ ownership.organisation.name }} · {{ '@estate.coowner.you'|trans({name: share ? share.name : '', share: share ? share.fractionLabel : '—'}) }}</p>{% endblock %}
+{% block estate_lead %}{{ ownership.name }}{% if ownership.units|length %} — {{ ownership.units|map(u => u.name)|join(', ') }}{% endif %}{% endblock %}
+{% block estate_class %}estate-space estate-coowner{% endblock %}
+{% block estate_actions %}
+    {% if ownerships|length > 1 %}<nav class="estate-filters">{% for o in ownerships %}<a href="{{ path('estate_coowner', {indivision: o.id}) }}" {{ o == ownership ? 'aria-current="true"' }}>{{ o.name }}</a>{% endfor %}</nav>{% endif %}
+    {% if folder %}<a class="estate-button is-ghost" href="{{ path('app_share', {path: folder}) }}"><i class="fa-solid fa-folder-open" aria-hidden="true"></i> {{ '@estate.coowner.folder'|trans }}</a>{% endif %}
+{% endblock %}
+
+{% block estate_content %}
+{% set open = calls|filter(c => not c.isPaid) %}
+<div class="estate-tiles">
+    <div class="estate-tile{{ statement.closing < 0 ? ' is-alert' }}">
+        <span>{{ '@estate.coowner.balance'|trans }}</span>
+        <strong>{{ statement.closing|euros }}</strong>
+        <small>{{ statement.closing < 0 ? '@estate.coowner.balance_owed'|trans : (statement.closing > 0 ? '@estate.coowner.balance_due_to_you'|trans : '@estate.coowner.balance_even'|trans) }}</small>
+    </div>
+    <div class="estate-tile{{ open|length ? ' is-alert' }}">
+        <span>{{ '@estate.coowner.to_pay'|trans }}</span>
+        <strong>{{ open|reduce((sum, c) => sum + c.remaining, 0)|euros }}</strong>
+        <small>{{ open|length ? '@estate.coowner.to_pay_detail'|trans({count: open|length}) : '@estate.coowner.up_to_date'|trans }}</small>
+    </div>
+    <div class="estate-tile">
+        <span>{{ '@estate.coowner.income'|trans({year: 'now'|date('Y')}) }}</span>
+        <strong>{{ statement.income|euros }}</strong>
+        <small>{{ '@estate.coowner.income_detail'|trans }}</small>
+    </div>
+    <div class="estate-tile">
+        <span>{{ '@estate.coowner.expenses'|trans({year: 'now'|date('Y')}) }}</span>
+        <strong>{{ statement.expenses|euros }}</strong>
+        <small>{{ '@estate.coowner.expenses_detail'|trans }}</small>
+    </div>
+</div>
+
+<div class="estate-columns">
+<section class="estate-panel">
+    <h2>{{ '@estate.coowner.calls'|trans }}</h2>
+    {% if calls|length %}
+    <table class="estate-table">
+        <thead><tr><th>{{ '@estate.coowner.call'|trans }}</th><th>{{ '@estate.coowner.due_on'|trans }}</th><th class="is-num">{{ '@estate.coowner.amount'|trans }}</th><th>{{ '@estate.coowner.state'|trans }}</th></tr></thead>
+        <tbody>
+        {% for call in calls %}
+            {% set status = call.status %}
+            <tr>
+                <td><strong>{{ call.label }}</strong><small>{{ call.reference }}</small></td>
+                <td>{{ call.dueOn|format_date('short') }}</td>
+                <td class="is-num">{{ call.amount|euros }}{% if call.paid and not call.isPaid %}<small>{{ '@estate.coowner.remaining'|trans({amount: call.remaining|euros}) }}</small>{% endif %}</td>
+                <td><span class="estate-status is-{{ status }}">{{ ('@estate.rent.' ~ status)|trans }}</span></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% if open|length and ownership.organisation.iban %}<p class="estate-muted">{{ '@estate.coowner.transfer_hint'|trans({iban: ownership.organisation.iban}) }}</p>{% endif %}
+    {% else %}
+    <p class="estate-muted">{{ '@estate.coowner.no_call'|trans }}</p>
+    {% endif %}
+
+    <h2>{{ '@estate.coowner.invoices'|trans }}</h2>
+    {% if invoices|length %}
+    <table class="estate-table">
+        <thead><tr><th>{{ '@estate.coowner.invoice'|trans }}</th><th>{{ '@estate.coowner.date'|trans }}</th><th class="is-num">{{ '@estate.coowner.amount'|trans }}</th><th class="is-num">{{ '@estate.coowner.your_part'|trans }}</th><th><span class="visually-hidden">{{ '@estate.coowner.file'|trans }}</span></th></tr></thead>
+        <tbody>
+        {% for invoice in invoices %}
+            <tr>
+                <td><strong>{{ invoice.label }}</strong><small>{{ invoice.supplier }}</small></td>
+                <td>{{ invoice.date|format_date('short') }}</td>
+                <td class="is-num">{{ invoice.amount|euros }}</td>
+                <td class="is-num">{{ invoice.isPosted ? invoice.part(holder)|euros : '—' }}</td>
+                <td class="estate-row-actions">{% if invoice.hasFile %}<a href="{{ path('estate_ownership_invoice_file', {id: invoice.id}) }}" target="_blank" rel="noopener"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i> {{ '@estate.coowner.file'|trans }}</a>{% endif %}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="estate-muted">{{ '@estate.coowner.no_invoice'|trans }}</p>
+    {% endif %}
+</section>
+
+<div class="estate-stack">
+    <section class="estate-panel">
+        <h2>{{ '@estate.coowner.statements'|trans }}</h2>
+        <ul class="estate-list">
+            {% for p in periods %}
+            <li><strong><a href="{{ path('estate_coowner_statement', {id: ownership.id, period: p.key}) }}" target="_blank" rel="noopener"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i> {{ ('@estate.coowner.period.' ~ (p.key matches '/^\\d{4}$/' ? 'year' : (p.key matches '/Q/' ? 'quarter' : 'month')))|trans({month: p.from|format_date(pattern: 'MMMM yyyy')|capitalize, quarter: ((p.from|date('n')) + 2) // 3, year: p.from|date('Y')}) }}</a></strong></li>
+            {% endfor %}
+        </ul>
+        <p class="estate-muted is-small">{{ '@estate.coowner.statements_hint'|trans }}</p>
+    </section>
+    <section class="estate-panel">
+        <h2>{{ '@estate.coowner.shares'|trans }}</h2>
+        <ul class="estate-list">
+            {% for s in ownership.sharesOn(date()) %}<li{{ s.holder == holder ? ' class="is-you"' }}><strong>{{ s.name }}{{ s.holder == holder ? ' · ' ~ '@estate.coowner.you_short'|trans }}</strong><span>{{ s.fractionLabel }} ({{ s.percent|number_format(2, ',', ' ') }} %)</span></li>{% endfor %}
+        </ul>
+        {% if ownership.description %}<p class="estate-muted">{{ ownership.description }}</p>{% endif %}
+    </section>
+    {% if statement.income %}
+    <section class="estate-panel">
+        <h2>{{ '@estate.coowner.rents'|trans({year: 'now'|date('Y')}) }}</h2>
+        <ul class="estate-list">
+            {% for line in statement.incomeLines|reverse|slice(0, 4) %}<li><strong>{{ line.label }}</strong><span>{{ line.date|format_date('short') }} · {{ line.part|euros }}</span></li>{% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+</div>
+</div>
+{% endblock %}

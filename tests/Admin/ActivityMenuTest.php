@@ -9,6 +9,10 @@ use Base\Estate\Entity\Associate;
 use Base\Estate\Entity\Contractor;
 use Base\Estate\Entity\Lease;
 use Base\Estate\Entity\Organisation;
+use Base\Estate\Entity\Ownership;
+use Base\Estate\Entity\OwnershipCall;
+use Base\Estate\Entity\OwnershipInvoice;
+use Base\Estate\Entity\OwnershipShare;
 use Base\Estate\Entity\RentCall;
 use Base\Estate\Entity\Unit;
 use Base\Estate\Entity\WorkOrder;
@@ -46,6 +50,14 @@ final class ActivityMenuTest extends TestCase
                 MenuItem::linkToCrud(Organisation::class, 'Société', 'fa-solid fa-landmark'),
                 MenuItem::linkToCrud(Associate::class, 'Associés', 'fa-solid fa-people-group'),
             ]),
+            MenuItem::section('Indivisions', 'fa-solid fa-people-roof')->setSubItems([
+                MenuItem::linkToCrud(Ownership::class, 'Indivisions', 'fa-solid fa-people-roof'),
+                MenuItem::linkToCrud(OwnershipShare::class, 'Quotes-parts', 'fa-solid fa-chart-pie'),
+                MenuItem::linkToCrud(OwnershipInvoice::class, 'Factures partagées', 'fa-solid fa-file-invoice'),
+                MenuItem::linkToCrud(OwnershipCall::class, 'Appels de fonds', 'fa-solid fa-hand-holding-dollar'),
+                MenuItem::linkToRoute('estate_admin_ownership_statements', [], 'Relevés des indivisaires', 'fa-solid fa-file-invoice'),
+            ]),
+            MenuItem::block('estate_ownership', 'estate_widget.ownership', 'fa-solid fa-people-roof')->setSize(2),
             MenuItem::linkToRoute('admin_settings', [], 'Réglages', 'fa-solid fa-sliders'),
         ];
     }
@@ -83,6 +95,19 @@ final class ActivityMenuTest extends TestCase
             ['La société', ['Société']],
             'Réglages',
         ], self::labels($kept));
+    }
+
+    public function testWithoutOwnershipNoIndivisionIsShown(): void
+    {
+        $menu = new ActivityMenu(new Activities(['assets']));
+        $labels = self::labels($menu->filter(self::items()));
+
+        self::assertNotContains('estate_widget.ownership', $labels, 'the card goes');
+        foreach ($labels as $label) {
+            self::assertNotSame('Indivisions', \is_array($label) ? $label[0] : $label, 'the section goes, all its screens with it');
+        }
+        self::assertFalse($menu->allows(MenuItem::linkToRoute('estate_admin_ownership_statements', [], 'Relevés')));
+        self::assertTrue((new ActivityMenu(new Activities(['ownership'])))->allows(MenuItem::linkToCrud(OwnershipInvoice::class, 'Factures partagées')));
     }
 
     public function testSalesAloneHideTheRentalScreensAndCards(): void

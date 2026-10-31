@@ -23,6 +23,8 @@ from what they are to the organisation, never from a role stored on the account.
   report, the building's notices.
 - **Contractors** (`/artisan`): the jobs given to them, with the address and the access, and a
   form to give a date, a quote, an invoice and a report.
+- **Co-owners** (`/indivision`, with the `ownership` activity): their shared ownership, their
+  account, calls for funds, the invoices shared, their statements, its cloud folder.
 - **The public**: the published homes (`/biens`), a visit request, an application form.
 
 ## How this manual is organised
@@ -33,6 +35,9 @@ from what they are to the organisation, never from a role stored on the account.
   enums.
 - [Rents](usage-rents.md): calling, reminding, payments, receipts, online payment, the IRL
   revision, the books.
+- [Shared ownership](usage-ownership.md): indivisions, co-owners' shares over time, shared
+  invoices, calls for funds, statements, the co-owner's space, the cloud folder, and how it is
+  kept in the books.
 - [Works, documents and messages](usage-works.md): work orders, files, the tenants' messages,
   notices.
 - [The public site and applications](usage-applications.md): the homes, visits, applications.

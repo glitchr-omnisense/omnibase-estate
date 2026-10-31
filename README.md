@@ -5,8 +5,10 @@ the organisations that own or manage homes (an SCI, an agency), their buildings 
 associates, leases and tenants, rent calls, receipts and online payment, contractors and work
 orders, invitations, and a private space for each of those people - posting to
 [omnibase/ledger](https://github.com/glitchr-omnisense/omnibase-ledger) when the organisation
-keeps its books there. Its words on the pages and in the e-mails are French: it was written for
-French residential lettings (the loi du 6 juillet 1989, the IRL revision, the quittance).
+keeps its books there. With the `ownership` activity, shared ownerships (indivisions): co-owners'
+shares over time, shared invoices divided and called for funds, each co-owner's statement and
+space. Its words on the pages and in the e-mails are French: it was written for French
+residential lettings (the loi du 6 juillet 1989, the IRL revision, the quittance).
 
 Nobody signs up: the management invites an associate, a tenant, a contractor or a member of its
 team, and what each person may open comes from what they are to the organisation, never from a
@@ -18,8 +20,8 @@ role stored on the account.
 - `omnisense/omnibase` 3.x or 4.0, `omnibridge/symfony` 1.x, `omnibase/admin`
 - Symfony 7 or 8 (`config`, `dependency-injection`, `form`, `http-kernel`, `mailer`, `security-bundle`)
 - Suggested: `omnibase/ledger` (the books), `omnisense/omnitrade` with `omnitrade/stripe` (rents
-  paid online), `dompdf/dompdf` (PDF notices and receipts), `omnisense/omnistate` (companies read
-  from the public registers)
+  paid online), `dompdf/dompdf` (PDF notices, receipts and statements), `omnisense/omnistate`
+  (companies read from the public registers), `omnibase/drive` (a shared ownership's cloud folder)
 
 ## Installation
 

@@ -1,0 +1,27 @@
+{# Base\Estate\Admin\Widget\Dashboard\OwnershipWidgetType: the shared ownerships, what their co-owners still owe on their calls, what is late. #}
+{% extends '@Estate/admin/widget/dashboard/_card.html.twig' %}
+{% block subtitle %}{{ 'dashboard.ownership.sub'|trans({count: rows|length}, 'estate') }}{% endblock %}
+{% block actions %}<a class="dash-card-action" href="{{ path('estate_admin_ownership_statements') }}">{{ 'dashboard.ownership.statements'|trans({}, 'estate') }}</a>{% endblock %}
+{% block body %}
+<div class="es-hero"><span class="es-hero-value{{ lateTotal > 0 ? ' es-bad' }}">{{ due|euros(true) }}</span><span class="es-hero-unit">{{ 'dashboard.ownership.due'|trans({}, 'estate') }}</span></div>
+{% if rows is empty %}
+    <p class="es-muted" style="margin: .6rem 0 0">{{ 'dashboard.ownership.none'|trans({}, 'estate') }} <a href="{{ path('admin_crud_ownerships_new') }}">{{ 'dashboard.ownership.create'|trans({}, 'estate') }}</a></p>
+{% else %}
+<ul class="dash-rows">
+    {% for row in rows %}
+    <li><a class="dash-row" href="{{ path('admin_crud_ownerships_detail', {entityId: row.ownership.id}) }}">
+        <i class="fa-solid {{ row.balanced ? 'fa-people-roof' : 'fa-triangle-exclamation es-bad' }} dash-row-icon" aria-hidden="true"></i>
+        <span class="dash-row-label">{{ row.ownership.name }}<small>{{ row.balanced ? 'dashboard.ownership.late'|trans({count: row.late}, 'estate') : 'dashboard.ownership.unbalanced'|trans({}, 'estate') }}</small></span>
+        <span class="dash-row-value{{ row.late ? ' es-bad' }}">{{ row.due|euros(true) }}</span>
+    </a></li>
+    {% endfor %}
+    {% for call in late|slice(0, 3) %}
+    <li><a class="dash-row" href="{{ path('estate_admin_ownership_call_payment', {id: call.id}) }}">
+        <i class="fa-solid fa-hourglass-half dash-row-icon" aria-hidden="true"></i>
+        <span class="dash-row-label">{{ call.share.name }}<small>{{ 'dashboard.ownership.call_late'|trans({reference: call.reference, date: call.dueOn|format_date('short')}, 'estate') }}</small></span>
+        <span class="dash-row-value es-bad">{{ call.remaining|euros(true) }}</span>
+    </a></li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

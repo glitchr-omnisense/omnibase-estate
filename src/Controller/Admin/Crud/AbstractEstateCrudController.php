@@ -32,6 +32,8 @@ abstract class AbstractEstateCrudController extends AbstractCrudController
         'WorkOrder' => ['Intervention', 'Interventions'], 'Notice' => ['Avis aux locataires', 'Avis aux locataires'], 'Deadline' => ['Échéance', 'Échéances'],
         'Invitation' => ['Invitation', 'Invitations'], 'Activity' => ['Activité', 'Journal d\'activité'],
         'Document' => ['Document', 'Documents des biens'], 'Application' => ['Candidature', 'Candidatures'],
+        'Ownership' => ['Indivision', 'Indivisions'], 'OwnershipShare' => ['Quote-part', 'Quotes-parts des indivisaires'],
+        'OwnershipInvoice' => ['Facture partagée', 'Factures partagées'], 'OwnershipCall' => ['Appel de fonds', 'Appels de fonds'],
     ];
 
     public function configureCrud(Crud $crud): Crud

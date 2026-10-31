@@ -1,0 +1,18 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ url('estate_coowner') }}{% endblock %}
+{% block action_text %}Voir mon espace indivisaire{% endblock %}
+{% block content %}
+{% set st = statement %}
+<p>Bonjour {{ st.name }},</p>
+<p>Voici votre relevé de compte de <strong>{{ ownership.name }}</strong> pour {{ st.periodLabel }}, en pièce jointe :</p>
+<table style="width:100%;border-collapse:collapse">
+    <tr><td>Solde d'ouverture</td><td style="text-align:right">{{ st.opening|euros }}</td></tr>
+    <tr><td>Votre part des recettes</td><td style="text-align:right">{{ st.income|euros }}</td></tr>
+    <tr><td>Votre part des charges</td><td style="text-align:right">− {{ st.expenses|euros }}</td></tr>
+    <tr><td>Vos versements</td><td style="text-align:right">{{ st.paid|euros }}</td></tr>
+    <tr><td><strong>Solde au {{ st.to|format_date('long') }}</strong></td><td style="text-align:right"><strong>{{ st.closing|euros }}</strong></td></tr>
+</table>
+{% if st.due %}<p>Il reste <strong>{{ st.due|euros }}</strong> à régler sur vos appels de fonds.</p>{% endif %}
+<p>{{ organisation.name }}</p>
+{% endblock %}

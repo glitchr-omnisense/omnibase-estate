@@ -1,4 +1,4 @@
-{# A rent notice or receipt, as a printable page (dompdf turns it into a PDF): the company, the tenant, the amounts. #}
+{# A rent notice or receipt, as a printable page (dompdf turns it into a PDF): the company, the tenant (block recipient: a co-owner's statement names its co-owner), the amounts. #}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -25,7 +25,7 @@
 <body>
 <table class="top"><tr>
     <td><div class="brand">{{ organisation.name|replace({'&': '<span>&amp;</span>'})|raw }}</div><div class="muted">{{ organisation.legalForm }}{% if organisation.siren %} · SIREN {{ organisation.siren }}{% endif %}<br>{{ organisation.fullAddress }}<br>{{ organisation.email }}</div></td>
-    <td style="text-align: right"><strong>{{ lease.tenantNames }}</strong><br>{{ lease.unit.address }}{% if lease.unit.door %}, {{ lease.unit.door }}{% endif %}<br>{{ lease.unit.postcode }} {{ lease.unit.city }}</td>
+    <td style="text-align: right">{% block recipient %}<strong>{{ lease.tenantNames }}</strong><br>{{ lease.unit.address }}{% if lease.unit.door %}, {{ lease.unit.door }}{% endif %}<br>{{ lease.unit.postcode }} {{ lease.unit.city }}{% endblock %}</td>
 </tr></table>
 {% block document %}{% endblock %}
 </body>

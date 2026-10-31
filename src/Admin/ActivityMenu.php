@@ -10,6 +10,11 @@ use Base\Estate\Entity\Document;
 use Base\Estate\Entity\Lease;
 use Base\Estate\Entity\LeaseParty;
 use Base\Estate\Entity\Notice;
+use Base\Estate\Entity\Ownership;
+use Base\Estate\Entity\OwnershipCall;
+use Base\Estate\Entity\OwnershipInvoice;
+use Base\Estate\Entity\OwnershipPayment;
+use Base\Estate\Entity\OwnershipShare;
 use Base\Estate\Entity\Payment;
 use Base\Estate\Entity\RentCall;
 use Base\Estate\Entity\WorkOrder;
@@ -28,9 +33,11 @@ use Base\Estate\Service\Activities;
  *
  * Tenants, leases, rents, works and contractors (and their dashboard cards)
  * belong to the activities that let homes: assets, ownership, management;
- * the associates to assets. The rest - homes, buildings, the company, its
- * team, deadlines, the books - to every activity. A section left without
- * items is left out.
+ * the associates to assets; the shared ownerships - their shares, shared
+ * invoices, calls for funds, statements and their dashboard card - to
+ * ownership. The rest - homes, buildings, the company, its team,
+ * deadlines, the books - to every activity. A section left without items
+ * is left out.
  */
 class ActivityMenu
 {
@@ -46,11 +53,17 @@ class ActivityMenu
         Notice::class => Activity::RENTAL,
         Document::class => Activity::RENTAL,
         Associate::class => [Activity::ASSETS],
+        Ownership::class => [Activity::OWNERSHIP],
+        OwnershipShare::class => [Activity::OWNERSHIP],
+        OwnershipInvoice::class => [Activity::OWNERSHIP],
+        OwnershipCall::class => [Activity::OWNERSHIP],
+        OwnershipPayment::class => [Activity::OWNERSHIP],
     ];
 
     /** Route => the activities it belongs to. */
     private const ROUTES = [
         'estate_admin_messages' => Activity::RENTAL,
+        'estate_admin_ownership_statements' => [Activity::OWNERSHIP],
     ];
 
     /** Dashboard card (block name) => the activities it belongs to. */
@@ -62,6 +75,7 @@ class ActivityMenu
         'estate_works' => Activity::RENTAL,
         'estate_todo' => Activity::RENTAL,
         'estate_payments' => Activity::RENTAL,
+        'estate_ownership' => [Activity::OWNERSHIP],
     ];
 
     public function __construct(private readonly Activities $activities)

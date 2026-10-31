@@ -17,7 +17,8 @@ account, what a user is to the organisations (memoised per request, reset betwee
 | `associateships(?User)`, `isAssociateOf(?User, Organisation)` | their `Associate` records |
 | `tenancies(?User)`, `isPartyOf(?User, Lease)` | the leases they are a party of |
 | `contractorships(?User)` | their `Contractor` records |
-| `of(?User)` | the spaces to offer, in order: `associate` (`estate_associate`), `tenant` (`estate_tenant`), `contractor` (`estate_contractor`) |
+| `coOwnerships(?User)`, `ownerships(?User)`, `isCoOwnerOf(?User, Ownership)`, `holdersIn(?User, Ownership)` | their `OwnershipShare` records and the ownerships they name - none, and nothing read, while the site does not run `ownership` |
+| `of(?User)` | the spaces to offer, in order: `associate` (`estate_associate`), `tenant` (`estate_tenant`), `contractor` (`estate_contractor`), `coowner` (`estate_coowner`, [Shared ownership](usage-ownership.md#the-co-owners-space)) |
 
 ## `EstateVoter`
 
@@ -31,6 +32,7 @@ account, what a user is to the organisations (memoised per request, reset betwee
 | `ESTATE_WORK_VIEW` | `WorkOrder` | its contractor, the parties of the unit's current lease, the organisation's associates |
 | `ESTATE_WORK_DO` | `WorkOrder` | its contractor |
 | `ESTATE_DOCUMENT_VIEW` | `Document` | see below |
+| `ESTATE_OWNERSHIP_VIEW` | `Ownership`, `OwnershipInvoice`, `OwnershipCall` | the ownership's co-owners; of the calls, only the co-owner called |
 
 ### Documents
 

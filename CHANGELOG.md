@@ -3,6 +3,29 @@
 ## [Unreleased]
 
 ### Added
+- Shared ownership, the `ownership` activity: `Entity\Ownership` (an indivision, its homes, its
+  managing organisation, its cloud folder), `Entity\OwnershipShare` (a co-owner - a person, an
+  associate or the company itself -, an exact fraction, an IBAN, from `startsOn` until `endsOn`),
+  checked to add up to one on every date they change (`Ownership::problems()`, `Model\Shares`);
+  `Entity\OwnershipInvoice` divided by the shares in force or by hand (`Enum\SplitMode`) and
+  posted by `Service\Ownerships::post()`: the expense with its VAT when the book is liable, the
+  supplier, a call for funds per co-owner (`Entity\OwnershipCall`, `AF-<year>-<n>`, e-mailed)
+  on their 467 current account against 7551, every line marked `ownership=<id>` and `unit=<id>`
+  (`Ledger\OwnershipBooks`, `Ledger\OwnershipDimensionLabeler`); the rents of its homes shared
+  out when received (6551 / 467, `Payments::record()` → `Ownerships::rentReceived()`, reversed by
+  `Payments::cancel()`, `estate:ownership:income` for those received before); payments by hand
+  or by the bank reconciliation (`Ledger\OwnershipSettlement` on `BankLineReconciled`,
+  `Entity\OwnershipPayment`). The co-owner's statement for a month, a quarter or a year
+  (`Model\OwnershipStatement`, `Model\OwnershipPeriod`), its PDF and e-mail; the co-owner's space
+  `/indivision` (`Controller\Client\CoOwnerController`, `Spaces::coOwnerships()`, `coowner` in
+  `Spaces::of()`, `EstateVoter::OWNERSHIP_VIEW`); with omnibase/drive, optional, the folder
+  `Indivisions/<name>` shared with the co-owners by name, deposit allowed, the invoices posted in
+  its « Factures » (`Drive\OwnershipFolders`). The back office: indivisions, shares (the sum
+  said on saving), shared invoices and their split preview, calls (send, collect), the
+  statements page, the dashboard card `estate_ownership`; all of it only with the activity
+  (`ActivityMenu`). Six tables (a migration in the application). `docs/usage-ownership.md`.
+- `Receipts::htmlToPdf()`: any printable page of the bundle as a PDF; the PDFs write French
+  amounts' narrow no-break spaces and minus signs as Helvetica has them, not as « ? ».
 - The activities a site runs, combinable: `estate.activities` (`Enum\Activity`: `assets`,
   `ownership`, `management`, `transaction`; `[assets]` by default, so every site stays as it
   was), `Service\Activities` (`has()`, `any()`, `all()`), the Twig functions

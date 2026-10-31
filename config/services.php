@@ -6,7 +6,9 @@ namespace Symfony\Component\DependencyInjection\Loader\Configurator;
  * Plain autowiring over src/, as omnibase/forge does. Entities, enums and
  * models are not services; the admin controllers are loaded only when
  * omnibase/admin is there, the books only when omnibase/ledger is, the
- * registers (CompanyRecords) only when glitchr/omnistate is.
+ * registers (CompanyRecords) only when glitchr/omnistate is, a shared
+ * ownership's cloud folder (Drive\OwnershipFolders) only when
+ * omnibase/drive is.
  */
 return function (ContainerConfigurator $configurator) {
 
@@ -27,8 +29,9 @@ return function (ContainerConfigurator $configurator) {
             $src.'/Exception/',
             $src.'/Controller/Admin/',
             $src.'/EstateBundle.php',
-            ...(class_exists('Base\\Ledger\\Service\\Posting') ? [] : [$src.'/Service/Books.php', $src.'/Ledger/', $src.'/Command/BooksUnitsCommand.php']),
+            ...(class_exists('Base\\Ledger\\Service\\Posting') ? [] : [$src.'/Service/Books.php', $src.'/Ledger/', $src.'/Command/BooksUnitsCommand.php', $src.'/Command/OwnershipIncomeCommand.php']),
             ...(class_exists('Omnistate\\Omnistate') ? [] : [$src.'/Service/CompanyRecords.php', $src.'/Command/CompanyRefreshCommand.php']),
+            ...(class_exists('Base\\Drive\\Share\\FileShare') ? [] : [$src.'/Drive/']),
         ]);
 
     $services->load('Base\\Estate\\Controller\\Client\\', $src.'/Controller/Client/')

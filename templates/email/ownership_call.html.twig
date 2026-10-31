@@ -1,0 +1,16 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ url('estate_coowner') }}{% endblock %}
+{% block action_text %}Voir mon espace indivisaire{% endblock %}
+{% block content %}
+<p>Bonjour {{ share.name }},</p>
+<p>Voici un appel de fonds de <strong>{{ ownership.name }}</strong>{% if call.invoice %}, pour votre quote-part ({{ share.fractionLabel }}) de la facture « {{ call.invoice.label }} »{% if call.invoice.supplier %} de {{ call.invoice.supplier }}{% endif %}{% endif %} :</p>
+<table style="width:100%;border-collapse:collapse">
+    <tr><td>{{ call.label }}</td><td style="text-align:right">{{ call.amount|euros }}</td></tr>
+    {% if call.paid %}<tr><td>Déjà reçu</td><td style="text-align:right">{{ call.paid|euros }}</td></tr>{% endif %}
+    <tr><td><strong>À régler avant le {{ call.dueOn|format_date('long') }}</strong></td><td style="text-align:right"><strong>{{ call.remaining|euros }}</strong></td></tr>
+</table>
+<p>Par virement{% if organisation.iban %} sur l'IBAN <strong>{{ organisation.iban }}</strong>{% endif %}, avec la référence <strong>{{ call.reference }}</strong> : votre versement est alors reconnu seul.</p>
+{% if call.invoice and call.invoice.hasFile %}<p>La facture est dans votre espace indivisaire.</p>{% endif %}
+<p>{{ organisation.name }}</p>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends '@Estate/pdf/_document.html.twig' %}
+{% set st = statement %}
+{% set title = 'Relevé ' ~ st.periodLabel ~ ' — ' ~ st.name %}
+{% block recipient %}<strong>{{ st.name }}</strong>{% if st.share and st.share.email %}<br>{{ st.share.email }}{% endif %}<br>Indivisaire · {{ st.share ? st.share.fractionLabel : '—' }}{% endblock %}
+{% block document %}
+<h1>Relevé de compte d'indivisaire</h1>
+<div class="ref">{{ ownership.name }} · {{ st.periodLabel|capitalize }} · du {{ st.from|format_date('long') }} au {{ st.to|format_date('long') }}</div>
+{% if ownership.units|length %}<p class="muted">{{ ownership.units|map(u => u.name ~ (u.address ? ', ' ~ u.address ~ ' ' ~ u.postcode ~ ' ' ~ u.city : ''))|join(' · ') }}</p>{% endif %}
+
+<table class="amounts">
+    <tr><td>Solde au {{ st.from|date_modify('-1 day')|format_date('long') }}</td><td class="num">{{ st.opening|euros }}</td></tr>
+</table>
+
+<h3 style="margin: 4mm 0 1mm">Votre part des recettes</h3>
+<table class="amounts">
+    {% for line in st.incomeLines %}<tr><td>{{ line.date|format_date('short') }} · {{ line.label }} <span class="muted">(encaissé {{ line.amount|euros }})</span></td><td class="num">{{ line.part|euros }}</td></tr>{% else %}<tr><td class="muted">Aucune recette sur la période.</td><td></td></tr>{% endfor %}
+    <tr class="total"><td>Total des recettes</td><td class="num">{{ st.income|euros }}</td></tr>
+</table>
+
+<h3 style="margin: 4mm 0 1mm">Votre part des charges</h3>
+<table class="amounts">
+    {% for line in st.expenseLines %}<tr><td>{{ line.date|format_date('short') }} · {{ line.label }} <span class="muted">(à répartir {{ line.amount|euros }})</span></td><td class="num">- {{ line.part|euros }}</td></tr>{% else %}<tr><td class="muted">Aucune charge sur la période.</td><td></td></tr>{% endfor %}
+    <tr class="total"><td>Total des charges</td><td class="num">- {{ st.expenses|euros }}</td></tr>
+</table>
+
+<h3 style="margin: 4mm 0 1mm">Vos versements</h3>
+<table class="amounts">
+    {% for line in st.paymentLines %}<tr><td>{{ line.date|format_date('short') }} · {{ line.label }}</td><td class="num">{{ line.amount|euros }}</td></tr>{% else %}<tr><td class="muted">Aucun versement sur la période.</td><td></td></tr>{% endfor %}
+    <tr class="total"><td>Total des versements</td><td class="num">{{ st.paid|euros }}</td></tr>
+</table>
+
+<table class="amounts">
+    <tr class="total"><td>Solde au {{ st.to|format_date('long') }} {{ st.closing < 0 ? '(vous devez à l\'indivision)' : (st.closing > 0 ? '(l\'indivision vous doit)' : '') }}</td><td class="num">{{ st.closing|euros }}</td></tr>
+</table>
+
+{% if st.calls %}
+<h3 style="margin: 4mm 0 1mm">Vos appels de fonds</h3>
+<table class="amounts">
+    {% for row in st.calls %}<tr><td>{{ row.call.reference }} · {{ row.call.label }} · émis le {{ row.call.issuedOn|format_date('short') }}, à régler avant le {{ row.call.dueOn|format_date('short') }}</td><td class="num">{{ row.call.amount|euros }}{% if row.remaining %}<br><span class="muted">reste {{ row.remaining|euros }}</span>{% else %}<br><span class="muted">réglé</span>{% endif %}</td></tr>{% endfor %}
+    <tr class="total"><td>Reste à régler sur vos appels</td><td class="num">{{ st.due|euros }}</td></tr>
+</table>
+{% endif %}
+
+{% if st.warnings %}<p class="note">{{ st.warnings|join(' ') }}</p>{% endif %}
+<p class="note">Recettes : les loyers encaissés pour les biens de l'indivision, selon les quotes-parts en vigueur le jour de l'encaissement. Charges : votre part des factures réparties, à leur date. Un appel de fonds pour provision n'entre au solde que par ce que vous versez.{% if organisation.iban %} Règlement par virement sur l'IBAN {{ organisation.iban }}, en indiquant la référence de l'appel.{% endif %}</p>
+<div class="sign">Établi à {{ organisation.city ?? 'Strasbourg' }}, le {{ 'now'|format_date('long') }}<br><strong>{{ organisation.name }}</strong>, gérant de l'indivision</div>
+{% endblock %}

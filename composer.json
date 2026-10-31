@@ -23,7 +23,8 @@
     "suggest": {
         "omnibase/ledger": "Rent calls, payments and work invoices posted to the company's books",
         "omnisense/omnitrade": "Rent paid online (omnitrade/stripe: card and SEPA debit)",
-        "dompdf/dompdf": "Rent notices and receipts as PDF"
+        "dompdf/dompdf": "Rent notices, receipts and co-owners' statements as PDF",
+        "omnibase/drive": "A shared ownership's cloud folder, shared with its co-owners"
     },
     "config": {"sort-packages": true, "allow-plugins": {"omnibridge/composer": true, "php-http/discovery": true}},
     "minimum-stability": "dev",

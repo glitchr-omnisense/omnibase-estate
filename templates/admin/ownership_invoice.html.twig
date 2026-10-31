@@ -1,0 +1,76 @@
+{% extends '@Admin/layout.html.twig' %}
+
+{% block page_title %}Répartir {{ invoice.label }}{% endblock %}
+
+{% block content_header %}
+<div class="admin-header">
+    <span class="admin-header-icon"><i class="fa-solid fa-divide"></i></span>
+    <div class="admin-header-titles">
+        <h1>{{ invoice.isPosted ? 'Répartition' : 'Répartir' }} — {{ invoice.label }}</h1>
+        <div class="admin-header-subtitle">{{ invoice.ownership.name }} · {{ invoice.supplier ?: 'fournisseur à préciser' }} · facture du {{ invoice.date|format_date('long') }}{% if invoice.number %} · n° {{ invoice.number }}{% endif %}</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{{ include('@Estate/admin/_ownership_style.html.twig') }}
+<div class="estate-own">
+    <div class="card"><dl>
+        <dt>Montant TTC</dt><dd>{{ invoice.amount|euros }}</dd>
+        <dt>Code TVA</dt><dd>{{ invoice.taxCode ?: '—' }}</dd>
+        <dt>Compte de charge</dt><dd>{{ invoice.expenseAccount }}</dd>
+        {% if invoice.unit %}<dt>Bien</dt><dd>{{ invoice.unit.name }}</dd>{% endif %}
+        <dt>À répartir</dt><dd>{{ (invoice.isPosted ? invoice.sharedAmount : preview.shared)|euros }}{% if (invoice.isPosted ? invoice.sharedAmount : preview.shared) != invoice.amount %} <small class="text-muted">(hors TVA récupérée par le livre)</small>{% endif %}</dd>
+        {% if invoice.hasFile %}<dt>Fichier</dt><dd><a href="{{ path('estate_ownership_invoice_file', {id: invoice.id}) }}" target="_blank" rel="noopener"><i class="fa-solid fa-file-pdf"></i> la facture</a></dd>{% endif %}
+    </dl></div>
+
+    {% if invoice.isPosted %}
+    <div class="card">
+        <h2 class="h5">Répartie le {{ invoice.postedAt|format_date('long') }}</h2>
+        <table>
+            <thead><tr><th>Indivisaire</th><th class="num">Part</th><th>Appel</th><th class="num">Reçu</th></tr></thead>
+            <tbody>
+            {% for holder, amount in invoice.parts %}
+                {% set share = invoice.ownership.shareOf(holder, invoice.date) %}
+                {% set call = invoice.calls|filter(c => c.holder == holder)|first %}
+                <tr><td>{{ share ? share.name : holder }}</td><td class="num">{{ amount|euros }}</td>
+                    <td>{% if call %}{{ call.reference }} · avant le {{ call.dueOn|format_date('short') }}{% elseif share and share.company %}<span class="text-muted">reste dans les comptes de la société</span>{% else %}—{% endif %}</td>
+                    <td class="num">{{ call ? call.paid|euros : '' }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <form method="post" class="card">
+        <input type="hidden" name="_token" value="{{ csrf_token('estate_ownership_invoice_' ~ invoice.id) }}">
+        <div class="modes">
+            {% for m in modes %}<label><input type="radio" name="mode" value="{{ m.value }}" {{ m == mode ? 'checked' }} onchange="this.form.requestSubmit()"> {{ m.label }}</label>{% endfor %}
+        </div>
+        <table>
+            <thead><tr><th>Indivisaire</th><th class="num">Quote-part</th>{% if mode.value != 'shares' %}<th class="num">{{ mode.value == 'amounts' ? 'Montant (€)' : 'Pourcentage' }}</th>{% endif %}<th class="num">Part</th></tr></thead>
+            <tbody>
+            {% for holder, part in preview.parts %}
+                <tr>
+                    <td>{{ part.share.name }}{% if part.share.company %} <small class="text-muted">(la société)</small>{% elseif part.share.email %} <small class="text-muted">{{ part.share.email }}</small>{% endif %}</td>
+                    <td class="num">{{ part.fraction }}</td>
+                    {% if mode.value != 'shares' %}<td class="num"><input class="form-control split" name="split[{{ holder }}]" inputmode="decimal" value="{{ split[holder] is defined ? (split[holder] / 100)|number_format(2, ',', '') : '' }}"></td>{% endif %}
+                    <td class="num">{{ part.amount|euros }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot><tr><td>Total</td><td></td>{% if mode.value != 'shares' %}<td></td>{% endif %}<td class="num">{{ preview.parts|reduce((sum, p) => sum + p.amount, 0)|euros }}</td></tr></tfoot>
+        </table>
+        {% for error in preview.errors %}<p class="is-bad"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</p>{% endfor %}
+        <div class="row2">
+            <label>À régler avant le<input class="form-control" type="date" name="dueOn" value="{{ dueOn|date('Y-m-d') }}"></label>
+            <label style="align-self: end; display: flex; gap: .5rem; align-items: center; font-weight: 500"><input type="checkbox" name="send" value="1" checked> Envoyer les appels par e-mail</label>
+        </div>
+        <p class="text-muted">{% if books %}La facture passe en charge (TVA déductible si le livre est assujetti) contre le fournisseur ; chaque part, hors celle de la société, devient un appel de fonds au compte courant de l'indivisaire (467), numéroté pour le rapprochement bancaire.{% else %}Chaque part, hors celle de la société, devient un appel de fonds numéroté.{% endif %}</p>
+        <div class="actions">
+            <button class="btn btn-secondary" type="submit" name="do" value="preview"><i class="fa-solid fa-rotate"></i> Recalculer</button>
+            <button class="btn btn-success" type="submit" name="do" value="post" {{ preview.errors ? 'disabled' }}><i class="fa-solid fa-check"></i> Passer en comptabilité et appeler les fonds</button>
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

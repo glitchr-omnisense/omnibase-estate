@@ -1,0 +1,34 @@
+{% extends '@Admin/layout.html.twig' %}
+
+{% block page_title %}Encaisser {{ call.reference }}{% endblock %}
+
+{% block content_header %}
+<div class="admin-header">
+    <span class="admin-header-icon"><i class="fa-solid fa-hand-holding-dollar"></i></span>
+    <div class="admin-header-titles">
+        <h1>Encaisser {{ call.reference }}</h1>
+        <div class="admin-header-subtitle">{{ call.share.name }} · {{ call.ownership.name }} · {{ call.label }} · avant le {{ call.dueOn|format_date('long') }}</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{{ include('@Estate/admin/_ownership_style.html.twig') }}
+<div class="estate-own" style="max-width: 40rem">
+    <div class="card"><dl>
+        <dt>Appelé</dt><dd>{{ call.amount|euros }}</dd>
+        <dt>Déjà reçu</dt><dd>{{ call.paid|euros }}</dd>
+        <dt>Reste dû</dt><dd>{{ call.remaining|euros }}</dd>
+    </dl></div>
+    <form method="post" class="card">
+        <input type="hidden" name="_token" value="{{ csrf_token('estate_ownership_payment_' ~ call.id) }}">
+        <div class="row2">
+            <label>Montant reçu (€)<input class="form-control" name="amount" required inputmode="decimal" value="{{ (call.remaining / 100)|number_format(2, ',', '') }}"></label>
+            <label>Reçu le<input class="form-control" type="date" name="paidOn" value="{{ 'now'|date('Y-m-d') }}"></label>
+        </div>
+        <label>Référence (facultatif)<input class="form-control" name="reference" placeholder="libellé du virement, n° de chèque"></label>
+        <p class="text-muted">Le versement passe en banque (512) contre le compte courant de l'indivisaire ; un virement vu au relevé se rapproche seul de l'appel, par sa référence.</p>
+        <div><button class="btn btn-success" type="submit"><i class="fa-solid fa-check"></i> Encaisser</button></div>
+    </form>
+</div>
+{% endblock %}

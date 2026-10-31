@@ -88,7 +88,9 @@ bin/console doctrine:migrations:migrate
 
 Tables `estate_*`: organisation, building, unit, unit_photo, associate, member, lease,
 lease_party, rent_call, payment, contractor, work_order, work_order_event, document, notice,
-deadline, activity, application, message, invitation.
+deadline, activity, application, message, invitation; with the shared ownerships (read only when
+the site runs `ownership`, but mapped: migrate them anyway) ownership, ownership_unit,
+ownership_share, ownership_invoice, ownership_call, ownership_payment.
 
 ## The crons
 

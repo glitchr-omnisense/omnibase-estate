@@ -30,6 +30,7 @@ public function configureWidgetItems(): iterable
 |---|---|
 | assets, ownership, management (they let homes) | leases, tenants and guarantors, applications, rent calls, payments, work orders, contractors, notices, the homes' documents, the tenants' messages; the cards `estate_overview`, `estate_occupancy`, `estate_rents`, `estate_late`, `estate_works`, `estate_todo`, `estate_payments` |
 | assets | the associates |
+| ownership | the indivisions, their shares, shared invoices, calls for funds (`Ownership*`), the statements page (`estate_admin_ownership_statements`), the card `estate_ownership` ([Shared ownership](usage-ownership.md#the-back-office)) |
 | every activity | the homes, their photos, the buildings, the company, the team, deadlines, invitations, the activity log, and everything not estate's (the books, the site) |
 
 A section left without items is left out. `ActivityMenu::allows($item)` and `activitiesOf($item)`

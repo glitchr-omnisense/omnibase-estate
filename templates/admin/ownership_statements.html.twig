@@ -1,0 +1,61 @@
+{% extends '@Admin/layout.html.twig' %}
+
+{% block page_title %}Relevés des indivisaires{% endblock %}
+
+{% block content_header %}
+<div class="admin-header">
+    <span class="admin-header-icon"><i class="fa-solid fa-file-invoice"></i></span>
+    <div class="admin-header-titles">
+        <h1>Relevés des indivisaires</h1>
+        <div class="admin-header-subtitle">{{ ownership ? ownership.name ~ ' · ' ~ label : 'Aucune indivision' }}</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{{ include('@Estate/admin/_ownership_style.html.twig') }}
+<div class="estate-own" style="max-width: 72rem">
+    {% if not ownership %}
+        <div class="card"><p>Aucune indivision : créez-la, puis ses quotes-parts.</p><p><a class="btn btn-success" href="{{ path('admin_crud_ownerships_new') }}">Créer une indivision</a></p></div>
+    {% else %}
+    <div class="card">
+        {% if ownerships|length > 1 %}<nav class="periods" style="margin-bottom: .6rem">{% for o in ownerships %}<a href="{{ path('estate_admin_ownership_statements', {ownership: o.id, period: period}) }}" {{ o.id == ownership.id ? 'aria-current="true"' }}>{{ o.name }}</a>{% endfor %}</nav>{% endif %}
+        <nav class="periods">{% for p in periods %}<a href="{{ path('estate_admin_ownership_statements', {ownership: ownership.id, period: p.key}) }}" {{ p.key == period ? 'aria-current="true"' }}>{{ p.label|capitalize }}</a>{% endfor %}</nav>
+        {% if not ownership.balanced %}<p class="is-bad" style="margin: .6rem 0 0"><i class="fa-solid fa-triangle-exclamation"></i> {{ ownership.sharesSummary }}</p>{% endif %}
+    </div>
+    <div class="card" style="overflow-x: auto">
+        <table>
+            <thead><tr><th>Indivisaire</th><th class="num">Quote-part</th><th class="num">Solde d'ouverture</th><th class="num">Recettes</th><th class="num">Charges</th><th class="num">Versements</th><th class="num">Solde de clôture</th><th class="num">Reste dû sur appels</th><th></th></tr></thead>
+            <tbody>
+            {% for s in statements %}
+                <tr>
+                    <td><strong>{{ s.name }}</strong>{% if s.share and s.share.company %} <small class="text-muted">(la société)</small>{% endif %}</td>
+                    <td class="num">{{ s.share ? s.share.fractionLabel : '—' }}</td>
+                    <td class="num">{{ s.opening|euros }}</td>
+                    <td class="num">{{ s.income|euros }}</td>
+                    <td class="num">{{ (0 - s.expenses)|euros }}</td>
+                    <td class="num">{{ s.paid|euros }}</td>
+                    <td class="num {{ s.closing < 0 ? 'is-bad' : '' }}"><strong>{{ s.closing|euros }}</strong></td>
+                    <td class="num {{ s.due > 0 ? 'is-bad' : '' }}">{{ s.due|euros }}</td>
+                    <td class="actions" style="justify-content: flex-end">
+                        {% if s.share %}<a class="btn btn-sm btn-secondary" href="{{ path('estate_admin_ownership_statement', {id: s.share.id, period: period}) }}" target="_blank" rel="noopener"><i class="fa-solid fa-file-pdf"></i> PDF</a>{% endif %}
+                        {% if s.share and not s.share.company and s.share.email %}
+                        <form method="post" action="{{ path('estate_admin_ownership_statements_send', {id: ownership.id}) }}" style="display: inline">
+                            <input type="hidden" name="_token" value="{{ csrf_token('estate_ownership_statements_' ~ ownership.id) }}"><input type="hidden" name="period" value="{{ period }}"><input type="hidden" name="share" value="{{ s.share.id }}">
+                            <button class="btn btn-sm btn-secondary" type="submit"><i class="fa-solid fa-paper-plane"></i> Envoyer</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <p class="text-muted" style="margin-top: .75rem">Du côté de l'indivisaire : un solde positif, l'indivision le lui doit ; négatif, il le doit. Recettes : les loyers encaissés, selon les quotes-parts du jour ; charges : les parts des factures réparties ; versements : ses règlements d'appels de fonds.</p>
+        <form method="post" action="{{ path('estate_admin_ownership_statements_send', {id: ownership.id}) }}" class="actions">
+            <input type="hidden" name="_token" value="{{ csrf_token('estate_ownership_statements_' ~ ownership.id) }}"><input type="hidden" name="period" value="{{ period }}">
+            <button class="btn btn-success" type="submit"><i class="fa-solid fa-paper-plane"></i> Envoyer les relevés de {{ label }} à chaque indivisaire</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
