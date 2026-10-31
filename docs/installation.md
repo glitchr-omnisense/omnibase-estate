@@ -15,7 +15,7 @@ What it suggests, each loaded only when present (`config/services.php`):
 
 | Package | Adds |
 |---|---|
-| `omnibase/ledger` | rent calls, payments and work invoices posted to the organisation's book (`Service\Books`); bank lines reconciled with rent calls pay them (`Ledger\BankSettlement`); associates read the books (`Ledger\AssociateBookAccess`) and their accounts in their space (`Ledger\CompanyAccounts`) |
+| `omnibase/ledger` | rent calls, payments and work invoices posted to the organisation's book (`Service\Books`); bank lines reconciled with rent calls pay them (`Ledger\BankSettlement`), and no longer once taken back (`Ledger\BankUnsettlement`); associates read the books (`Ledger\AssociateBookAccess`) and their accounts in their space (`Ledger\CompanyAccounts`) |
 | `omnisense/omnitrade` with `omnitrade/stripe` | rents paid online by card or SEPA debit (`Service\OnlinePayments`) |
 | `dompdf/dompdf` | notices, receipts and certificates as PDF (without it, printable pages) |
 | `omnisense/omnistate` (with `omnistate/annuaire-entreprises`, `omnistate/vies`) | a company's identity read from the registers (`Service\CompanyRecords`, `estate:company:refresh`) |

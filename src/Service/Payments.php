@@ -67,6 +67,19 @@ class Payments
         return $payment;
     }
 
+    /**
+     * Takes back a payment recorded in error (a bank line unreconciled): off
+     * its call, which is due again. Its receipt number stays the call's, for
+     * the receipt the next payment gives. Posting nothing: the ledger side is
+     * the caller's (the reconciliation's reversal).
+     */
+    public function cancel(Payment $payment): void
+    {
+        $payment->getRentCall()->removePayment($payment);
+        $this->entityManager->remove($payment);
+        $this->entityManager->flush();
+    }
+
     public function method(PaymentMethod $method): string
     {
         return match ($method) {

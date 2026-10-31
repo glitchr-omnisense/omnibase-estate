@@ -39,6 +39,10 @@ reminded yet and whose due date is `estate.reminder_days` (5) days past is remin
   posted it); with `$notify`, the receipt e-mailed to the tenants, the PDF attached when dompdf
   is installed.
 
+`Payments::cancel(Payment $payment)`: a payment recorded in error taken back - off its call, which
+is due again (`RentCall::removePayment()`: called, or partial with what is left), its receipt
+number kept for the next payment. Nothing is posted: the ledger side is the caller's.
+
 The back office records a payment by hand (amount, method, date, reference).
 
 ## Receipts, notices and certificates
@@ -102,4 +106,5 @@ posting carries its source: nothing is posted twice.
 `Base\Estate\Ledger\BankSettlement` listens to omnibase/ledger's `BankLineReconciled`: money in
 whose settled open items come from rent calls (`estate:rent:<reference>`) pays those calls
 (`Payments::record(..., 'bank:<line id>:<call id>', notify: true, post: false)`), the receipt sent,
-nothing posted twice.
+nothing posted twice. `Base\Estate\Ledger\BankUnsettlement` listens to `BankLineUnreconciled`: the line
+taken back in the books, the payments recorded from it (`bank:<line id>:`) are cancelled.

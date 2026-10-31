@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Fixed
+- A bank line unreconciled in the books takes back the rent payment it recorded
+  (`Ledger\BankUnsettlement`, on omnibase/ledger's `BankLineUnreconciled`; `Payments::cancel()`,
+  `RentCall::removePayment()`): the rent call stayed paid, its receipt available, after the
+  reconciliation was undone.
 - Paying a rent online asks the provider again after a refusal, and for another method: the
   idempotency key was the call and the amount paid only, so Stripe, which keeps a key's answer for
   24 hours, refusals included, answered every later try with the first refusal, and a card session

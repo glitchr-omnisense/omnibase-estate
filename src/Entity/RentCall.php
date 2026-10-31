@@ -121,6 +121,20 @@ class RentCall
         return $this;
     }
 
+    /** Takes a payment back (a bank line unreconciled): called again, or partial, as what is left says. */
+    public function removePayment(Payment $payment): self
+    {
+        if ($this->payments->removeElement($payment)) {
+            $this->paid -= $payment->getAmount();
+            if ($this->paid < $this->getTotal()) {
+                $this->status = $this->paid > 0 ? RentStatus::PARTIAL : RentStatus::CALLED;
+                $this->paidAt = null;
+            }
+        }
+
+        return $this;
+    }
+
     public function isPaid(): bool { return RentStatus::PAID === $this->status; }
 
     public function isLate(?\DateTimeImmutable $today = null): bool
