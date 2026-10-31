@@ -2,6 +2,7 @@
 
 namespace Base\Estate\DependencyInjection;
 
+use Base\Estate\Enum\Activity;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 
@@ -13,6 +14,12 @@ class EstateConfiguration implements ConfigurationInterface
 
         $treeBuilder->getRootNode()
             ->children()
+                ->arrayNode('activities')
+                    ->info('What the business does, combinable: assets (its own property), ownership (a shared ownership), management (for third parties), transaction (sales). The back office shows what belongs to them.')
+                    ->enumPrototype()->values(array_map(fn (Activity $activity) => $activity->value, Activity::cases()))->end()
+                    ->defaultValue([Activity::ASSETS->value])
+                    ->requiresAtLeastOneElement()
+                ->end()
                 ->scalarNode('user_class')->defaultValue('App\Entity\User')
                     ->info('The application\'s user entity: invitations create accounts of this class.')->end()
                 ->scalarNode('from_email')->defaultValue('%env(default::MAILER_CONTACT)%')

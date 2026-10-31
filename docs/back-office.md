@@ -9,6 +9,32 @@ Loaded when omnibase/admin is installed. The CRUDs extend `AbstractEstateCrudCon
 opens creating, editing, deleting and the three saves to `ROLE_ADMIN` (not only the
 super-administrator); the action pages are `#[IsGranted('ROLE_ADMIN')]`. Labels are French.
 
+## Activities
+
+The menu items and dashboard cards that belong to an activity show only when the site runs it
+(`estate.activities`, see [Configuration](configuration.md#activities)). The dashboard
+controller passes its items through `Base\Estate\Admin\ActivityMenu::filter()`, which keeps
+their labels, icons, order and keys (the layout the team arranged is stored by key):
+
+```php
+#[Required]
+public function setActivityMenu(ActivityMenu $activityMenu): void { $this->activityMenu = $activityMenu; }
+
+public function configureWidgetItems(): iterable
+{
+    return $this->activityMenu->filter($this->items());
+}
+```
+
+| Belongs to | Items |
+|---|---|
+| assets, ownership, management (they let homes) | leases, tenants and guarantors, applications, rent calls, payments, work orders, contractors, notices, the homes' documents, the tenants' messages; the cards `estate_overview`, `estate_occupancy`, `estate_rents`, `estate_late`, `estate_works`, `estate_todo`, `estate_payments` |
+| assets | the associates |
+| every activity | the homes, their photos, the buildings, the company, the team, deadlines, invitations, the activity log, and everything not estate's (the books, the site) |
+
+A section left without items is left out. `ActivityMenu::allows($item)` and `activitiesOf($item)`
+answer for one item.
+
 ## The screens
 
 | CRUD | Slug | Actions of its own |

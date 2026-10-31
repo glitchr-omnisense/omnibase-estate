@@ -15,7 +15,7 @@ use Base\Estate\Entity\RentCall;
 use Base\Estate\Entity\WorkOrder;
 use Base\Estate\Enum\ActivityKind;
 use Base\Estate\Enum\PaymentMethod;
-use Base\Estate\Service\Activities;
+use Base\Estate\Service\ActivityLog;
 use Base\Estate\Service\Applications;
 use Base\Estate\Service\CompanyRecords;
 use Base\Estate\Service\RentRevisions;
@@ -130,7 +130,7 @@ class ActionController extends AbstractController
     }
 
     #[Route('/notice/{id}/send', name: 'estate_admin_notice_send', requirements: ['id' => '\d+'])]
-    public function send(Request $request, Notice $notice, EstateMailer $mailer, Activities $activities): RedirectResponse
+    public function send(Request $request, Notice $notice, EstateMailer $mailer, ActivityLog $activities): RedirectResponse
     {
         $this->assertToken($request, 'estate_notice_send', $notice->getId());
         $emails = [];

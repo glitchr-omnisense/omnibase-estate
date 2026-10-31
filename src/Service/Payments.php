@@ -18,7 +18,7 @@ class Payments
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly RentCallRepository $calls,
-        private readonly Activities $activities,
+        private readonly ActivityLog $activities,
         private readonly EstateMailer $mailer,
         private readonly Receipts $receipts,
         private readonly ?Books $books = null,

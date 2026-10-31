@@ -5,7 +5,9 @@ namespace Base\Estate\Service;
 use Base\Estate\Entity\Organisation;
 use Base\Estate\Entity\Payment;
 use Base\Estate\Entity\RentCall;
+use Base\Estate\Entity\Unit;
 use Base\Estate\Entity\WorkOrder;
+use Base\Estate\Ledger\UnitDimensionLabeler;
 use Base\Ledger\Entity\Book;
 use Base\Ledger\Entity\Entry;
 use Base\Ledger\Entity\EntryLine;
@@ -20,7 +22,9 @@ use Doctrine\ORM\EntityManagerInterface;
  * a rent call is a receivable (411 / 706 rent, 708 charges), a payment
  * settles it (512 for a transfer, 5112 for a card or SEPA payment until the
  * provider's payout), a work invoice is a supplier debt (615 / 401). Each
- * posting carries its source, so nothing is posted twice.
+ * posting carries its source, so nothing is posted twice, and its unit as
+ * an analytic dimension on every line (unit=<id>, named by
+ * Ledger\UnitDimensionLabeler): the books give each home's result.
  * Only loaded when omnibase/ledger is installed (config/services.php).
  */
 class Books
@@ -47,11 +51,12 @@ class Books
         $tenant = $lease->getTenants()[0] ?? null;
         $party = $this->parties->partyFor($book, 'tenant', 'lease:'.$lease->getReference(), $lease->getTenantNames() ?: $lease->getReference(), $tenant?->getIban());
 
+        $unit = self::unit($lease->getUnit());
         $draft = new EntryDraft($book, 'VT', $call->getPeriod(), sprintf('Loyer %s %s', $call->getPeriod()->format('m/Y'), $lease->getReference()), 'estate:rent:'.$call->getReference(), $call->getReference());
-        $draft->line($party->getAccountNumber(), $call->getTotal(), 0, $party);
-        $draft->line('706', 0, $call->getRent());
+        $draft->line($party->getAccountNumber(), $call->getTotal(), 0, $party, dimensions: $unit);
+        $draft->line('706', 0, $call->getRent(), dimensions: $unit);
         if ($call->getCharges() > 0) {
-            $draft->line('708', 0, $call->getCharges());
+            $draft->line('708', 0, $call->getCharges(), dimensions: $unit);
         }
         $this->posting->post($draft);
     }
@@ -65,9 +70,10 @@ class Books
         }
         $party = $this->parties->partyFor($book, 'tenant', 'lease:'.$lease->getReference(), $lease->getTenantNames() ?: $lease->getReference());
 
+        $unit = self::unit($lease->getUnit());
         $draft = new EntryDraft($book, 'BQ', $payment->getPaidOn(), sprintf('Règlement %s', $call->getReference()), 'estate:payment:'.$payment->getId(), $call->getReference());
-        $draft->line($payment->getMethod()->isOnline() ? '5112' : '512', $payment->getAmount(), 0);
-        $draft->line($party->getAccountNumber(), 0, $payment->getAmount(), $party);
+        $draft->line($payment->getMethod()->isOnline() ? '5112' : '512', $payment->getAmount(), 0, dimensions: $unit);
+        $draft->line($party->getAccountNumber(), 0, $payment->getAmount(), $party, dimensions: $unit);
         $this->posting->post($draft);
 
         // Paid in full: the call and its payments lettered on the tenant's account, nothing left open there.
@@ -98,8 +104,48 @@ class Books
         $party = $this->parties->partyFor($book, 'supplier', 'contractor:'.$contractor->getId(), $contractor->getCompany(), $contractor->getIban());
 
         $draft = new EntryDraft($book, 'AC', $order->getClosedAt() ?? new \DateTimeImmutable('today'), sprintf('Travaux %s — %s', $order->getUnit()->getName(), $order->getTitle()), 'estate:work:'.$order->getId(), $order->getInvoiceNumber());
-        $draft->line('615', $order->getInvoiceAmount(), 0);
-        $draft->line($party->getAccountNumber(), 0, $order->getInvoiceAmount(), $party);
+        $unit = self::unit($order->getUnit());
+        $draft->line('615', $order->getInvoiceAmount(), 0, dimensions: $unit);
+        $draft->line($party->getAccountNumber(), 0, $order->getInvoiceAmount(), $party, dimensions: $unit);
         $this->posting->post($draft);
+    }
+
+    /**
+     * Gives the unit's dimension to the lines of what estate posted before
+     * it carried one (rent calls, payments, work invoices): the axis is
+     * added where a line has not got it, the amounts untouched. Returns how
+     * many lines got it.
+     */
+    public function tagUnits(): int
+    {
+        $tagged = 0;
+        $tag = function (?Book $book, string $source, ?Unit $unit) use (&$tagged): void {
+            $entry = null === $book ? null : $this->entityManager->getRepository(Entry::class)->findOneBy(['book' => $book, 'source' => $source]);
+            foreach (self::unit($unit) as $axis => $value) {
+                foreach ($entry?->getLines() ?? [] as $line) {
+                    $tagged += $line->addDimension($axis, $value) ? 1 : 0;
+                }
+            }
+        };
+        foreach ($this->entityManager->getRepository(RentCall::class)->findAll() as $call) {
+            $lease = $call->getLease();
+            $book = $this->bookFor($lease->getOrganisation());
+            $tag($book, 'estate:rent:'.$call->getReference(), $lease->getUnit());
+            foreach ($call->getPayments() as $payment) {
+                $tag($book, 'estate:payment:'.$payment->getId(), $lease->getUnit());
+            }
+        }
+        foreach ($this->entityManager->getRepository(WorkOrder::class)->findAll() as $order) {
+            $tag($this->bookFor($order->getOrganisation()), 'estate:work:'.$order->getId(), $order->getUnit());
+        }
+        $this->entityManager->flush();
+
+        return $tagged;
+    }
+
+    /** @return array<string, string> the unit's analytic dimension, none for a unit not saved yet */
+    public static function unit(?Unit $unit): array
+    {
+        return null === $unit?->getId() ? [] : [UnitDimensionLabeler::AXIS => (string) $unit->getId()];
     }
 }

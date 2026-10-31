@@ -27,7 +27,7 @@ return function (ContainerConfigurator $configurator) {
             $src.'/Exception/',
             $src.'/Controller/Admin/',
             $src.'/EstateBundle.php',
-            ...(class_exists('Base\\Ledger\\Service\\Posting') ? [] : [$src.'/Service/Books.php', $src.'/Ledger/']),
+            ...(class_exists('Base\\Ledger\\Service\\Posting') ? [] : [$src.'/Service/Books.php', $src.'/Ledger/', $src.'/Command/BooksUnitsCommand.php']),
             ...(class_exists('Omnistate\\Omnistate') ? [] : [$src.'/Service/CompanyRecords.php', $src.'/Command/CompanyRefreshCommand.php']),
         ]);
 

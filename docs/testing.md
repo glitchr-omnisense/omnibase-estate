@@ -21,7 +21,16 @@ docker run --rm --network none \
 OK (6 tests, 7 assertions)
 ```
 
-The package has no tests of its services: an application tests them through its own pages and
-commands. The entities need no database: the in-memory example in
+Beside it, the services' own tests: `Service/ActivitiesTest` (the default, the order, an
+unknown activity), `Admin/ActivityMenuTest` (assets and ownership keep every item and its key,
+an agency has no associates, sales alone hide the rental screens and cards and the sections
+left empty), `Service/BooksTest` (a rent call and a work invoice posted with their unit on
+every line), the online payments, the webhook and the dashboard cards. In meyers' container:
+
+```bash
+docker exec -w /srv/app/vendor/omnibase/estate meyers-web-1 php /srv/app/vendor/bin/phpunit --do-not-cache-result
+```
+
+An application tests the rest through its own pages and commands. The entities need no database: the in-memory example in
 [Organisations, homes and leases](concepts.md#rent-calls-and-payments) runs in the harness
 image as it is.

@@ -3,6 +3,24 @@
 ## [Unreleased]
 
 ### Added
+- The activities a site runs, combinable: `estate.activities` (`Enum\Activity`: `assets`,
+  `ownership`, `management`, `transaction`; `[assets]` by default, so every site stays as it
+  was), `Service\Activities` (`has()`, `any()`, `all()`), the Twig functions
+  `estate_activity()` and `estate_activities()`. `Admin\ActivityMenu::filter()` leaves out of a
+  dashboard's items the menu items and cards of an activity the site does not run - tenants,
+  leases, rents, works and contractors are assets', ownership's and management's, the
+  associates assets' -, labels, order and keys untouched, a section left empty left out.
+  `docs/configuration.md`, `docs/back-office.md`.
+- Estate's entries carry the home as an analytic dimension on every line (`unit=<id>`): rent
+  calls, payments, work invoices (`Books::unit()`); `Ledger\UnitDimensionLabeler` names the
+  ledger's `unit` axis with the units' names; `estate:books:units` adds the unit to what was
+  posted before (`Books::tagUnits()`). `docs/usage-rents.md`.
+
+### Changed
+- The associates' feed writer is `Service\ActivityLog` (was `Service\Activities`, now the
+  activities' switch); its `log()` is unchanged.
+
+### Added
 - The payment provider's webhook registered by the application: `estate:payment:webhook [--force]`
   (`Service\PaymentWebhook::ensure()`), run at each deploy, registers `estate_payment_webhook` at
   the provider through omnitrade's `RegisterWebhook` and keeps the secret it answers sealed in

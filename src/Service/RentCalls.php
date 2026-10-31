@@ -23,7 +23,7 @@ class RentCalls
         private readonly EntityManagerInterface $entityManager,
         private readonly LeaseRepository $leases,
         private readonly RentCallRepository $calls,
-        private readonly Activities $activities,
+        private readonly ActivityLog $activities,
         private readonly EstateMailer $mailer,
         private readonly ?Books $books = null,
         #[Autowire('%estate.reminder_days%')] private readonly int $reminderDays = 5,

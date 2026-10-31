@@ -23,7 +23,7 @@ class Applications
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ApplicationRepository $applications,
-        private readonly Activities $activities,
+        private readonly ActivityLog $activities,
         private readonly EstateMailer $mailer,
     ) {
     }

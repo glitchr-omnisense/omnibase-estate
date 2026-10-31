@@ -23,7 +23,7 @@ class WorkOrders
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly Activities $activities,
+        private readonly ActivityLog $activities,
         private readonly EstateMailer $mailer,
         private readonly ?Books $books = null,
     ) {

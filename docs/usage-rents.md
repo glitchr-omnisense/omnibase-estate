@@ -148,6 +148,14 @@ posts:
 A call paid in full has its entry and its payments' lettered on the tenant's account. Each
 posting carries its source: nothing is posted twice.
 
+Every line of these entries carries the home as an analytic dimension, `unit=<unit id>`
+(`Books::unit()`), so the ledger gives each home's result: the income statement filtered on a
+home or per home (`?by=unit`). `Base\Estate\Ledger\UnitDimensionLabeler` names the axis's values
+with the units' names. What was posted before carried none: `estate:books:units` (once, after the
+upgrade; run again, it does nothing) adds the unit to those lines (`Books::tagUnits()`, the
+amounts untouched - omnibase/ledger lets an axis be added to a validated line). The bank lines'
+own entries (the reconciliation's `bank:<id>`) carry no unit.
+
 `Base\Estate\Ledger\BankSettlement` listens to omnibase/ledger's `BankLineReconciled`: money in
 whose settled open items come from rent calls (`estate:rent:<reference>`) pays those calls
 (`Payments::record(..., 'bank:<line id>:<call id>', notify: true, post: false)`), the receipt sent,

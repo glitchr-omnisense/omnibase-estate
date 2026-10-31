@@ -2,6 +2,7 @@
 
 namespace Base\Estate\Twig;
 
+use Base\Estate\Service\Activities;
 use Base\Estate\Service\OnlinePayments;
 use Base\Estate\Service\Spaces;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -9,7 +10,7 @@ use Symfony\Contracts\Service\ResetInterface;
 use Twig\Attribute\AsTwigFilter;
 use Twig\Attribute\AsTwigFunction;
 
-/** The spaces the header offers, money in euros as the pages write it, and estate_once() (a style shared by the dashboard's cards, written once a page). */
+/** The spaces the header offers, money in euros as the pages write it, estate_once() (a style shared by the dashboard's cards, written once a page), and the activities the site runs (estate_activity('ownership'), estate_activities()). */
 class EstateExtension implements ResetInterface
 {
     /** @var array<string, true> */
@@ -19,7 +20,22 @@ class EstateExtension implements ResetInterface
         private readonly Spaces $spaces,
         private readonly Security $security,
         private readonly OnlinePayments $online,
+        private readonly ?Activities $activities = null,
     ) {
+    }
+
+    /** Whether the site runs $activity (estate.activities). */
+    #[AsTwigFunction('estate_activity')]
+    public function activity(string $activity): bool
+    {
+        return ($this->activities ?? new Activities())->has($activity);
+    }
+
+    /** @return list<string> the activities the site runs, as configured */
+    #[AsTwigFunction('estate_activities')]
+    public function activities(): array
+    {
+        return array_map(fn ($activity) => $activity->value, ($this->activities ?? new Activities())->all());
     }
 
     /** @return list<array{key: string, route: string}> */

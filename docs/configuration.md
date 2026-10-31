@@ -13,6 +13,12 @@ order: 40
 ```yaml
 estate:
 
+    # What the business does, combinable: assets (its own property), ownership (a shared ownership), management (for third parties), transaction (sales). The back office shows what belongs to them.
+    activities:
+
+        # Default:
+        - assets
+
     # The application's user entity: invitations create accounts of this class.
     user_class:           App\Entity\User
 
@@ -41,6 +47,7 @@ estate:
 
 | Option | Type | Default | Read by |
 |---|---|---|---|
+| `activities` | list of `assets`, `ownership`, `management`, `transaction`, at least one | `[assets]` | `Service\Activities` (`ActivityMenu`, the Twig functions) |
 | `user_class` | class | `App\Entity\User` | `Invitations` (accounts it creates), `InvitationController` (usernames taken) |
 | `from_email` | string | `%env(default::MAILER_CONTACT)%` | `EstateMailer`; empty: the mailer's own sender |
 | `payment_gateway` | string | `stripe` | `OnlinePayments`; empty: no online payment |
@@ -49,11 +56,30 @@ estate:
 | `reminder_days` | int, 1 or more | `5` | `RentCalls::markLate()` |
 | `documents_route` | route name or null | `null` | `AssociateController` |
 
+## Activities
+
+`estate.activities` says what the business does, combinable (`Base\Estate\Enum\Activity`):
+
+| Activity | What it is |
+|---|---|
+| `assets` | its own property: a property company (SCI), several companies |
+| `ownership` | a shared ownership (indivision): co-owners' shares, shared invoices, calls for funds |
+| `management` | property management for third parties: mandates, owners' statements, fees with VAT |
+| `transaction` | sales: sale mandates, buyers, offers, fees |
+
+Meyers & Associée sets `[assets, ownership]`; an agency `[management, transaction]`. The
+default, `[assets]`, keeps a site as it was. `Base\Estate\Service\Activities` answers `has()`,
+`any()` and `all()` (in the enum's order); in Twig, `estate_activity('ownership')` and
+`estate_activities()`.
+
+What the back office shows follows it ([The back office](back-office.md#activities)). Ownership,
+management and transaction have no screens of their own yet: they come in the next steps.
+
 ## Services
 
 `config/services.php` autowires and autoconfigures `src/` but `DependencyInjection/`, `Entity/`,
 `Enum/`, `Model/`, `Exception/`, `Controller/Admin/` and the bundle class, and leaves out
-`Service/Books.php` and `Ledger/` without omnibase/ledger (`Base\Ledger\Service\Posting`), and
+`Service/Books.php`, `Ledger/` and `Command/BooksUnitsCommand.php` without omnibase/ledger (`Base\Ledger\Service\Posting`), and
 `Service/CompanyRecords.php` and `Command/CompanyRefreshCommand.php` without omnisense/omnistate.
 `Controller/Client/` is tagged `controller.service_arguments`; `Controller/Admin/` too when
 omnibase/admin is installed. `Books` is an optional argument of `Payments`, `RentCalls` and

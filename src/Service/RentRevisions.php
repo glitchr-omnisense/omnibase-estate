@@ -21,7 +21,7 @@ class RentRevisions
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly LeaseRepository $leases,
-        private readonly Activities $activities,
+        private readonly ActivityLog $activities,
         private readonly EstateMailer $mailer,
     ) {
     }
