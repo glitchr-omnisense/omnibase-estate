@@ -1,0 +1,49 @@
+{# Base\Estate\Admin\Widget\Dashboard\RentsWidgetType: rents called and received, month by month.
+   Every period drawn and switched in the card (:has() on radios, no script); one scale; a tooltip
+   per month; a table for screen readers. #}
+{% extends '@Estate/admin/widget/dashboard/_card.html.twig' %}
+{% block subtitle %}{{ 'dashboard.rents.sub'|trans({}, 'estate') }}{% endblock %}
+{% block actions %}<a class="dash-card-action" href="{{ path('admin_crud_rent_calls_index') }}" title="{{ 'dashboard.open'|trans({}, 'estate') }}"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>{% endblock %}
+{% block body %}
+{% set uid = 'es' ~ random() %}
+<div class="es-rents">
+    <div class="es-toolbar">
+        <div class="es-pills" role="radiogroup" aria-label="{{ 'dashboard.rents.period'|trans({}, 'estate') }}">
+            {% for count, s in series %}<label data-months="{{ count }}"><input class="es-choice" type="radio" name="{{ uid }}" value="{{ count }}"{{ count == period ? ' checked' }}>{{ 'dashboard.rents.months'|trans({count: count}, 'estate') }}</label>{% endfor %}
+        </div>
+        <div class="es-legend"><span><i class="es-swatch"></i>{{ 'dashboard.rents.received'|trans({}, 'estate') }}</span><span><i class="es-swatch is-tint"></i>{{ 'dashboard.rents.called'|trans({}, 'estate') }}</span></div>
+    </div>
+    {% for count, s in series %}
+    {% set n = s.months|length %}
+    <div class="es-chart" data-months="{{ count }}">
+        <div class="es-totals">
+            <span>{{ 'dashboard.rents.received'|trans({}, 'estate') }} <strong>{{ s.received|euros(true) }}</strong></span>
+            <span>{{ 'dashboard.rents.called'|trans({}, 'estate') }} <strong>{{ s.called|euros(true) }}</strong></span>
+            {% if s.rate is not null %}<span>{{ 'dashboard.rents.rate'|trans({}, 'estate') }} <strong>{{ s.rate }} %</strong></span>{% endif %}
+        </div>
+        <div class="es-plot" aria-hidden="true">
+            <div class="es-bars" style="--n: {{ n }}">
+                {% for tick in s.scale.ticks %}<span class="es-tick" style="bottom: {{ (tick / s.scale.max * 100)|round(2) }}%"><em>{{ tick >= 100000 ? (tick / 100000)|round(1) ~ ' k€' : tick|euros(true) }}</em></span>{% endfor %}
+                {% for m in s.months %}
+                <div class="es-col" tabindex="0">
+                    <span class="es-called" style="height: {{ m.calledHeight }}%"><span class="es-received" style="height: {{ m.calledHeight > 0 ? (m.receivedHeight / m.calledHeight * 100)|round(2) : 0 }}%"></span></span>
+                    <div class="es-tip">
+                        <b>{{ m.month|format_date(pattern: 'MMMM y') }}</b>
+                        <span><i>{{ 'dashboard.rents.received'|trans({}, 'estate') }}</i>{{ m.received|euros }}</span>
+                        <span><i>{{ 'dashboard.rents.called'|trans({}, 'estate') }}</i>{{ m.called|euros }}</span>
+                        {% if m.rate is not null %}<span><i>{{ 'dashboard.rents.rate'|trans({}, 'estate') }}</i>{{ m.rate }} %</span>{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="es-axis" style="--n: {{ n }}">{% for m in s.months %}<span>{% if n <= 6 or loop.index0 is even %}{{ m.month|format_date(pattern: 'MMM')|trim('.') }}{% endif %}</span>{% endfor %}</div>
+        </div>
+        <table class="es-sr">
+            <caption>{{ 'dashboard.rents.months'|trans({count: count}, 'estate') }}</caption>
+            <tr><th>{{ 'dashboard.rents.month'|trans({}, 'estate') }}</th><th>{{ 'dashboard.rents.called'|trans({}, 'estate') }}</th><th>{{ 'dashboard.rents.received'|trans({}, 'estate') }}</th></tr>
+            {% for m in s.months %}<tr><td>{{ m.month|format_date(pattern: 'MMMM y') }}</td><td>{{ m.called|euros }}</td><td>{{ m.received|euros }}</td></tr>{% endfor %}
+        </table>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

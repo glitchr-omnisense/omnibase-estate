@@ -26,6 +26,32 @@ class Figures
     ) {
     }
 
+    /**
+     * The rents called and received month by month, the $count months to
+     * this one, oldest first: what the dashboard's rents card draws.
+     *
+     * @return list<array{month: \DateTimeImmutable, called: int, received: int}>
+     */
+    public function months(Organisation $organisation, int $count = 12, ?\DateTimeImmutable $today = null): array
+    {
+        $today ??= new \DateTimeImmutable('today');
+        $months = [];
+        for ($i = $count - 1; $i >= 0; --$i) {
+            $month = $today->modify('first day of this month')->modify("-$i months")->setTime(0, 0);
+            $months[$month->format('Y-m')] = ['month' => $month, 'called' => 0, 'received' => 0];
+        }
+        $from = $today->modify('first day of this month')->modify(sprintf('-%d months', $count - 1))->setTime(0, 0);
+        foreach ($this->calls->findForOrganisation($organisation, $from, $today->modify('last day of this month')) as $call) {
+            $key = $call->getPeriod()->format('Y-m');
+            if (isset($months[$key])) {
+                $months[$key]['called'] += $call->getTotal();
+                $months[$key]['received'] += $call->getPaid();
+            }
+        }
+
+        return array_values($months);
+    }
+
     /** @return array<string, mixed> */
     public function of(Organisation $organisation, ?\DateTimeImmutable $today = null): array
     {

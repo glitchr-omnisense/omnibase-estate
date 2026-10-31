@@ -65,15 +65,31 @@ not know it, as for an SCI letting homes, which is not liable); `registryChecked
 without a valid SIREN or for a company the register does not know; a register that does not
 answer throws omnistate's `UnavailableException` and nothing changes.
 
-## Dashboard tiles
+## Dashboard cards
 
-- `estate_overview` (`OverviewWidgetType`): per organisation, its figures, the rents to revise
-  within 45 days, the tenants' messages unread, the new applications, the active leases whose
-  insurance is missing or run out.
-- `estate_payments` (`PaymentsWidgetType`): the eight latest payments and how, this month's total
-  per method, whether online payment is on.
+Palette cards of omnibase/admin (a superadmin adds them from "+ Ajouter un widget", a dashboard
+controller places them by name), in admin's dashboard card - the title above the white panel,
+tinted rows, legends and axes -, for every organisation together, titled by their keys in the
+`admin` domain (`estate_widget.*`), their words in the `estate` domain (`dashboard.*`). A compact
+card sits two to a row on a phone.
+
+| Block name | Card | |
+|---|---|---|
+| `estate_occupancy` (`Dashboard\OccupancyWidgetType`) | the homes let and vacant as a donut, the vacant named | compact |
+| `estate_late` (`Dashboard\LateRentsWidgetType`) | what is late, by whom, since when, oldest first | compact |
+| `estate_works` (`Dashboard\WorksWidgetType`) | the interventions in progress and their status, the year's works' cost | compact |
+| `estate_rents` (`Dashboard\RentsWidgetType`) | rents called (a light bar) and collected (drawn inside it) month by month, 6 or 12 months switched in the card (`months` parameter: the one shown first), the legend, an axis, a tooltip per month, a table for screen readers, the period's rate | |
+| `estate_todo` (`Dashboard\TodoWidgetType`) | what waits, as rows each with its icon, a short text and its action: the month's rents to call, applications, tenants' messages, late rents, rents to revise, insurance certificates | |
+| `estate_payments` (`PaymentsWidgetType`) | this month's money in, per method, the latest payments, whether online payment is on | |
+
+`estate_overview` (`OverviewWidgetType`), the earlier all-in-one card, is kept for the dashboards
+that place it; it is not in the palette.
 
 ```php
-yield MenuItem::block('estate_overview', 'Gestion', 'fa-solid fa-building');
-yield MenuItem::block('estate_payments', 'Encaissements', 'fa-solid fa-euro-sign');
+yield MenuItem::block('estate_occupancy', 'estate_widget.occupancy', 'fa-solid fa-house-circle-check')->setSize(1);
+yield MenuItem::block('estate_rents', 'estate_widget.rents', 'fa-solid fa-chart-column')->setSize(2)->setParams(['months' => 12]);
+yield MenuItem::block('estate_todo', 'estate_widget.todo', 'fa-solid fa-list-check')->setSize(2);
+yield MenuItem::block('estate_payments', 'estate_widget.payments', 'fa-solid fa-money-bill-wave')->setSize(2);
 ```
+
+`Figures::months($organisation, $count)` gives the rents called and received month by month.

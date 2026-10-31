@@ -4,7 +4,9 @@
 // (vendor/omnibase/estate, the omnibase harness): whichever autoloader exists is
 // used, and the test namespace is registered by hand - a host's autoloader
 // never reads a dependency's autoload-dev.
-foreach ([__DIR__.'/../vendor/autoload.php', __DIR__.'/../../../autoload.php'] as $candidate) {
+// ESTATE_AUTOLOAD or /srv/app/vendor/autoload.php: a host's vendor mounted elsewhere (the checkout
+// run in meyers' container, as omnibase/ledger's tests are).
+foreach (array_filter([getenv('ESTATE_AUTOLOAD') ?: null, __DIR__.'/../vendor/autoload.php', __DIR__.'/../../../autoload.php', '/srv/app/vendor/autoload.php']) as $candidate) {
     if (is_file($candidate)) {
         $loader = require $candidate;
         $loader->addPsr4('Tests\\Base\\Estate\\', __DIR__);

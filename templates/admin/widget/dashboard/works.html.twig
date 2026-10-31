@@ -1,0 +1,18 @@
+{# Base\Estate\Admin\Widget\Dashboard\WorksWidgetType: the interventions in progress and what the year's works cost. #}
+{% extends '@Estate/admin/widget/dashboard/_card.html.twig' %}
+{% block subtitle %}{{ 'dashboard.works.sub'|trans({amount: spent|euros(true), year: year}, 'estate') }}{% endblock %}
+{% block actions %}<a class="dash-card-action" href="{{ path('admin_crud_work_orders_index') }}" title="{{ 'dashboard.open'|trans({}, 'estate') }}"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>{% endblock %}
+{% block body %}
+<div class="es-hero"><span class="es-hero-value">{{ open|length }}</span><span class="es-hero-unit">{{ 'dashboard.works.open'|trans({count: open|length}, 'estate') }}</span></div>
+{% if open is not empty %}
+<ul class="dash-rows">
+    {% for order in open|slice(0, 4) %}
+    <li><div class="dash-row">
+        <i class="fa-solid fa-screwdriver-wrench dash-row-icon" aria-hidden="true"></i>
+        <span class="dash-row-label">{{ order.title }}<small>{{ order.unit.name }}{% if order.contractor %} · {{ order.contractor.company }}{% endif %}</small></span>
+        <span class="es-status">{{ ('work.' ~ order.status.value)|trans({}, 'estate') }}</span>
+    </div></li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

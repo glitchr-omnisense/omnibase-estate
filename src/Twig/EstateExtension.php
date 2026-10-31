@@ -5,12 +5,16 @@ namespace Base\Estate\Twig;
 use Base\Estate\Service\OnlinePayments;
 use Base\Estate\Service\Spaces;
 use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Contracts\Service\ResetInterface;
 use Twig\Attribute\AsTwigFilter;
 use Twig\Attribute\AsTwigFunction;
 
-/** The spaces the header offers, and money in euros as the pages write it. */
-class EstateExtension
+/** The spaces the header offers, money in euros as the pages write it, and estate_once() (a style shared by the dashboard's cards, written once a page). */
+class EstateExtension implements ResetInterface
 {
+    /** @var array<string, true> */
+    private array $once = [];
+
     public function __construct(
         private readonly Spaces $spaces,
         private readonly Security $security,
@@ -25,6 +29,22 @@ class EstateExtension
         $user = $this->security->getUser();
 
         return $user instanceof \Base\Entity\User ? $this->spaces->of($user) : [];
+    }
+
+    /** True the first time it is asked in a request only. */
+    #[AsTwigFunction('estate_once')]
+    public function once(string $key): bool
+    {
+        if (isset($this->once[$key])) {
+            return false;
+        }
+
+        return $this->once[$key] = true;
+    }
+
+    public function reset(): void
+    {
+        $this->once = [];
     }
 
     #[AsTwigFunction('estate_online_payment')]

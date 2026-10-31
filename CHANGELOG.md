@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Added
+- The dashboard's cards, omnibase/admin palette cards in its dashboard card (`Admin\Widget\Dashboard\*`):
+  `estate_occupancy` (a donut of the homes let and vacant), `estate_rents` (rents called and collected
+  month by month, 6 or 12 months switched in the card, legend, axis, tooltip, a table for screen
+  readers), `estate_late`, `estate_works`, `estate_todo` (rows with an icon, a short text and an
+  action button), compact ones two to a row on a phone; `estate_payments` is a palette card too,
+  restyled. Their words in the `estate` domain (`dashboard.*`, French and English), their names in
+  the `admin` domain (`estate_widget.*`). `Figures::months()`, `estate_once()`.
+- The tests run in a host's container whose vendor is mounted elsewhere (`/srv/app/vendor`, or
+  `ESTATE_AUTOLOAD`), as omnibase/ledger's.
+
 ### Fixed
 - A rent paid online is recorded even when the tenant never comes back to the site (a page
   closed, a SEPA debit through days later): `POST /estate/payments/webhook`

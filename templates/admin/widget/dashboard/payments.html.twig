@@ -1,0 +1,25 @@
+{# Base\Estate\Admin\Widget\PaymentsWidgetType: money in this month, per way, and the latest payments. #}
+{% extends '@Estate/admin/widget/dashboard/_card.html.twig' %}
+{% block subtitle %}{{ 'dashboard.payments.sub'|trans({}, 'estate') }}{% endblock %}
+{% block actions %}<span class="es-badge {{ online ? 'is-on' : 'is-off' }}" title="{{ online ? 'dashboard.payments.online_on'|trans({}, 'estate') : 'dashboard.payments.online_off'|trans({}, 'estate') }}"><i class="fa-solid {{ online ? 'fa-credit-card' : 'fa-triangle-exclamation' }}"></i> {{ online ? 'dashboard.payments.online'|trans({}, 'estate') : 'dashboard.payments.offline'|trans({}, 'estate') }}</span>{% endblock %}
+{% block body %}
+<div class="es-hero"><span class="es-hero-value">{{ total|euros }}</span><span class="es-hero-unit">{{ 'dashboard.payments.this_month'|trans({}, 'estate') }}</span></div>
+<div class="es-split">
+    {% for method, amount in byMethod %}
+    <div class="es-split-row"><span>{{ methods[method] }}</span><b>{{ amount|euros }}</b><span class="es-meter"><span style="width: {{ total ? (100 * amount / total)|round : 0 }}%"></span></span></div>
+    {% else %}
+    <p class="es-muted" style="margin: 0">{{ 'dashboard.payments.none'|trans({}, 'estate') }}</p>
+    {% endfor %}
+</div>
+{% if latest is not empty %}
+<ul class="dash-rows">
+    {% for p in latest|slice(0, 6) %}
+    <li><div class="dash-row">
+        <i class="fa-solid {{ p.method.value == 'card' ? 'fa-credit-card' : (p.method.value == 'sepa_debit' ? 'fa-building-columns' : 'fa-right-left') }} dash-row-icon" aria-hidden="true"></i>
+        <span class="dash-row-label">{{ p.rentCall.lease.tenantNames }}<small>{{ p.paidOn|format_date('short') }} · {{ methods[p.method.value] }} · {{ p.rentCall.lease.unit.name }}</small></span>
+        <span class="dash-row-value">{{ p.amount|euros }}</span>
+    </div></li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

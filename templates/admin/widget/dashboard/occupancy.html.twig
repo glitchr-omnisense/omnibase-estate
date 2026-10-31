@@ -1,0 +1,23 @@
+{# Base\Estate\Admin\Widget\Dashboard\OccupancyWidgetType: the homes let and vacant. #}
+{% extends '@Estate/admin/widget/dashboard/_card.html.twig' %}
+{% block subtitle %}{{ 'dashboard.occupancy.sub'|trans({count: lettable}, 'estate') }}{% endblock %}
+{% block actions %}<a class="dash-card-action" href="{{ path('admin_crud_units_index') }}" title="{{ 'dashboard.open'|trans({}, 'estate') }}"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>{% endblock %}
+{% block body %}
+{% if lettable == 0 %}
+    <p class="dash-empty">{{ 'dashboard.occupancy.none'|trans({}, 'estate') }}</p>
+{% else %}
+<div class="es-occupancy">
+    <svg class="es-donut" viewBox="0 0 42 42" role="img" aria-label="{{ 'dashboard.occupancy.aria'|trans({let: let, count: lettable}, 'estate') }}">
+        <circle class="is-vacant" cx="21" cy="21" r="15.9155"></circle>
+        {% if let > 0 %}<circle class="is-let" cx="21" cy="21" r="15.9155" stroke-dasharray="{{ letDash }} {{ 100 - letDash }}" stroke-dashoffset="25"><title>{{ 'dashboard.occupancy.let'|trans({count: let}, 'estate') }}</title></circle>{% endif %}
+        <text class="es-donut-n" x="21" y="22.5">{{ share }} %</text>
+        <text class="es-donut-l" x="21" y="27">{{ 'dashboard.occupancy.rate'|trans({}, 'estate') }}</text>
+    </svg>
+    <div class="es-occupancy-legend">
+        <div><span class="es-swatch"></span><span>{{ 'dashboard.occupancy.let_label'|trans({}, 'estate') }}</span><strong>{{ let }}</strong></div>
+        <div><span class="es-swatch is-tint"></span><span>{{ 'dashboard.occupancy.vacant_label'|trans({}, 'estate') }}</span><strong>{{ lettable - let }}</strong></div>
+        {% if vacant is not empty %}<span class="es-muted">{{ vacant|join(', ') }}</span>{% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

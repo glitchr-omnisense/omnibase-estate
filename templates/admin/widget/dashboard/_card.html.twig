@@ -1,0 +1,17 @@
+{# The frame of the property company's dashboard cards (Base\Estate\Admin\Widget\Dashboard\*):
+   omnibase/admin's dashboard card, the title above the white panel, what it covers and its
+   actions beside; a compact card two to a row on a phone. The style is written once a page. #}
+<section class="dash-card es-card es-card-{{ card }}{{ compact ? ' dash-card--compact' }}" data-estate-card="{{ card }}">
+    <header class="dash-card-head">
+        <div class="dash-card-titles">
+            <h2 class="dash-card-title">{{ widget.label|trans({}, 'admin') }}</h2>
+            {% set _sub %}{% block subtitle %}{% endblock %}{% endset %}
+            {% if _sub|trim is not empty %}<span class="dash-card-sub">{{ _sub }}</span>{% endif %}
+        </div>
+        <span class="dash-card-actions">{% block actions %}{% endblock %}</span>
+    </header>
+    <div class="dash-card-panel">
+        {% block body %}{% endblock %}
+    </div>
+</section>
+{% if estate_once('estate-dashboard-style') %}{{ include('@Estate/admin/widget/dashboard/_style.html.twig') }}{% endif %}

@@ -1,0 +1,8 @@
+# The palette's names of omnibase/estate's dashboard cards (omnibase/admin translates them in its "admin" domain).
+estate_widget:
+  occupancy: "Occupancy"
+  rents: "Rents called and collected"
+  late: "Late rents"
+  works: "Works"
+  todo: "To do"
+  payments: "Money in"

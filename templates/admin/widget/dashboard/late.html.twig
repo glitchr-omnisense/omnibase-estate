@@ -1,0 +1,19 @@
+{# Base\Estate\Admin\Widget\Dashboard\LateRentsWidgetType: what is late, by whom, and the way to record its payment. #}
+{% extends '@Estate/admin/widget/dashboard/_card.html.twig' %}
+{% block subtitle %}{{ 'dashboard.late.sub'|trans({count: late|length}, 'estate') }}{% endblock %}
+{% block body %}
+<div class="es-hero"><span class="es-hero-value{{ total > 0 ? ' es-bad' }}">{{ total|euros(true) }}</span><span class="es-hero-unit">{{ 'dashboard.late.owed'|trans({}, 'estate') }}</span></div>
+{% if late is empty %}
+    <p class="es-muted" style="margin: .6rem 0 0"><i class="fa-solid fa-check es-good"></i> {{ 'dashboard.late.none'|trans({}, 'estate') }}</p>
+{% else %}
+<ul class="dash-rows">
+    {% for call in late|slice(0, 4) %}
+    <li><div class="dash-row">
+        <i class="fa-solid fa-hourglass-half dash-row-icon" aria-hidden="true"></i>
+        <span class="dash-row-label">{{ call.lease.tenantNames }}<small>{{ 'dashboard.late.since'|trans({date: call.dueOn|format_date('short'), unit: call.lease.unit.name}, 'estate') }}</small></span>
+        <span class="dash-row-value">{{ call.remaining|euros(true) }}</span>
+    </div></li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

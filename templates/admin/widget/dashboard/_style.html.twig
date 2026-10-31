@@ -1,0 +1,87 @@
+{# The property company's cards: omnibase/admin's tokens, light and dark. The rents drawn in the
+   admin's accent - what came in solid, what was called as its light tint behind it -, the
+   homes let in the accent and the vacant in the tint; states with an icon and words. #}
+<style>
+    .es-card { font-variant-numeric: tabular-nums; }
+    .es-muted { color: var(--admin-muted); font-size: .82rem; }
+    .es-hero { display: flex; align-items: baseline; flex-wrap: wrap; gap: .15rem .5rem; }
+    .es-hero-value { font-size: 1.75rem; font-weight: 700; line-height: 1.1; color: var(--admin-text); }
+    .es-hero-unit { font-size: .85rem; color: var(--admin-muted); }
+    .es-good { color: var(--admin-success); } .es-bad { color: var(--admin-danger); }
+    .es-card .dash-rows { margin-top: .8rem; }
+    .es-card .dash-row { grid-template-columns: auto minmax(0, 1fr) auto; }
+    .es-card .dash-row-label { overflow: hidden; text-overflow: ellipsis; }
+    .es-card .dash-row-label small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .es-legend { display: flex; flex-wrap: wrap; gap: .3rem 1rem; font-size: .82rem; color: var(--admin-text); }
+    .es-legend span { display: inline-flex; align-items: center; gap: .4rem; }
+    .es-swatch { width: .7rem; height: .7rem; border-radius: 3px; background: var(--admin-accent); }
+    .es-swatch.is-tint { background: color-mix(in srgb, var(--admin-accent) 22%, var(--admin-surface)); }
+
+    /* occupancy */
+    .es-occupancy { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: .9rem; align-items: center; }
+    .es-donut { width: 100%; height: auto; display: block; }
+    .es-donut circle { fill: none; stroke-width: 5.5; }
+    .es-donut .is-let { stroke: var(--admin-accent); }
+    .es-donut .is-vacant { stroke: color-mix(in srgb, var(--admin-accent) 22%, var(--admin-surface)); }
+    .es-donut text { text-anchor: middle; fill: var(--admin-text); }
+    .es-donut .es-donut-n { font-size: .6rem; font-weight: 700; }
+    .es-donut .es-donut-l { font-size: .3rem; fill: var(--admin-muted); }
+    .es-occupancy-legend { display: grid; gap: .35rem; font-size: .84rem; }
+    .es-occupancy-legend div { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .45rem; align-items: center; }
+    .es-occupancy-legend strong { font-weight: 700; }
+
+    /* rents */
+    .es-rents input.es-choice { position: absolute; opacity: 0; pointer-events: none; }
+    .es-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .6rem; margin-bottom: .7rem; }
+    .es-pills { display: inline-flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--admin-tint); }
+    .es-pills label { padding: .2rem .65rem; border-radius: 6px; font-size: .8rem; cursor: pointer; color: var(--admin-muted); }
+    .es-chart { display: none; }
+    .es-rents:has(input[value="6"]:checked) .es-chart[data-months="6"], .es-rents:has(input[value="12"]:checked) .es-chart[data-months="12"] { display: block; }
+    .es-rents:has(input[value="6"]:checked) .es-pills label[data-months="6"], .es-rents:has(input[value="12"]:checked) .es-pills label[data-months="12"] { background: var(--admin-surface); color: var(--admin-text); font-weight: 600; box-shadow: 0 1px 2px rgba(27, 33, 64, .1); }
+    .es-pills label:has(input:focus-visible) { outline: 2px solid var(--admin-accent); outline-offset: 1px; }
+    .es-totals { display: flex; flex-wrap: wrap; gap: .2rem 1.1rem; font-size: .84rem; color: var(--admin-muted); margin-bottom: .7rem; }
+    .es-totals strong { color: var(--admin-text); font-size: .98rem; }
+    .es-plot { position: relative; padding-right: 2.9rem; }
+    .es-bars { position: relative; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); height: 9.5rem; border-bottom: 1px solid var(--admin-border); }
+    .es-tick { position: absolute; left: 0; right: -2.9rem; border-top: 1px dashed var(--admin-border); pointer-events: none; }
+    .es-tick em { position: absolute; right: 0; top: -.55rem; width: 2.7rem; padding-left: .3rem; font-style: normal; font-size: .68rem; color: var(--admin-muted); background: var(--admin-surface); white-space: nowrap; }
+    .es-col { position: relative; display: flex; align-items: flex-end; justify-content: center; outline: none; }
+    .es-col::before { content: ""; position: absolute; inset: 0 2px; border-radius: 6px; background: var(--admin-text); opacity: 0; }
+    .es-col:hover::before, .es-col:focus-visible::before { opacity: .05; }
+    .es-called { position: relative; width: min(1.6rem, 58%); border-radius: 6px 6px 0 0; background: color-mix(in srgb, var(--admin-accent) 22%, var(--admin-surface)); display: flex; align-items: flex-end; }
+    .es-received { width: 100%; border-radius: 6px 6px 0 0; background: var(--admin-accent); min-height: 0; }
+    .es-tip { position: absolute; z-index: 5; bottom: calc(100% + .3rem); left: 50%; transform: translateX(-50%); min-width: 10rem; padding: .5rem .65rem; border-radius: 8px; background: var(--admin-surface); box-shadow: 0 8px 24px rgba(27, 33, 64, .18); font-size: .78rem; display: none; text-align: left; pointer-events: none; }
+    .es-col:nth-child(-n+2) .es-tip { left: 0; transform: none; }
+    .es-col:nth-last-child(-n+2) .es-tip { left: auto; right: 0; transform: none; }
+    .es-col:hover .es-tip, .es-col:focus-visible .es-tip { display: grid; gap: .2rem; }
+    .es-tip span { display: flex; justify-content: space-between; gap: .8rem; }
+    .es-axis { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); margin-right: 2.9rem; padding-top: .3rem; font-size: .7rem; color: var(--admin-muted); text-align: center; }
+    .es-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+    /* payments */
+    .es-split { display: grid; gap: .5rem; margin-top: .8rem; }
+    .es-split-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .25rem .75rem; font-size: .86rem; }
+    .es-split-row b { font-weight: 700; }
+    .es-meter { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--admin-tint); overflow: hidden; }
+    .es-meter span { display: block; height: 100%; border-radius: 3px; background: var(--admin-accent); }
+    .es-badge { display: inline-flex; align-items: center; gap: .35rem; padding: .15rem .6rem; border-radius: 999px; font-size: .76rem; font-weight: 600; white-space: nowrap; }
+    .es-badge.is-on { background: color-mix(in srgb, var(--admin-success) 15%, transparent); color: var(--admin-text); }
+    .es-badge.is-off { background: color-mix(in srgb, var(--admin-warning) 18%, transparent); color: var(--admin-text); }
+    .es-status { display: inline-block; padding: .1rem .5rem; border-radius: 999px; font-size: .72rem; background: var(--admin-tint-strong); color: var(--admin-text); white-space: nowrap; }
+
+    /* A compact card, two to a row on a phone: the figure smaller, the list shortened. */
+    @container (max-width: 240px) {
+        .es-hero-value { font-size: 1.3rem; }
+        .es-occupancy { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: .6rem; }
+        .es-occupancy .es-donut { width: 5.5rem; }
+        .es-occupancy-legend { width: 100%; }
+        .es-card .dash-rows > li:nth-child(n+3) { display: none; }
+        .es-card .dash-row { grid-template-columns: minmax(0, 1fr) auto; padding: .5rem .55rem; font-size: .8rem; }
+        .es-card .dash-row .dash-row-icon, .es-card .dash-row .dash-row-action, .es-card .dash-row .es-status { display: none; }
+        .es-card .dash-row-label { white-space: nowrap; }
+    }
+    @container (max-width: 420px) {
+        .es-plot { padding-right: 2.5rem; } .es-axis { margin-right: 2.5rem; } .es-tick { right: -2.5rem; } .es-tick em { width: 2.3rem; }
+        .es-bars { height: 8.5rem; }
+    }
+</style>

@@ -1,0 +1,31 @@
+{# Base\Estate\Admin\Widget\Dashboard\TodoWidgetType: what waits, as tinted rows - an icon, a short text, its action. #}
+{% extends '@Estate/admin/widget/dashboard/_card.html.twig' %}
+{% block subtitle %}{{ 'dashboard.todo.sub'|trans({count: items|length}, 'estate') }}{% endblock %}
+{% block body %}
+<ul class="dash-rows es-todo">
+    {% for item in items %}
+    <li><div class="dash-row">
+        <i class="fa-solid {{ item.icon }} dash-row-icon" aria-hidden="true"></i>
+        {% if item.kind == 'call' %}
+            <span class="dash-row-label">{{ 'dashboard.todo.call'|trans({month: item.month|format_date(pattern: 'MMMM')}, 'estate') }}</span>
+            <a class="dash-row-action" href="{{ path('estate_admin_rents_call', {_token: csrf_token('estate_rents_call_0')}) }}">{{ 'dashboard.todo.call_action'|trans({}, 'estate') }}</a>
+        {% elseif item.kind == 'applications' %}
+            <span class="dash-row-label">{{ 'dashboard.todo.applications'|trans({count: item.count}, 'estate') }}</span>
+            <a class="dash-row-action" href="{{ path('admin_crud_applications_index') }}">{{ 'dashboard.todo.look'|trans({}, 'estate') }}</a>
+        {% elseif item.kind == 'messages' %}
+            <span class="dash-row-label">{{ 'dashboard.todo.messages'|trans({count: item.count}, 'estate') }}</span>
+            <a class="dash-row-action" href="{{ path('estate_admin_messages') }}">{{ 'dashboard.todo.read'|trans({}, 'estate') }}</a>
+        {% elseif item.kind == 'late' %}
+            <span class="dash-row-label">{{ 'dashboard.todo.late'|trans({count: item.count}, 'estate') }}</span>
+            <a class="dash-row-action" href="{{ path('estate_admin_payment', {id: item.call.id}) }}">{{ 'dashboard.todo.collect'|trans({}, 'estate') }}</a>
+        {% elseif item.kind == 'revision' %}
+            <span class="dash-row-label">{{ 'dashboard.todo.revision'|trans({tenant: item.lease.tenantNames, date: item.on|format_date('short')}, 'estate') }}</span>
+            <a class="dash-row-action" href="{{ path('estate_admin_revise', {id: item.lease.id}) }}">{{ 'dashboard.todo.revise'|trans({}, 'estate') }}</a>
+        {% elseif item.kind == 'insurance' %}
+            <span class="dash-row-label">{{ 'dashboard.todo.insurance'|trans({tenant: item.lease.tenantNames, state: item.lease.insuranceUntil ? 'expired' : 'missing', date: item.lease.insuranceUntil ? item.lease.insuranceUntil|format_date('short') : ''}, 'estate') }}</span>
+            <a class="dash-row-action" href="{{ path('admin_crud_leases_edit', {entityId: item.lease.id}) }}">{{ 'dashboard.todo.see'|trans({}, 'estate') }}</a>
+        {% endif %}
+    </div></li>
+    {% endfor %}
+</ul>
+{% endblock %}
