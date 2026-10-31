@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Fixed
+- A rent paid online is recorded even when the tenant never comes back to the site (a page
+  closed, a SEPA debit through days later): `POST /estate/payments/webhook`
+  (`PaymentWebhookController`, `OnlinePayments::paidBy()`), Stripe's paid Checkout sessions
+  checked against `webhook_secret`. Only the return to the site recorded them.
 - A bank line unreconciled in the books takes back the rent payment it recorded
   (`Ledger\BankUnsettlement`, on omnibase/ledger's `BankLineUnreconciled`; `Payments::cancel()`,
   `RentCall::removePayment()`): the rent call stayed paid, its receipt available, after the

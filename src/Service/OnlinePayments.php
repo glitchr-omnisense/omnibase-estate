@@ -6,6 +6,7 @@ use Base\Estate\Entity\RentCall;
 use Base\Estate\Enum\PaymentMethod;
 use Omnitrade\Model\Money;
 use Omnitrade\Model\Payment as OmnitradePayment;
+use Omnitrade\Model\Status;
 use Omnitrade\Registry;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
@@ -71,7 +72,29 @@ class OnlinePayments
         return $transaction->redirectUrl ?? $returnUrl;
     }
 
-    /** Back from the provider: recorded when it is paid (SEPA debits come later, through the webhook or the next look). */
+    /**
+     * The provider's webhook, checked against its signature (an
+     * InvalidNotificationException when it does not match): the rent call a
+     * paid session names (its metadata "rent_call") and the session's
+     * reference, for complete(); null when the event pays no rent - another
+     * event, a SEPA debit not through yet, a payment that is not a rent.
+     *
+     * @param array<string, string|list<string>> $headers
+     *
+     * @return array{call: int, reference: string}|null
+     */
+    public function paidBy(string $body, array $headers): ?array
+    {
+        $notification = $this->registry->get($this->gateway)->notify($body, $headers);
+        $call = $notification->transaction?->metadata['rent_call'] ?? null;
+        if (Status::PAID !== $notification->status || null === $notification->reference || !is_numeric($call)) {
+            return null;
+        }
+
+        return ['call' => (int) $call, 'reference' => $notification->reference];
+    }
+
+    /** Back from the provider, or told by its webhook: recorded when it is paid (SEPA debits come later, through the webhook or the next look). */
     public function complete(RentCall $call, string $reference): bool
     {
         $transaction = $this->registry->get($this->gateway)->fetch($reference);

@@ -68,6 +68,19 @@ certificate only when nothing past due is owed.
   is a redirect to the provider's origin.
 - `complete(RentCall $call, string $reference)` - back from the provider (`?session=`): recorded
   as a card or SEPA payment once the transaction is paid. A SEPA debit is paid later.
+- `paidBy(string $body, array $headers)` - the provider's webhook, checked against its signature
+  (`InvalidNotificationException` otherwise): `['call' => <rent call id>, 'reference' => <session>]`
+  for a paid session (Stripe's `checkout.session.completed` or `async_payment_succeeded`) whose
+  metadata names a rent call, null for anything else.
+
+`POST /estate/payments/webhook` (`estate_payment_webhook`, public) takes it: a rent call not paid
+yet is recorded through `complete()`, under the session's reference - the tenant's return records
+nothing twice. 204; 400 for a signature that does not match; 404 without a gateway. The rent is
+paid even when the tenant never came back: a page closed, a SEPA debit through days later. The
+endpoint is declared at the provider (Stripe: Developers → Webhooks, the four
+`checkout.session.*` events) with its signing secret in the gateway's `webhook_secret`
+(`STRIPE_WEBHOOK_SECRET`); locally, `stripe listen --forward-to
+https://localhost:<port>/estate/payments/webhook --skip-verify` prints that secret.
 
 The tenant's "Payer" is a POST with the token `rent_pay_<id>`; refused for a paid call or when
 online payment is off.
