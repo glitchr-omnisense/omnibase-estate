@@ -19,7 +19,8 @@ use Symfony\Contracts\Service\Attribute\Required;
 /**
  * The leases: who, which home, the rent and its index, the insurance - and the yearly rent
  * revision. Saved, a signed lease gives each of its tenants their cloud folder (Locataires/<name>,
- * with omnibase/drive: Drive\LeaseFolders), shared with those who have an account.
+ * with omnibase/drive: Drive\LeaseFolders), shared with those who have an account - and, with two
+ * occupants or more, their common folder Colocations/<home> and its group (Drive\FlatshareFolders).
  */
 class LeaseCrudController extends AbstractEstateCrudController
 {

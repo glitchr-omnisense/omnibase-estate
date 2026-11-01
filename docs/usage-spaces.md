@@ -70,7 +70,8 @@ A user who is none of these gets a 403 on that space.
 ## The cloud folders (optional: omnibase/drive)
 
 With omnibase/drive installed, each business makes its people's folders, shared by name once they
-have an account: a tenant's `Locataires/<name>` (`Drive\LeaseFolders`), an owner's
+have an account: a tenant's `Locataires/<name>` (`Drive\LeaseFolders`), a flatshare's
+`Colocations/<home>` (`Drive\FlatshareFolders`), an owner's
 `Propriétaires/<name>` (`Drive\MandatorFolders`), a shared ownership's `Indivisions/<name>`
 (`Drive\OwnershipFolders`), a sale's `Transactions/<number>` (`Drive\SaleFolders`).
 
@@ -82,6 +83,34 @@ that name is reused, what the team said of it kept; a tenant on a second lease k
 Made when the lease or one of its parties is saved in the back office, and when a tenant accepts
 their invitation (`Invitations::accept()`): the cloud never stops any of these, it says so (a flash,
 a log line).
+
+**A flatshare's folder and group.** A signed lease with two occupants or more
+(`Lease::isShared()`: its tenant and co-tenants, not its guarantors) is a flatshare, and gets, with
+omnibase/drive's groups (`ShareGroup`, from the release that has them):
+
+- a group, « Colocation <home> », whose members are its occupants **who have an account**: kept so
+  whenever the lease's folders are made - the lease or a party saved, a party deleted (alone or in a
+  batch), an invitation accepted. The group is the lease's: someone the team adds to it by hand is
+  taken off at the next sync (share the folder with them by name instead). The lease knows it by
+  its id (`Lease::$groupId`, column `estate_lease.groupId`, no foreign key: estate does not require
+  omnibase/drive), so a group the team renames keeps its new name; a group the team made before
+  under that very name, held by no lease, is taken rather than a second one made;
+- a common folder, `Colocations/<home>`, the team's (`drive.default_audience`), shared **read only**
+  with that group (`Lease::$folder`, column `estate_lease.folder`): the documents of the whole
+  flatshare - the lease, the inventory of fixtures, the house rules. Each occupant keeps their own
+  `Locataires/<name>`, which the others do not see.
+
+When the lease ends, the group loses its members and the folder stays with what it holds, the
+team's - as a tenant's folder stays when they leave: the papers of a flatshare are the agency's to
+keep (the retention lock, when the site has it, keeps them anyway). A later lease of the same home
+gets a folder and a group of its own, `Colocations/<home> - <reference>`, never the former flatmates'
+papers. A lease that loses an occupant keeps its folder and group, with the ones left.
+
+**A couple** on one lease is two occupants too: the same mechanism, and the label stays
+« Colocation »: two names on one lease are two occupants, whatever they are to each other. No setting names it
+otherwise: one would have to say per lease what the occupants are to each other, which estate does
+not record; the team renames the group in the cloud when it wants (« Famille Weber »), and the
+name it gives is kept.
 
 **Each person's space.** `Drive\EstateSpaces` is omnibase/drive's `SpaceProviderInterface`: a file
 the team shares on upload with someone goes into their tenant's folder (their lease running), else

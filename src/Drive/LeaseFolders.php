@@ -16,7 +16,9 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  * the inventory of fixtures, the receipts. The folder is the team's
  * (drive.default_audience) and theirs: nobody else sees it. A folder already
  * there under that name is reused, what was said of it kept; a tenant on a
- * second lease keeps the same one.
+ * second lease keeps the same one. A lease with two occupants or more - a
+ * flatshare, a couple - also gets their common folder and group
+ * (FlatshareFolders), made and kept here too.
  *
  * Only loaded when omnibase/drive is installed (config/services.php):
  * estate does not require it, its callers take this service as optional.
@@ -29,6 +31,7 @@ class LeaseFolders
         private readonly FileShare $share,
         private readonly EntityManagerInterface $entityManager,
         #[Autowire('%drive.default_audience%')] private readonly string $staff = 'staff',
+        private readonly ?FlatshareFolders $flatshares = null,
     ) {
     }
 
@@ -40,12 +43,14 @@ class LeaseFolders
     /**
      * Each tenant's folder of a signed lease made if it is not there, shared
      * read-only with those who have an account; their paths. An ended lease
-     * makes none.
+     * makes none. A flatshare's common folder and group with them
+     * (FlatshareFolders: an ended lease's group loses its members).
      *
      * @return list<string>
      */
     public function sync(Lease $lease): array
     {
+        $this->flatshares?->sync($lease);
         if (LeaseStatus::ENDED === $lease->getStatus()) {
             return [];
         }

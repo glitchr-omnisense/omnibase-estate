@@ -15,7 +15,8 @@ use Symfony\Contracts\Service\Attribute\Required;
 
 /**
  * The people on the leases; a tenant gets their space by invitation. Saved, a tenant of a signed
- * lease has their cloud folder (Locataires/<name>, with omnibase/drive: Drive\LeaseFolders).
+ * lease has their cloud folder (Locataires/<name>, with omnibase/drive: Drive\LeaseFolders); saved
+ * or taken off, a flatshare's group follows its occupants (Drive\FlatshareFolders).
  */
 class LeasePartyCrudController extends AbstractEstateCrudController
 {
@@ -61,6 +62,22 @@ class LeasePartyCrudController extends AbstractEstateCrudController
     {
         parent::updateEntity($entityManager, $entity);
         $this->syncFolder($entity);
+    }
+
+    /** Deleted alone or with others (batchDelete() comes through here too). */
+    public function removeEntity(EntityManagerInterface $entityManager, object $entity): void
+    {
+        $lease = $entity->getLease();
+        $lease?->removeParty($entity);
+        parent::removeEntity($entityManager, $entity);
+        // Someone off a flatshare's lease is out of its group (the sync's flush takes the removal with it).
+        try {
+            if (null !== $this->folders && null !== $lease) {
+                $this->folders->sync($lease);
+            }
+        } catch (\Throwable $e) {
+            $this->addFlash('warning', sprintf('Le groupe de la colocation n\'a pas pu être mis à jour : %s', $e->getMessage()));
+        }
     }
 
     /** A tenant's folder, when their lease is signed: the cloud never stops them being saved, it says so instead. */

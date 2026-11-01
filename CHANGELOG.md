@@ -3,6 +3,16 @@
 ## [Unreleased]
 
 ### Added
+- A lease with two occupants or more is a flatshare (a couple too), with omnibase/drive's groups:
+  `Drive\FlatshareFolders` gives a signed one a group « Colocation <home> » (`ShareGroup`) of its
+  occupants who have an account, kept as they are added, deleted or accept their invitation, and a
+  common folder `Colocations/<home>`, the team's, shared read only with the group (the lease, the
+  inventory, the house rules); each keeps their own `Locataires/<name>`. An ended lease's group loses
+  its members, its folder stays; a later lease of the same home gets `Colocations/<home> -
+  <reference>`. `Lease::$folder` and `Lease::$groupId` (columns `estate_lease.folder`,
+  `estate_lease.groupId`, a migration in the site), `Lease::isShared()`. `LeaseFolders::sync()`
+  makes it (its new optional `FlatshareFolders` argument); `LeasePartyCrudController::removeEntity()`
+  syncs the lease of a party deleted.
 - A signed lease gives each of its tenants a cloud folder (with omnibase/drive), as a management
   mandate gives its owner one: `Drive\LeaseFolders`, `Locataires/<name>` for each tenant and
   co-tenant (not the guarantors) of a lease running or under notice, the team's, shared by name

@@ -79,6 +79,20 @@ class Lease
     #[ORM\Column(type: 'date_immutable', nullable: true)]
     private ?\DateTimeImmutable $revisedOn = null;
 
+    /**
+     * A flatshare's common folder in the site's cloud (omnibase/drive: Colocations/<home>,
+     * Drive\FlatshareFolders), kept once made: a later lease of the same home gets its own.
+     */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $folder = null;
+
+    /**
+     * The flatshare's group of occupants (omnibase/drive's ShareGroup), by its id - no foreign
+     * key, estate does not require omnibase/drive. Renamed by the team, it is still this one.
+     */
+    #[ORM\Column(nullable: true)]
+    private ?int $groupId = null;
+
     /** @var Collection<int, LeaseParty> */
     #[ORM\OneToMany(targetEntity: LeaseParty::class, mappedBy: 'lease', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $parties;
@@ -136,6 +150,10 @@ class Lease
     public function setInsuranceUntil(?\DateTimeImmutable $insuranceUntil): self { $this->insuranceUntil = $insuranceUntil; return $this; }
     public function getNotes(): ?string { return $this->notes; }
     public function setNotes(?string $notes): self { $this->notes = $notes; return $this; }
+    public function getFolder(): ?string { return $this->folder; }
+    public function setFolder(?string $folder): self { $this->folder = $folder; return $this; }
+    public function getGroupId(): ?int { return $this->groupId; }
+    public function setGroupId(?int $groupId): self { $this->groupId = $groupId; return $this; }
 
     /** @return Collection<int, LeaseParty> */
     public function getParties(): Collection { return $this->parties; }
@@ -154,6 +172,12 @@ class Lease
     public function getTenants(): array
     {
         return array_values($this->parties->filter(fn (LeaseParty $p) => PartyRole::GUARANTOR !== $p->getRole())->toArray());
+    }
+
+    /** Two occupants or more - a flatshare, or a couple: they share a folder (Drive\FlatshareFolders). */
+    public function isShared(): bool
+    {
+        return \count($this->getTenants()) >= 2;
     }
 
     public function getTenantNames(): string
