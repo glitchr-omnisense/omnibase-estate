@@ -35,7 +35,12 @@ period's end and the French holidays, the fee posted at the acte with its VAT by
 mandate names and nothing before, a cancellation and the deposit the agency holds, a buyer
 matched, the activity off: nothing), `Service/TransactionSpacesTest` (the seller's and the buyer's
 spaces and what each may see), `Service/BooksTest` (a rent call and a work invoice posted with their unit on
-every line), the online payments, the webhook and the dashboard cards. In meyers' container:
+every line), `Model/FloorPlanTest` (a surface from its shape on the grid, an L, the measured figure
+prevailing, a balcony and a cellar out of the living area, the gap with the declared surface), `Security/PlanAccessTest` (the plan for the occupants while their
+lease runs - not a guarantor, not a former tenant, not a neighbour -, the team, the associates, the
+owners), `Service/StoriesTest` (nothing public until published and only the cleared photos, no
+tenant's name - taken out, refused -, works under way and their suggested state, the amount only
+when ticked, the networks' text and link, the images' sizes), the online payments, the webhook and the dashboard cards. In meyers' container:
 
 ```bash
 docker exec -w /srv/app/vendor/omnibase/estate meyers-web-1 php /srv/app/vendor/bin/phpunit --do-not-cache-result

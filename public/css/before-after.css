@@ -1,0 +1,26 @@
+/*
+ * omnibase/estate - the before/after pair's working rules: side by side without
+ * JavaScript, one over the other with the slider (.is-slider, set by
+ * before-after.js). The host gives it its look (radius, label colours, fonts)
+ * through the --estate-ba-* variables or its own rules.
+ */
+.estate-ba { margin: 0 0 1.25rem; --estate-ba: 50%; }
+.estate-ba-frame { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; overflow: hidden; border-radius: var(--estate-ba-radius, 6px); }
+.estate-ba-side { position: relative; margin: 0; }
+.estate-ba-side img { display: block; width: 100%; height: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.estate-ba-label { position: absolute; top: .6rem; left: .6rem; padding: .2rem .55rem; border-radius: 3px; background: var(--estate-ba-label-bg, rgba(20, 22, 26, .78)); color: var(--estate-ba-label-fg, #fff); font-size: .8rem; font-weight: 700; line-height: 1.3; }
+.estate-ba figcaption { margin-top: .4rem; font-size: .88rem; color: var(--estate-ba-caption, inherit); }
+
+.estate-ba.is-slider { position: relative; }
+.estate-ba.is-slider .estate-ba-frame { display: block; position: relative; gap: 0; aspect-ratio: 4 / 3; }
+.estate-ba.is-slider .estate-ba-side { position: absolute; inset: 0; }
+.estate-ba.is-slider .estate-ba-side.is-after { clip-path: inset(0 0 0 var(--estate-ba)); }
+.estate-ba.is-slider .estate-ba-side.is-after .estate-ba-label { left: auto; right: .6rem; }
+.estate-ba.is-slider .estate-ba-frame::after { content: ""; position: absolute; top: 0; bottom: 0; left: var(--estate-ba); width: 3px; margin-left: -1.5px; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .25); pointer-events: none; }
+.estate-ba.is-slider .estate-ba-frame::before { content: "\2194"; position: absolute; z-index: 1; top: 50%; left: var(--estate-ba); width: 2.6rem; height: 2.6rem; margin: -1.3rem 0 0 -1.3rem; border-radius: 50%; background: #fff; color: #1f2328; box-shadow: 0 1px 4px rgba(0, 0, 0, .35); font-size: 1.25rem; line-height: 2.6rem; text-align: center; pointer-events: none; }
+/* The range covers the photos: dragged anywhere, focused by Tab; its own look is hidden, the handle above is its picture. */
+.estate-ba-range { position: absolute; top: 0; left: 0; width: 100%; height: auto; aspect-ratio: 4 / 3; margin: 0; opacity: 0; cursor: ew-resize; -webkit-appearance: none; appearance: none; touch-action: pan-y; }
+.estate-ba-range[hidden] { display: none; }
+.estate-ba.is-slider:has(.estate-ba-range:focus-visible) .estate-ba-frame { outline: 3px solid var(--estate-ba-focus, #1f6feb); outline-offset: 3px; }
+.estate-ba.is-slider figcaption { position: static; }
+@media (prefers-reduced-motion: reduce) { .estate-ba * { transition: none !important; animation: none !important; } }

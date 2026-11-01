@@ -15,7 +15,11 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-/** The public site's homes: the published units, each one's page with a visit request and, free, its application form. */
+/**
+ * The public site's homes: the published units, each one's page with a visit request and, free,
+ * its application form. Neither its plan (private, its tenants') nor its works (the works page,
+ * /travaux) show there.
+ */
 class UnitController extends AbstractController
 {
     #[Route('/biens', name: 'estate_units')]

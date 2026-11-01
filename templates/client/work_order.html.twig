@@ -33,6 +33,7 @@
         {{ form_start(file, {attr: {class: 'estate-form is-wide', novalidate: 'novalidate'}}) }}
             {{ form_row(file.kind) }}
             <div class="estate-form-row">{{ form_row(file.file) }}{{ form_row(file.title) }}</div>
+            <div class="estate-form-row">{{ form_row(file.phase) }}{{ form_row(file.view) }}</div>
             <button type="submit" class="estate-button">{{ '@estate.work.add_file'|trans }}</button>
         {{ form_end(file) }}
     </section>

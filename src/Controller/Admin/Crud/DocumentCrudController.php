@@ -9,6 +9,7 @@ use Base\Estate\Entity\Organisation;
 use Base\Estate\Entity\Unit;
 use Base\Estate\Entity\WorkOrder;
 use Base\Estate\Enum\DocumentKind;
+use Base\Estate\Enum\PhotoPhase;
 use Base\Field\AssociationField;
 use Base\Field\BooleanField;
 use Base\Field\DateField;
@@ -45,6 +46,9 @@ class DocumentCrudController extends AbstractEstateCrudController
         yield AssociationField::new('workOrder', 'Intervention')->setFormType(EntityType::class)->setFormTypeOptions(['class' => WorkOrder::class, 'required' => false])->setColumns(3)->hideOnIndex();
         yield BooleanField::new('tenantVisible', 'Visible des locataires')->setColumns(3);
         yield DateField::new('validUntil', 'Valable jusqu\'au')->setRequired(false)->setColumns(3)->hideOnIndex();
+        yield $this->enum('phase', 'Photo de travaux', PhotoPhase::class, fn (PhotoPhase $p) => $p->label())
+            ->setRequired(false)->setColumns(3)->hideOnIndex()->setFormTypeOption('placeholder', '—')->setHelp('Une photo avant et une après de la même vue forment une paire pour l\'histoire du bien.');
+        yield TextField::new('view', 'Vue')->setRequired(false)->setColumns(3)->hideOnIndex()->setHelp('« La cuisine », « La salle de bains ».');
         yield TextField::new('uploadedByName', 'Ajouté par')->hideOnForm();
         yield DateTimeField::new('createdAt', 'Ajouté le')->hideOnForm();
     }

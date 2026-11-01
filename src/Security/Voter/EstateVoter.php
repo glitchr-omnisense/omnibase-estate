@@ -33,7 +33,8 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  * ownership, its invoices and their own calls for funds; an owner under
  * management their mandates, their statements and payouts; a seller their
  * sale mandates, their visits, offers and sale; a buyer their offers and
- * the sale of the one accepted - nothing else.
+ * the sale of the one accepted; a home's plan its occupants, associates,
+ * co-owners and owners - nothing else.
  */
 final class EstateVoter extends Voter
 {
@@ -48,6 +49,7 @@ final class EstateVoter extends Voter
     public const OWNERSHIP_VIEW = 'ESTATE_OWNERSHIP_VIEW';
     public const MANDATE_VIEW = 'ESTATE_MANDATE_VIEW';
     public const SALE_VIEW = 'ESTATE_SALE_VIEW';
+    public const UNIT_PLAN = 'ESTATE_UNIT_PLAN';
 
     public function __construct(private readonly Spaces $spaces)
     {
@@ -59,7 +61,7 @@ final class EstateVoter extends Voter
             self::MANAGE, self::ASSOCIATE => $subject instanceof Organisation,
             self::LEASE_VIEW => $subject instanceof Lease,
             self::RENT_VIEW => $subject instanceof RentCall,
-            self::UNIT_REPORT => $subject instanceof Unit,
+            self::UNIT_REPORT, self::UNIT_PLAN => $subject instanceof Unit,
             self::WORK_VIEW, self::WORK_DO => $subject instanceof WorkOrder,
             self::DOCUMENT_VIEW => $subject instanceof Document,
             self::OWNERSHIP_VIEW => $subject instanceof Ownership || $subject instanceof OwnershipCall || $subject instanceof OwnershipInvoice,
@@ -112,6 +114,7 @@ final class EstateVoter extends Voter
             self::LEASE_VIEW => $this->spaces->isPartyOf($user, $subject),
             self::RENT_VIEW => $this->spaces->isPartyOf($user, $subject->getLease()),
             self::UNIT_REPORT => null !== ($lease = $subject->getCurrentLease()) && $this->spaces->isPartyOf($user, $lease),
+            self::UNIT_PLAN => $this->canSeePlan($user, $subject, $organisation),
             self::WORK_VIEW => $this->isContractorOf($user, $subject)
                 || (null !== ($lease = $subject->getUnit()->getCurrentLease()) && $this->spaces->isPartyOf($user, $lease))
                 || $this->spaces->isAssociateOf($user, $organisation),
@@ -146,6 +149,39 @@ final class EstateVoter extends Voter
         }
 
         return null !== ($lease = $document->getUnit()?->getCurrentLease()) && $this->spaces->isPartyOf($user, $lease);
+    }
+
+    /**
+     * A home's plan: its tenants while their lease runs (a guarantor is no occupant), the
+     * associates of its company, its co-owners (ownership) and its owners under management -
+     * the team already passed.
+     */
+    private function canSeePlan(User $user, Unit $unit, Organisation $organisation): bool
+    {
+        $lease = $unit->getCurrentLease();
+        if (null !== $lease && $this->spaces->isPartyOf($user, $lease)) {
+            foreach ($lease->getTenants() as $party) {
+                if ($party->getUser()?->getId() === $user->getId()) {
+                    return true;
+                }
+            }
+        }
+        if ($this->spaces->isAssociateOf($user, $organisation)) {
+            return true;
+        }
+        $holds = static fn (iterable $units): bool => \in_array($unit->getId(), array_map(fn (Unit $u) => $u->getId(), [...$units]), true);
+        foreach ($this->spaces->ownerships($user) as $ownership) {
+            if ($holds($ownership->getUnits())) {
+                return true;
+            }
+        }
+        foreach ($this->spaces->mandates($user) as $mandate) {
+            if ($holds($mandate->getUnits())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function isContractorOf(User $user, WorkOrder $order): bool

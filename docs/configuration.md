@@ -43,6 +43,21 @@ estate:
 
     # The application's documents page, linked from the associates' space. Null: none.
     documents_route:      null
+
+    # The homes' stories: the ready-to-post images made for the networks.
+    story:
+
+        # A TTF/OTF file for the images' titles and labels (bold). Null: DejaVu Sans Bold where the system has it.
+        font:                 null
+
+        # A TTF/OTF file for the images' second line. Null: the bold font's regular sibling, else the bold one.
+        font_regular:         null
+
+        # The company's mark on the images' band: a PNG or JPEG file (transparent PNG best). Null: none, the company's name is written.
+        mark:                 null
+
+        # The band's and the labels' colour, #rrggbb.
+        color:                '#1f2328'
 ```
 
 | Option | Type | Default | Read by |
@@ -55,6 +70,9 @@ estate:
 | `invitation_days` | int, 1 or more | `14` | `Invitations` |
 | `reminder_days` | int, 1 or more | `5` | `RentCalls::markLate()` |
 | `documents_route` | route name or null | `null` | `AssociateController` |
+| `story.font`, `story.font_regular` | font file or null | `null` (DejaVu Sans) | `StoryImages` (FreeType reads TTF, OTF and WOFF) |
+| `story.mark` | image file or null | `null` | `StoryImages` |
+| `story.color` | `#rrggbb` | `#1f2328` | `StoryImages` |
 
 ## Activities
 

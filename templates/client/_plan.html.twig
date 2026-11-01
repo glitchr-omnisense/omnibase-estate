@@ -1,0 +1,49 @@
+{#
+ # A home's plan (Model\FloorPlan): each level drawn in SVG - its rooms outlined,
+ # labelled with their name and surface where they fit, their number otherwise -
+ # and the rooms listed with their surfaces, then the totals. The table says it all
+ # for a screen reader and on a narrow screen; the drawing is its picture.
+ #   plan    the FloorPlan
+ #   print   true on the A4 sheet (no heading of its own)
+ #}
+{% set many = plan.levels|length > 1 %}
+<div class="estate-plan{{ print|default(false) ? ' is-print' }}">
+    {% for level in plan.levels %}
+    <figure class="estate-plan-level">
+        {% if many %}<figcaption class="estate-plan-level-name">{{ '@estate.plan.level'|trans({level: level.level}) }} · {{ level.area|m2 }}</figcaption>{% endif %}
+        <svg class="estate-plan-svg" viewBox="{{ level.viewBox }}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="{{ '@estate.plan.drawing'|trans({unit: plan.unit.name}) }}{{ many ? ' — ' ~ '@estate.plan.level'|trans({level: level.level}) }}" style="aspect-ratio: {{ level.width }} / {{ level.height }}; width: {{ level.scale }}%">
+            {% for r in level.rooms %}
+            <g class="estate-plan-room is-{{ r.room.kind.value }}{{ r.room.counted ? '' : ' is-uncounted' }}">
+                <polygon points="{{ r.points }}" fill="#ffffff" stroke="#1f2328" stroke-width="2.5" stroke-linejoin="miter" vector-effect="non-scaling-stroke"></polygon>
+                <text x="{{ r.x }}" y="{{ r.y }}" font-size="{{ level.font }}" text-anchor="middle" fill="#1f2328">
+                    {% if r.showName %}<tspan x="{{ r.x }}" dy="-0.25em" class="estate-plan-name">{{ r.room.name }}</tspan><tspan x="{{ r.x }}" dy="1.25em" class="estate-plan-surface">{{ r.room.surface|m2 }}</tspan>
+                    {% elseif r.showSurface %}<tspan x="{{ r.x }}" dy="-0.25em" class="estate-plan-number">{{ r.number }}</tspan><tspan x="{{ r.x }}" dy="1.25em" class="estate-plan-surface">{{ r.room.surface|m2 }}</tspan>
+                    {% elseif r.showInline %}<tspan x="{{ r.x }}" dy="0.35em"><tspan class="estate-plan-number">{{ r.number }}</tspan> · <tspan class="estate-plan-surface">{{ r.room.surface|m2 }}</tspan></tspan>
+                    {% else %}<tspan x="{{ r.x }}" dy="0.35em" class="estate-plan-number">{{ r.number }}</tspan>{% endif %}
+                </text>
+            </g>
+            {% endfor %}
+        </svg>
+    </figure>
+    {% endfor %}
+
+    <table class="estate-table estate-plan-rooms">
+        <caption class="visually-hidden">{{ '@estate.plan.rooms'|trans }}</caption>
+        <thead><tr><th scope="col">{{ '@estate.plan.room'|trans }}</th>{% if many %}<th scope="col">{{ '@estate.plan.level_short'|trans }}</th>{% endif %}<th scope="col" class="is-num">{{ '@estate.plan.surface'|trans }}</th></tr></thead>
+        <tbody>
+        {% for level in plan.levels %}{% for r in level.rooms %}
+            <tr class="{{ r.room.counted ? '' : 'is-uncounted' }}">
+                {% set kind = ('@estate.room.' ~ r.room.kind.value)|trans %}
+                <td><span class="estate-plan-index">{{ r.number }}</span> {{ r.room.name }}{% if kind|lower != r.room.name|lower %} <small>{{ kind }}</small>{% endif %}</td>
+                {% if many %}<td>{{ '@estate.plan.level'|trans({level: level.level}) }}</td>{% endif %}
+                <td class="is-num">{{ r.room.surface|m2 }}{% if r.room.measured %} <small>{{ '@estate.plan.measured'|trans }}</small>{% endif %}{% if not r.room.counted %} <small>{{ '@estate.plan.uncounted'|trans }}</small>{% endif %}</td>
+            </tr>
+        {% endfor %}{% endfor %}
+        </tbody>
+        <tfoot>
+            <tr><th scope="row" {{ many ? 'colspan="2"' }}>{{ '@estate.plan.living_area'|trans }}</th><td class="is-num"><strong>{{ plan.livingArea|m2 }}</strong></td></tr>
+            {% if plan.totalArea != plan.livingArea %}<tr><th scope="row" {{ many ? 'colspan="2"' }}>{{ '@estate.plan.total_area'|trans }}</th><td class="is-num">{{ plan.totalArea|m2 }}</td></tr>{% endif %}
+        </tfoot>
+    </table>
+    <p class="estate-muted estate-plan-note">{{ '@estate.plan.note'|trans }}</p>
+</div>

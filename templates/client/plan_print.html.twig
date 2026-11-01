@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+{#
+ # A home's plan on an A4 sheet: no site around it, the drawing as large as the page
+ # allows, the rooms and the totals under it. Opened in a tab; the browser prints it.
+ #}
+<html lang="{{ app.request.locale|default('fr') }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <title>{{ '@estate.plan.title'|trans }} — {{ unit.name }}</title>
+    <style>
+        @page { size: A4 portrait; margin: 14mm; }
+        * { box-sizing: border-box; }
+        html { background: #e9ebee; }
+        body { margin: 0 auto; padding: 14mm; width: 210mm; min-height: 297mm; background: #fff; color: #1f2328; font: 10.5pt/1.4 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+        header { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; border-bottom: 1.5pt solid #1f2328; padding-bottom: 3mm; margin-bottom: 5mm; }
+        h1 { margin: 0; font-size: 16pt; }
+        header p { margin: 1mm 0 0; color: #555; }
+        .estate-plan-level { margin: 0 0 5mm; break-inside: avoid; }
+        .estate-plan-level-name { font-weight: 700; margin-bottom: 2mm; }
+        .estate-plan-svg { display: block; width: 100%; max-height: 170mm; height: auto; }
+        .estate-plan-svg polygon { fill: #fff; stroke: #1f2328; }
+        .estate-plan-room.is-uncounted polygon { fill: #f1f2f4; stroke-dasharray: 18 10; }
+        .estate-plan-name { font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; break-inside: avoid; }
+        th, td { padding: 1.4mm 2mm; border-bottom: .5pt solid #ccc; text-align: left; }
+        tfoot th, tfoot td { border-bottom: 0; border-top: 1pt solid #1f2328; }
+        .is-num { text-align: right; white-space: nowrap; }
+        small { color: #666; }
+        .estate-plan-index { display: inline-block; min-width: 5mm; color: #666; }
+        .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+        .estate-muted { color: #666; font-size: 8.5pt; }
+        .estate-print-actions { position: fixed; top: 1rem; right: 1rem; }
+        .estate-print-actions button { font: inherit; padding: .5rem .9rem; border: 1px solid #1f2328; background: #fff; border-radius: 4px; cursor: pointer; }
+        @media print { html { background: #fff; } body { width: auto; min-height: 0; padding: 0; } .estate-print-actions { display: none; } }
+        @media (max-width: 230mm) { body { width: auto; padding: 1rem; } }
+    </style>
+</head>
+<body>
+    <div class="estate-print-actions"><button type="button" onclick="window.print()">{{ '@estate.plan.print'|trans }}</button></div>
+    <header>
+        <div>
+            <h1>{{ unit.name }}</h1>
+            <p>{% if unit.address %}{{ unit.address }}, {{ unit.postcode }} {{ unit.city }}{% endif %}{% if unit.door %} · {{ unit.door }}{% endif %}</p>
+        </div>
+        <p>{{ unit.organisation.name }} · {{ 'now'|format_date('long') }}</p>
+    </header>
+    {% include '@Estate/client/_plan.html.twig' with {plan: plan, print: true} %}
+</body>
+</html>

@@ -1,0 +1,15 @@
+{% extends '@Estate/client/layout.html.twig' %}
+
+{% block estate_title %}{{ '@estate.plan.title'|trans }}{% endblock %}
+{% block estate_eyebrow %}<p class="estate-eyebrow">{{ unit.organisation.name }}{% if unit.district %} · {{ unit.district }}{% endif %}</p>{% endblock %}
+{% block estate_lead %}{{ unit.name }}{% if unit.door %} ({{ unit.door }}){% endif %} — {{ '@estate.plan.lead'|trans({area: plan.livingArea|m2, rooms: plan.unit.planRooms|length}) }}{% endblock %}
+{% block estate_class %}estate-space estate-plan-page{% endblock %}
+{% block estate_actions %}
+    <a class="estate-button is-ghost" href="{{ path('estate_unit_plan_print', {id: unit.id}) }}" target="_blank" rel="noopener"><i class="fa-solid fa-print" aria-hidden="true"></i> {{ '@estate.plan.print'|trans }}</a>
+{% endblock %}
+
+{% block estate_content %}
+<section class="estate-panel">
+    {% include '@Estate/client/_plan.html.twig' with {plan: plan} %}
+</section>
+{% endblock %}

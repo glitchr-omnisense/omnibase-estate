@@ -31,7 +31,8 @@ from what they are to the organisation, never from a role stored on the account.
 - **Sellers and buyers** (`/vendeur`, `/acquereur`, with the `transaction` activity): a seller's
   mandate, its visits and offers, the sale's steps and documents; a buyer's offers and, once one
   is accepted, the sale's steps; the sale's cloud folder.
-- **The public**: the published homes (`/biens`), a visit request, an application form.
+- **The public**: the published homes (`/biens`), a visit request, an application form; the works
+  under way and done (`/travaux`). A home's plan is never public.
 
 ## How this manual is organised
 
@@ -52,6 +53,8 @@ from what they are to the organisation, never from a role stored on the account.
   VAT, the deposit, the seller's and the buyer's spaces and folder, and how it is kept in the books.
 - [Works, documents and messages](usage-works.md): work orders, files, the tenants' messages,
   notices.
+- [Plans, stories and works](usage-plans-stories.md): a home's rooms and surfaces drawn for its
+  tenants (private), its story with before/after photos on the works page, the images for the networks.
 - [The public site and applications](usage-applications.md): the homes, visits, applications.
 - [Invitations](invitations.md): inviting, accepting.
 - [Spaces and access](usage-spaces.md): `Spaces`, `EstateVoter`, the four spaces, the Twig

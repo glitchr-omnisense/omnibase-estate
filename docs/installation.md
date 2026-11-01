@@ -70,6 +70,9 @@ estate_controller:
 | `estate_buyer` | `/acquereur` | a buyer (the `transaction` activity) |
 | `estate_transaction_document` | `/vente/document/{id}` | the sale's sellers and buyer |
 | `estate_document` | `/fichier/{id}` | whoever may see the document |
+| `estate_unit_plan` | `/plan/{id}` | whoever may see the home's plan (`ESTATE_UNIT_PLAN`; 404 to anyone else, a visitor too) |
+| `estate_unit_plan_print` | `/plan/{id}/imprimer` | the same: an A4 sheet |
+| `estate_works` | `/travaux` | public: the works under way and done ([Plans, stories and works](usage-plans-stories.md)) |
 | `estate_admin_*` | `/admin/estate/...` | `ROLE_ADMIN` ([The back office](back-office.md)) |
 
 The spaces need a signed-in user (`ROLE_USER`); the core's firewall provides the sign-in.
@@ -86,7 +89,11 @@ estate:
     invitation_days: 14
     reminder_days: 5
     documents_route: null
+    story: { font: null, font_regular: null, mark: null, color: '#1f2328' }
 ```
+
+The plan editor's and the before/after slider's scripts and the slider's stylesheet live in
+`public/`: `bin/console assets:install` publishes them under `bundles/estate/`.
 
 ## The schema
 
@@ -102,7 +109,9 @@ the site runs `ownership`, but mapped: migrate them anyway) ownership, ownership
 ownership_share, ownership_invoice, ownership_call, ownership_payment; with property management
 (read only when the site runs `management`, mapped all the same) mandator, mandate, mandate_unit,
 mandate_fee, mandate_expense, mandate_payout; with sales (read only when the site runs
-`transaction`) sale_mandate, sale_mandate_seller, buyer, visit, offer, sale, sale_event. omnibase/ledger's `ledger_bank_account` has an
+`transaction`) sale_mandate, sale_mandate_seller, buyer, visit, offer, sale, sale_event; the
+homes' plans and stories room, story_entry, story_entry_work_order, story_photo (and the columns
+`estate_unit.planBackground`, `planBackgroundScale`, `planBackgroundX`, `planBackgroundY`, `estate_document.phase`, `view`). omnibase/ledger's `ledger_bank_account` has an
 `escrow` column (the escrow account).
 
 ## The crons

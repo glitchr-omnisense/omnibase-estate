@@ -5,6 +5,7 @@ namespace Base\Estate\Entity;
 use Base\Database\Attribute\Uploader;
 use Base\Entity\User;
 use Base\Estate\Enum\DocumentKind;
+use Base\Estate\Enum\PhotoPhase;
 use Base\Estate\Repository\DocumentRepository;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -55,6 +56,14 @@ class Document
     #[ORM\Column]
     private bool $tenantVisible = true;
 
+    /** A works photo's moment: before or after the works; null for any other file. */
+    #[ORM\Column(length: 8, nullable: true, enumType: PhotoPhase::class)]
+    private ?PhotoPhase $phase = null;
+
+    /** The view a works photo shows ("La cuisine"): a before and an after of the same view make a pair. */
+    #[ORM\Column(length: 80, nullable: true)]
+    private ?string $view = null;
+
     /** Until when it holds: an insurance certificate's end, a diagnostic's validity. */
     #[ORM\Column(type: 'date_immutable', nullable: true)]
     private ?\DateTimeImmutable $validUntil = null;
@@ -98,6 +107,10 @@ class Document
     public function setFile($file): self { $this->file = $file ?: null; return $this; }
     public function isTenantVisible(): bool { return $this->tenantVisible; }
     public function setTenantVisible(bool $tenantVisible): self { $this->tenantVisible = $tenantVisible; return $this; }
+    public function getPhase(): ?PhotoPhase { return $this->phase; }
+    public function setPhase(?PhotoPhase $phase): self { $this->phase = $phase; return $this; }
+    public function getView(): ?string { return $this->view; }
+    public function setView(?string $view): self { $this->view = $view ? trim($view) : null; return $this; }
     public function getValidUntil(): ?\DateTimeImmutable { return $this->validUntil; }
     public function setValidUntil(?\DateTimeImmutable $validUntil): self { $this->validUntil = $validUntil; return $this; }
     public function getUploadedBy(): ?User { return $this->uploadedBy; }

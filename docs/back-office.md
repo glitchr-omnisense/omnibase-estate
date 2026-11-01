@@ -47,14 +47,15 @@ answer for one item.
 | `MemberCrudController` | `members` | **Inviter** |
 | `AssociateCrudController` | `associates` | **Inviter** |
 | `BuildingCrudController` | `buildings` | |
-| `UnitCrudController` | `units` | |
+| `UnitCrudController` | `units` | **Plan** (the editor); « Surface des pièces » and the gap with the declared surface |
 | `UnitPhotoCrudController` | `unit-photos` | |
 | `LeaseCrudController` | `leases` | **Réviser le loyer** |
 | `LeasePartyCrudController` | `lease-parties` | **Inviter** |
 | `RentCallCrudController` | `rent-calls` | no new nor edit; **Encaisser** (record a payment), **Appeler les loyers du mois** |
 | `PaymentCrudController` | `payments` | read-only |
 | `ContractorCrudController` | `contractors` | **Inviter** |
-| `WorkOrderCrudController` | `work-orders` | **Confier**, **Clôturer** |
+| `WorkOrderCrudController` | `work-orders` | **Confier**, **Clôturer**, **Raconter** (into the home's story) |
+| `StoryEntryCrudController` | `story-entries` | **Photos et réseaux**: the photos and their clearance, the linked work orders, publishing, the images and texts for the networks ([Plans, stories and works](usage-plans-stories.md)) |
 | `DocumentCrudController` | `documents` | |
 | `NoticeCrudController` | `notices` | **Envoyer aux locataires** |
 | `DeadlineCrudController` | `deadlines` | |

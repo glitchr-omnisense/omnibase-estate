@@ -1,0 +1,22 @@
+{#
+ # A before/after pair: without JavaScript, the two photos side by side, each labelled;
+ # with public/js/before-after.js, one over the other and a slider between them - a
+ # native range input, so the keyboard moves it (arrows, Home, End) - and, unless the
+ # visitor asked for reduced motion, one gentle sweep when it comes into view.
+ #   pair   {view, before, after} (StoryEntry::getPairs(true): cleared photos only)
+ #}
+{% set view = pair.view ?: '@estate.story.this_view'|trans %}
+<figure class="estate-ba" data-estate-ba>
+    <div class="estate-ba-frame">
+        <div class="estate-ba-side is-before">
+            <img src="{{ pair.before.image|thumbnail(1200, 900) }}" alt="{{ '@estate.story.before_alt'|trans({view: view}) }}" loading="lazy" width="1200" height="900">
+            <span class="estate-ba-label">{{ '@estate.story.before'|trans }}</span>
+        </div>
+        <div class="estate-ba-side is-after">
+            <img src="{{ pair.after.image|thumbnail(1200, 900) }}" alt="{{ '@estate.story.after_alt'|trans({view: view}) }}" loading="lazy" width="1200" height="900">
+            <span class="estate-ba-label">{{ '@estate.story.after'|trans }}</span>
+        </div>
+    </div>
+    <input class="estate-ba-range" type="range" min="0" max="100" step="1" value="50" aria-label="{{ '@estate.story.slider'|trans({view: view}) }}" hidden>
+    {% if pair.view %}<figcaption>{{ pair.view }}</figcaption>{% endif %}
+</figure>

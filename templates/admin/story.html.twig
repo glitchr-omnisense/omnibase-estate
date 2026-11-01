@@ -1,0 +1,167 @@
+{% extends '@Admin/layout.html.twig' %}
+
+{% block page_title %}Histoire — {{ entry.title }}{% endblock %}
+
+{% block content_header %}
+<div class="admin-header">
+    <span class="admin-header-icon"><i class="fa-solid fa-book-open"></i></span>
+    <div class="admin-header-titles">
+        <h1>{{ entry.title ?: 'Entrée sans titre' }}</h1>
+        <div class="admin-header-subtitle">{{ entry.unit.name }} · {{ entry.inProgress ? 'travaux en cours' : 'terminé' }} · {{ entry.happenedOn|format_date('long') }} · {{ entry.published ? 'publiée le ' ~ entry.publishedAt|format_date('long') : 'privée' }}</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% set token = csrf_token('estate_story_entry_' ~ entry.id) %}
+<style>
+    .estate-story-admin { display: grid; gap: 1rem; }
+    .estate-story-admin .card { padding: 1rem 1.25rem; }
+    .estate-story-admin h2 { font-size: 1.05rem; margin: 0 0 .75rem; }
+    .estate-story-admin .problems { margin: 0; padding-left: 1.1rem; color: var(--bs-danger, #b42318); }
+    .estate-story-admin .row-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+    .estate-story-photos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: .9rem; }
+    .estate-story-photo { display: grid; gap: .4rem; padding: .6rem; border: 1px solid var(--admin-border, #ddd); border-radius: 8px; }
+    .estate-story-photo img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px; background: #eee; }
+    .estate-story-photo.is-cleared { border-color: var(--bs-success, #1a7f37); box-shadow: inset 0 0 0 1px var(--bs-success, #1a7f37); }
+    .estate-story-photo label { display: grid; gap: .15rem; font-size: .82rem; font-weight: 600; }
+    .estate-story-photo .publish { display: flex; gap: .45rem; align-items: center; font-size: .9rem; }
+    .estate-story-photo .inline { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; }
+    .estate-story-pack { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: .75rem; }
+    .estate-story-pack figure { margin: 0; }
+    .estate-story-pack img { width: 100%; height: auto; border-radius: 4px; border: 1px solid var(--admin-border, #ddd); background: #f4f4f4; }
+    .estate-story-pack figcaption { font-size: .78rem; color: var(--admin-muted, #666); margin-top: .2rem; }
+    .estate-story-admin textarea.caption { width: 100%; min-height: 9rem; font: inherit; font-size: .88rem; }
+    .estate-story-admin .networks { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: .9rem; }
+    .estate-story-admin code { word-break: break-all; font-size: .78rem; }
+    .estate-story-admin .facts { display: grid; grid-template-columns: auto 1fr; gap: .2rem 1rem; margin: 0 0 .9rem; font-size: .9rem; }
+    .estate-story-admin .facts dd { margin: 0; }
+</style>
+<div class="estate-story-admin">
+    <div class="card">
+        <h2>{{ entry.published ? 'Publiée' : 'Pas encore publique' }}</h2>
+        {% if problems %}
+            <p>Avant de la publier :</p>
+            <ul class="problems">{% for p in problems %}<li>{{ p }}</li>{% endfor %}</ul>
+        {% else %}
+            <p class="text-muted">{{ entry.publicPhotos|length }} photo(s) sur {{ entry.photos|length }} autorisée(s) à la publication, {{ pairs|length }} paire(s) avant/après publiable(s). Rien d'autre ne sort : les photos non cochées restent privées.</p>
+        {% endif %}
+        <dl class="facts">
+            <dt>État</dt><dd>{{ entry.inProgress ? 'Travaux en cours' : 'Terminé' }}{% if suggested and suggested != entry.state %} <span class="text-warning">— les interventions liées disent « {{ suggested.value == 'done' ? 'terminé' : 'en cours' }} » : à vous de voir</span>{% endif %}</dd>
+            {% if entry.startedOn or entry.plannedEndOn %}<dt>Dates</dt><dd>{{ entry.startedOn ? 'commencés le ' ~ entry.startedOn|format_date('long') }}{{ entry.startedOn and entry.plannedEndOn ? ', ' }}{{ entry.plannedEndOn ? 'fin prévue le ' ~ entry.plannedEndOn|format_date('long') }}</dd>{% endif %}
+            <dt>Montant</dt><dd>{{ entry.amount ? entry.amount|euros(true) : '—' }} · {{ entry.amount and entry.showAmount ? 'affiché sur le site' : 'masqué' }}</dd>
+        </dl>
+        <div class="row-actions">
+            <a class="btn btn-secondary" href="{{ path('admin_crud_story_entries_edit', {entityId: entry.id}) }}"><i class="fa-solid fa-pen"></i> Titre, état, dates, montant, texte</a>
+            <form method="post" action="{{ path('estate_admin_story_publish', {id: entry.id}) }}">
+                <input type="hidden" name="_token" value="{{ token }}">
+                {% if entry.published %}
+                    <button class="btn btn-secondary" name="unpublish" value="1"><i class="fa-solid fa-eye-slash"></i> Retirer du site</button>
+                {% else %}
+                    <button class="btn btn-success" {{ problems ? 'disabled' }}><i class="fa-solid fa-globe"></i> Publier</button>
+                {% endif %}
+            </form>
+            {% if entry.published %}<a class="btn btn-link" href="{{ links|first|split('?')|first }}#histoire-{{ entry.id }}" target="_blank" rel="noopener">Voir sur le site</a>{% endif %}
+        </div>
+    </div>
+
+    <div class="card" id="works">
+        <h2>Interventions racontées</h2>
+        {% if entry.workOrders|length %}
+        <ul style="margin: 0 0 .75rem; padding-left: 1.1rem">
+            {% for order in entry.workOrders %}
+            <li>
+                <a href="{{ path('admin_crud_work_orders_detail', {entityId: order.id}) }}">#{{ order.id }} {{ order.title }}</a> — {{ order.status.value }}{% if order.contractor %} · {{ order.contractor.company }}{% endif %}
+                <form method="post" action="{{ path('estate_admin_story_works', {id: entry.id}) }}" style="display: inline">
+                    <input type="hidden" name="_token" value="{{ token }}"><input type="hidden" name="workOrder" value="{{ order.id }}">
+                    <button class="btn btn-link btn-sm text-danger" name="unlink" value="1">délier</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}<p class="text-muted">Aucune intervention liée.</p>{% endif %}
+        {% set others = workOrders|filter(o => o not in entry.workOrders) %}
+        {% if others %}
+        <form method="post" action="{{ path('estate_admin_story_works', {id: entry.id}) }}" class="row-actions">
+            <input type="hidden" name="_token" value="{{ token }}">
+            <select class="form-select form-select-sm" name="workOrder" style="max-width: 28rem">{% for o in others %}<option value="{{ o.id }}">#{{ o.id }} {{ o.title }} ({{ o.status.value }})</option>{% endfor %}</select>
+            <button class="btn btn-sm btn-secondary" type="submit"><i class="fa-solid fa-link"></i> Lier (ses photos arrivent, privées)</button>
+        </form>
+        {% endif %}
+    </div>
+
+    <form method="post" action="{{ path('estate_admin_story_photos', {id: entry.id}) }}" class="card" id="photos">
+        <input type="hidden" name="_token" value="{{ token }}">
+        <h2>Photos</h2>
+        <p class="text-muted">Une photo « avant » et une « après » de la même vue forment une paire ; « pendant » montre l'avancement d'un chantier en cours. Cochez « OK pour publier » seulement si la photo ne montre ni personne ni les affaires d'un locataire.</p>
+        {% if entry.photos|length %}
+        <div class="estate-story-photos-grid">
+            {% for photo in entry.photos %}
+            <div class="estate-story-photo{{ photo.publishable ? ' is-cleared' }}">
+                {% if photo.image %}<img src="{{ photo.image|thumbnail(480, 360) }}" alt="{{ photo.label }}" loading="lazy">{% else %}<div class="text-muted">fichier manquant</div>{% endif %}
+                <div class="inline">
+                    <label>Moment
+                        <select class="form-select form-select-sm" name="photos[{{ photo.id }}][phase]">
+                            <option value="">—</option>
+                            {% for p in phases %}<option value="{{ p.value }}" {{ photo.phase == p ? 'selected' }}>{{ p.label }}</option>{% endfor %}
+                        </select>
+                    </label>
+                    <label>Ordre<input class="form-control form-control-sm" type="number" name="photos[{{ photo.id }}][position]" value="{{ photo.position }}"></label>
+                </div>
+                <label>Vue (relie avant et après)<input class="form-control form-control-sm" name="photos[{{ photo.id }}][view]" value="{{ photo.view }}" maxlength="80" placeholder="La cuisine"></label>
+                <label>Légende<input class="form-control form-control-sm" name="photos[{{ photo.id }}][caption]" value="{{ photo.caption }}" maxlength="160"></label>
+                <label class="publish"><input type="checkbox" name="photos[{{ photo.id }}][publishable]" value="1" {{ photo.publishable ? 'checked' }}> OK pour publier</label>
+                <label class="publish text-muted"><input type="checkbox" name="photos[{{ photo.id }}][remove]" value="1"> Retirer de l'entrée</label>
+            </div>
+            {% endfor %}
+        </div>
+        <p style="margin: 1rem 0 0"><button class="btn btn-success" type="submit"><i class="fa-solid fa-check"></i> Enregistrer les photos</button></p>
+        {% else %}
+        <p class="text-muted">Pas encore de photo.</p>
+        {% endif %}
+    </form>
+
+    <form method="post" action="{{ path('estate_admin_story_upload', {id: entry.id}) }}" enctype="multipart/form-data" class="card">
+        <input type="hidden" name="_token" value="{{ token }}">
+        <h2>Ajouter des photos</h2>
+        <div class="row g-2 align-items-end">
+            <div class="col-md-5"><input class="form-control" type="file" name="images[]" accept="image/*" multiple required></div>
+            <div class="col-md-2"><select class="form-select" name="phase"><option value="">Moment —</option>{% for p in phases %}<option value="{{ p.value }}">{{ p.label }}</option>{% endfor %}</select></div>
+            <div class="col-md-3"><input class="form-control" name="view" placeholder="Vue : la cuisine" maxlength="80"></div>
+            <div class="col-md-2"><button class="btn btn-secondary w-100" type="submit"><i class="fa-solid fa-upload"></i> Ajouter</button></div>
+        </div>
+    </form>
+
+    <div class="card" id="networks">
+        <h2>Pour les réseaux</h2>
+        {% if images %}
+            <p class="row-actions">
+                <a class="btn btn-success" href="{{ path('estate_admin_story_zip', {id: entry.id}) }}"><i class="fa-solid fa-file-zipper"></i> Tout télécharger ({{ images|length }} images + texte)</a>
+                <span class="text-muted">Côte à côte et carrousel en deux images, en 1080×1080, 1080×1350 et 1200×630, avec la marque de la société.</span>
+            </p>
+            <div class="estate-story-pack">
+                {% for name, image in images %}
+                <figure>
+                    <a href="{{ path('estate_admin_story_image', {id: entry.id, pair: image.pair, layout: image.layout, format: image.format}) }}" target="_blank" rel="noopener" download="{{ name }}">
+                        <img src="{{ path('estate_admin_story_image', {id: entry.id, pair: image.pair, layout: image.layout, format: image.format}) }}" alt="{{ name }}" loading="lazy" width="{{ formats[image.format][0] }}" height="{{ formats[image.format][1] }}">
+                    </a>
+                    <figcaption>{{ name }}</figcaption>
+                </figure>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted">Les images se font à partir des paires avant/après dont les deux photos sont cochées « OK pour publier ».</p>
+        {% endif %}
+        <h3 class="h6" style="margin-top: 1.25rem">Texte suggéré et lien suivi</h3>
+        {% if not entry.published %}<p class="text-muted">Le lien mène à l'entrée une fois publiée.</p>{% endif %}
+        <div class="networks">
+            {% for key, label in networks %}
+            <label><strong>{{ label }}</strong>
+                <textarea class="form-control caption" readonly onclick="this.select()">{{ captions[key] }}</textarea>
+                <code>{{ links[key] }}</code>
+            </label>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

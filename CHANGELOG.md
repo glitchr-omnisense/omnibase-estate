@@ -16,6 +16,35 @@
   its subtitle reads « tout est à jour », not « aucun loyer » beside « 0 € dus ».
 
 ### Added
+- A home's plan for its tenants, private: `Entity\Room` (`estate_room`: name, `Enum\RoomKind`,
+  level, a polygon in centimetres on a 10 cm grid, a measured surface that prevails, counted in the
+  living area or not), `Unit::getPlanRooms()`, `getLivingArea()` (`Unit::$surface` stays the
+  declared surface; `getSurfaceGap()` shown to the team) and an architect's plan to trace over
+  (`planBackground`, its scale and offset; a PDF's first page with Imagick). The back office's
+  editor (`Controller\Admin\PlanController`, `public/js/plan-editor.js`: rectangles, corners, merge
+  into an L and split on the grid's cells, levels, undo; saved as JSON by `Service\Plans`), « Plan »
+  on the homes' screen. `EstateVoter::UNIT_PLAN` (the tenants of the current lease, the associates,
+  co-owners and owners, the team); the plan in `/locataire`, at `/plan/{id}` and as an A4 sheet
+  `/plan/{id}/imprimer`. Never public (Marco, 2026-11-01: « les plans sont pour les locataires,
+  c'est privé »): no option shows it on the listing, a visitor or another tenant gets a 404.
+  `Model\FloorPlan`, `Model\Polygon`, Twig `estate_plan()` and `|m2`.
+- The homes' works told: `Entity\StoryEntry` (`estate_story_entry`: date, title, text,
+  `Enum\StoryState` in progress or done, started on, planned end, an amount shown only when ticked,
+  its work orders in `estate_story_entry_work_order`) and `Entity\StoryPhoto` (`estate_story_photo`:
+  before, during or after, the view that pairs a before with an after, « OK pour publier », private
+  by default). `Service\Stories`: an entry from a work order (« Raconter »; its photos copied,
+  private), more work orders linked, the state they suggest, publishing refused while a tenant's
+  name (or the mark left where one was taken out) is in it. A works photo's `Document::$phase` and
+  `$view`, picked by the contractor in `/artisan` and by the team. Public only on `/travaux`
+  (`estate_works`): the works under way first, then the works done with an accessible before/after
+  slider (`public/js/before-after.js`, `public/css/before-after.css`: plain images without
+  JavaScript, the keyboard, no sweep under reduced motion), its intro `@estate.works.lead`; a home's
+  page shows no story, no works, no before/after (Marco, 2026-11-01).
+- Ready-to-post images for the networks (`Service\StoryImages`, Imagine): each cleared pair side by
+  side and as a two-slide carousel, in 1080×1080, 1080×1350 and 1200×630, with the title, the place
+  and the company's mark (`estate.story.font`, `font_regular`, `mark`, `color`), their zip with the
+  suggested text; the text per network and the link to `/travaux` with UTM parameters. Posting
+  directly is left to omnibase/social (docs/usage-plans-stories.md says what it would take).
 - A lease with two occupants or more is a flatshare (a couple too), with omnibase/drive's groups:
   `Drive\FlatshareFolders` gives a signed one a group « Colocation <home> » (`ShareGroup`) of its
   occupants who have an account, kept as they are added, deleted or accept their invitation, and a

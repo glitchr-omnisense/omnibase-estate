@@ -2,6 +2,8 @@
 
 namespace Base\Estate\Controller\Admin\Crud;
 
+use Base\Admin\Config\Action;
+use Base\Admin\Config\Actions;
 use Base\Estate\Entity\Unit;
 use Base\Estate\Enum\UnitKind;
 use Base\Field\AssociationField;
@@ -14,13 +16,25 @@ use Base\Field\TextareaField;
 use Base\Field\TextField;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 
-/** The homes: what they are, what they cost, whether they are on the public site and when they are free. */
+/**
+ * The homes: what they are, what they cost, whether they are on the public site and when they are
+ * free; « Plan » draws their rooms (the living area then computed, a gap with the surface declared
+ * shown here).
+ */
 class UnitCrudController extends AbstractEstateCrudController
 {
     public const KINDS = ['house' => 'Maison', 'apartment' => 'Appartement', 'studio' => 'Studio', 'parking' => 'Parking', 'commercial' => 'Local commercial'];
 
     public static function getEntityFqcn(): string { return Unit::class; }
     public static function getPreferredIcon(): ?string { return 'fa-solid fa-house'; }
+
+    public function configureActions(Actions $actions): Actions
+    {
+        $plan = Action::new('estatePlan', 'Plan', 'fa-solid fa-ruler-combined')
+            ->linkToRoute('estate_admin_plan', fn (Unit $u) => ['id' => $u->getId()]);
+
+        return parent::configureActions($actions)->add(Action::INDEX, $plan)->add(Action::DETAIL, $plan);
+    }
 
     public function configureFields(string $pageName): iterable
     {
@@ -34,7 +48,10 @@ class UnitCrudController extends AbstractEstateCrudController
         yield TextField::new('address', 'Adresse (sans immeuble)')->setRequired(false)->setColumns(6)->hideOnIndex();
         yield TextField::new('postcode', 'Code postal')->setRequired(false)->setColumns(2)->hideOnIndex();
         yield TextField::new('city', 'Ville')->setRequired(false)->setColumns(4)->hideOnIndex();
-        yield NumberField::new('surface', 'Surface (m²)')->setRequired(false)->setColumns(2);
+        yield NumberField::new('surface', 'Surface (m²)')->setRequired(false)->setColumns(2)->setHelp('Celle du bail et de l\'annonce.');
+        yield TextField::new('livingArea', 'Surface des pièces')->hideOnForm()
+            ->formatValue(fn ($value, ?Unit $unit) => null === $unit?->getLivingArea() ? '—' : rtrim(rtrim(number_format($unit->getLivingArea(), 2, ',', ' '), '0'), ',').' m²'
+                .(null !== $unit->getSurfaceGap() ? sprintf(' (écart %s%s m² avec la surface déclarée)', $unit->getSurfaceGap() > 0 ? '+' : '', number_format($unit->getSurfaceGap(), 2, ',', ' ')) : ''));
         yield IntegerField::new('rooms', 'Pièces')->setRequired(false)->setColumns(2);
         yield IntegerField::new('bedrooms', 'Chambres')->setRequired(false)->setColumns(2)->hideOnIndex();
         yield IntegerField::new('floor', 'Étage')->setRequired(false)->setColumns(2)->hideOnIndex();

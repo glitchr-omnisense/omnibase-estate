@@ -1,0 +1,58 @@
+{% extends '@Estate/client/layout.html.twig' %}
+
+{#
+ # The works (« Travaux »): what the company invests in its homes - the works under way first,
+ # then the works done with their before/after, each leading to its home's story. Published
+ # entries only, cleared photos only, an amount only when the team ticked it. The intro is the
+ # translation key @estate.works.lead (a site with editable texts rewrites it there).
+ #}
+{% block estate_title %}{{ '@estate.works.title'|trans }}{% endblock %}
+{% block description %}{{ '@estate.works.lead'|trans }}{% endblock %}
+{% block estate_lead %}{{ '@estate.works.lead'|trans }}{% endblock %}
+{% block estate_class %}estate-works-page{% endblock %}
+
+{% block estate_content %}
+{% if estate_once('estate-story-assets') %}
+<link rel="stylesheet" href="{{ asset('bundles/estate/css/before-after.css') }}">
+<script src="{{ asset('bundles/estate/js/before-after.js') }}" defer></script>
+{% endif %}
+
+<section class="estate-works-section is-progress" id="en-cours" aria-labelledby="works-in-progress">
+    <h2 id="works-in-progress">{{ '@estate.works.in_progress'|trans }}</h2>
+    {% if inProgress %}
+    <ol class="estate-work-list">
+        {% for entry in inProgress %}
+        <li class="estate-work is-progress" id="histoire-{{ entry.id }}">
+            <p class="estate-story-date">{% if entry.unit.published %}<a href="{{ path('estate_unit', {slug: entry.unit.slug}) }}">{{ entry.unit.name }}</a>{% else %}{{ entry.unit.name }}{% endif %}{% if entry.unit.district %} · {{ entry.unit.district }}{% endif %}</p>
+            <h3>{{ entry.title }}</h3>
+            <dl class="estate-work-facts">
+                {% if entry.startedOn %}<div><dt>{{ '@estate.works.started'|trans }}</dt><dd>{{ entry.startedOn|format_date('long') }}</dd></div>{% endif %}
+                {% if entry.plannedEndOn %}<div><dt>{{ '@estate.works.planned_end'|trans }}</dt><dd>{{ entry.plannedEndOn|format_date(pattern: 'MMMM yyyy')|capitalize }}</dd></div>{% endif %}
+                {% if entry.publicAmount %}<div class="is-amount"><dt>{{ '@estate.works.investment'|trans }}</dt><dd>{{ '@estate.works.amount'|trans({amount: entry.publicAmount|euros(true)}) }}</dd></div>{% endif %}
+            </dl>
+            {% if entry.text %}<div class="estate-text">{{ entry.text|nl2br }}</div>{% endif %}
+            {% set before = entry.getPublicPhotosOf(constant('Base\\Estate\\Enum\\PhotoPhase::BEFORE'))|first %}
+            {% set during = entry.getPublicPhotosOf(constant('Base\\Estate\\Enum\\PhotoPhase::DURING')) %}
+            {% if before or during %}
+            <div class="estate-work-photos">
+                {% if before %}<figure class="is-before"><img src="{{ before.image|thumbnail(900, 675) }}" alt="{{ '@estate.story.before_alt'|trans({view: before.view ?: entry.title}) }}" loading="lazy" width="900" height="675"><figcaption><b>{{ '@estate.story.before'|trans }}</b>{% if before.label %} · {{ before.label }}{% endif %}</figcaption></figure>{% endif %}
+                {% for photo in during %}<figure class="is-during"><img src="{{ photo.image|thumbnail(900, 675) }}" alt="{{ '@estate.story.during_alt'|trans({view: photo.view ?: entry.title}) }}" loading="lazy" width="900" height="675"><figcaption><b>{{ '@estate.story.during'|trans }}</b>{% if photo.label %} · {{ photo.label }}{% endif %}</figcaption></figure>{% endfor %}
+            </div>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ol>
+    {% else %}
+    <p class="estate-empty">{{ '@estate.works.none_in_progress'|trans }}</p>
+    {% endif %}
+</section>
+
+<section class="estate-works-section is-done" id="termines" aria-labelledby="works-done">
+    <h2 id="works-done">{{ '@estate.works.done'|trans }}</h2>
+    {% if done %}
+        {% include '@Estate/client/_story.html.twig' with {entries: done, unit: true} %}
+    {% else %}
+        <p class="estate-empty">{{ '@estate.works.none_done'|trans }}</p>
+    {% endif %}
+</section>
+{% endblock %}

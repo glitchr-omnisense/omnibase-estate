@@ -2,6 +2,7 @@
 
 namespace Base\Estate\Entity;
 
+use Base\Database\Attribute\Uploader;
 use Base\Estate\Enum\UnitKind;
 use Base\Estate\Repository\UnitRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -12,6 +13,8 @@ use Doctrine\ORM\Mapping as ORM;
  * A home the organisation lets: a house, a flat, a studio, a parking space,
  * premises. Published, it is on the public site with its photos, what it
  * costs and when it is free; its façade colour paints it until a photo is in.
+ * Its rooms drawn, it has a plan - private: its tenants, its owners and the
+ * team see it, never the public - and a living area computed from them.
  */
 #[ORM\Entity(repositoryClass: UnitRepository::class)]
 #[ORM\Table(name: 'estate_unit')]
@@ -121,6 +124,27 @@ class Unit
     #[ORM\OrderBy(['position' => 'ASC', 'id' => 'ASC'])]
     private Collection $photos;
 
+    /** @var Collection<int, Room> */
+    #[ORM\OneToMany(targetEntity: Room::class, mappedBy: 'unit', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['level' => 'ASC', 'position' => 'ASC', 'id' => 'ASC'])]
+    private Collection $planRooms;
+
+    /** An architect's plan to trace over: an image (a PDF's first page is turned into one). */
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Uploader(max_size: '20MB', mime_types: ['image/*'], missable: true)]
+    private $planBackground = null;
+
+    /** The background's scale, in centimetres per pixel of the image (two points and a known length). */
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $planBackgroundScale = null;
+
+    /** Where the background's top-left corner sits on the plan, in centimetres. */
+    #[ORM\Column]
+    private int $planBackgroundX = 0;
+
+    #[ORM\Column]
+    private int $planBackgroundY = 0;
+
     /** @var Collection<int, Lease> */
     #[ORM\OneToMany(targetEntity: Lease::class, mappedBy: 'unit')]
     #[ORM\OrderBy(['startOn' => 'DESC'])]
@@ -133,6 +157,7 @@ class Unit
         $this->slug = $slug;
         $this->photos = new ArrayCollection();
         $this->leases = new ArrayCollection();
+        $this->planRooms = new ArrayCollection();
     }
 
     public function __toString(): string { return $this->name; }
@@ -218,6 +243,77 @@ class Unit
 
     /** @return Collection<int, Lease> */
     public function getLeases(): Collection { return $this->leases; }
+
+    /** @return Collection<int, Room> the rooms drawn on its plan (getRooms() is the number of rooms it is let with) */
+    public function getPlanRooms(): Collection { return $this->planRooms ??= new ArrayCollection(); }
+    public function addPlanRoom(Room $room): self
+    {
+        if (!$this->getPlanRooms()->contains($room)) {
+            $this->planRooms->add($room);
+            $room->setUnit($this);
+        }
+
+        return $this;
+    }
+    public function removePlanRoom(Room $room): self { $this->getPlanRooms()->removeElement($room); return $this; }
+    public function hasPlan(): bool { return !$this->getPlanRooms()->isEmpty(); }
+    public function getPlanBackground(): ?string { return Uploader::getPublic($this, 'planBackground'); }
+    public function getPlanBackgroundFile() { return Uploader::get($this, 'planBackground'); }
+    public function setPlanBackground($file): self { $this->planBackground = $file ?: null; return $this; }
+    public function getPlanBackgroundScale(): ?float { return $this->planBackgroundScale; }
+    public function setPlanBackgroundScale(?float $scale): self { $this->planBackgroundScale = $scale > 0 ? $scale : null; return $this; }
+    public function getPlanBackgroundX(): int { return $this->planBackgroundX; }
+    public function getPlanBackgroundY(): int { return $this->planBackgroundY; }
+    public function setPlanBackgroundOffset(int $x, int $y): self { $this->planBackgroundX = $x; $this->planBackgroundY = $y; return $this; }
+
+    /**
+     * The living area from the rooms drawn (those counted, each its measured
+     * figure or its drawn one), in m²; null while no room is drawn. Unit::$surface
+     * stays the surface declared - on the lease, on the listing -, which the
+     * team compares with it (getSurfaceGap()).
+     */
+    public function getLivingArea(): ?float
+    {
+        if (!$this->hasPlan()) {
+            return null;
+        }
+
+        return round(array_sum(array_map(fn (Room $room) => $room->isCounted() ? $room->getSurface() : 0.0, $this->planRooms->toArray())), 2);
+    }
+
+    /** Every room's surface, counted or not (a balcony, a cellar), in m². */
+    public function getPlanSurface(): float
+    {
+        return round(array_sum(array_map(fn (Room $room) => $room->getSurface(), $this->getPlanRooms()->toArray())), 2);
+    }
+
+    /**
+     * The living area drawn less the surface declared, in m², when the two
+     * differ by half a square metre or more; null when they agree or one is
+     * missing. Shown to the team, never to tenants or the public.
+     */
+    public function getSurfaceGap(): ?float
+    {
+        $area = $this->getLivingArea();
+        if (null === $area || null === $this->getSurface()) {
+            return null;
+        }
+        $gap = round($area - $this->getSurface(), 2);
+
+        return abs($gap) >= 0.5 ? $gap : null;
+    }
+
+    /** @return array<int, list<Room>> the rooms by level, the lowest first */
+    public function getRoomsByLevel(): array
+    {
+        $levels = [];
+        foreach ($this->getPlanRooms() as $room) {
+            $levels[$room->getLevel()][] = $room;
+        }
+        ksort($levels);
+
+        return $levels;
+    }
 
     /** The lease running today, if any. */
     public function getCurrentLease(?\DateTimeImmutable $on = null): ?Lease

@@ -44,8 +44,12 @@ to get in, shown to contractors).
 | `position` | |
 | `photos` | `UnitPhoto`s (12 MB each, caption, position) |
 | `leases` | newest first |
+| `planRooms` | `Room`s drawn on its plan, by level ([Plans, stories and works](usage-plans-stories.md)) |
+| `planBackground`, `planBackgroundScale`, `planBackgroundX`, `planBackgroundY` | an architect's plan traced over, its scale (cm per pixel) and offset (cm) |
 
-`getCurrentLease(?$on)`, `isLet(?$on)`, `getCover()`.
+`getCurrentLease(?$on)`, `isLet(?$on)`, `getCover()`; `hasPlan()`, `getLivingArea()` (the counted
+rooms' surfaces; `surface` stays the declared one), `getPlanSurface()`, `getSurfaceGap()`,
+`getRoomsByLevel()`.
 
 ## Leases
 
@@ -119,7 +123,8 @@ Jean Dupont | running on 2026-10-01: true
 | Entity | Fields |
 |---|---|
 | `WorkOrder` (`estate_work_order`) | `unit`, `reportedBy`, `title`, `description`, `category` (`Autre`), `urgency` (`LOW`, `NORMAL`, `URGENT`), `status` (`REPORTED`, `ASSIGNED`, `SCHEDULED`, `DONE`, `CLOSED`, `CANCELLED`), `contractor`, `visitAt`, `quoteAmount`, `invoiceAmount`, `invoiceNumber`, `report`, `createdAt`, `closedAt`, `events` (`WorkOrderEvent`: author, name, body, date) |
-| `Document` (`estate_document`) | `organisation` and one of `unit`, `lease`, `workOrder`; `kind` (`LEASE`, `INVENTORY`, `DIAGNOSTIC`, `RULES`, `INSURANCE`, `QUOTE`, `INVOICE`, `PHOTO`, `OTHER`), `title`, `file` (PDF or image, 20 MB, outside `public/`), `tenantVisible` (`true`), `validUntil`, `uploadedBy`, `uploadedByName` |
+| `Document` (`estate_document`) | `organisation` and one of `unit`, `lease`, `workOrder`; `kind` (`LEASE`, `INVENTORY`, `DIAGNOSTIC`, `RULES`, `INSURANCE`, `QUOTE`, `INVOICE`, `PHOTO`, `OTHER`), `title`, `file` (PDF or image, 20 MB, outside `public/`), `tenantVisible` (`true`), `validUntil`, `uploadedBy`, `uploadedByName`; a works photo's `phase` (`PhotoPhase`: before, during, after) and `view` |
+| `StoryEntry` (`estate_story_entry`), `StoryPhoto` (`estate_story_photo`) | a home's story and the works page: [Plans, stories and works](usage-plans-stories.md#the-story) |
 | `Message` (`estate_message`) | `lease`, `author`, `authorName`, `fromManagement`, `body`, `createdAt`, `readAt` |
 | `Notice` (`estate_notice`) | a notice to the tenants: `organisation`, `building` (none: all), `title`, `body`, `sentAt` |
 | `Application` (`estate_application`) | [The public site and applications](usage-applications.md) |

@@ -10,7 +10,7 @@ use Symfony\Contracts\Service\ResetInterface;
 use Twig\Attribute\AsTwigFilter;
 use Twig\Attribute\AsTwigFunction;
 
-/** The spaces the header offers, money in euros as the pages write it, a cloud folder's link (estate_folder), estate_once() (a style shared by the dashboard's cards, written once a page), and the activities the site runs (estate_activity('ownership'), estate_activities()). */
+/** The spaces the header offers, money in euros and surfaces in m² as the pages write them, a home's plan (estate_plan), a cloud folder's link (estate_folder), estate_once() (a style shared by the dashboard's cards, written once a page), and the activities the site runs (estate_activity('ownership'), estate_activities()). */
 class EstateExtension implements ResetInterface
 {
     /** @var array<string, true> */
@@ -99,5 +99,24 @@ class EstateExtension implements ResetInterface
         $slug = $twig->getFilter('drive_slug')?->getCallable();
 
         return \is_callable($slug) ? (string) $slug((string) $path) : (string) $path;
+    }
+
+    /** 12.4 → "12,4 m²" (two decimals at most, none when whole). */
+    #[AsTwigFilter('m2')]
+    public function squareMetres(int|float|null $surface): string
+    {
+        if (null === $surface) {
+            return '—';
+        }
+        $formatted = rtrim(rtrim(number_format((float) $surface, 2, ',', ' '), '0'), ',');
+
+        return str_replace(' ', "\u{202F}", $formatted)."\u{00A0}m²";
+    }
+
+    /** A home's plan as the pages draw it (its rooms by level, labels, totals), null while no room is drawn. */
+    #[AsTwigFunction('estate_plan')]
+    public function plan(\Base\Estate\Entity\Unit $unit): ?\Base\Estate\Model\FloorPlan
+    {
+        return $unit->hasPlan() ? \Base\Estate\Model\FloorPlan::of($unit) : null;
     }
 }

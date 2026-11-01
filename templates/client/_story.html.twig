@@ -1,0 +1,31 @@
+{#
+ # Works told (the works page, /travaux; a home's page shows none): published entries - date, title, works under way said so, the
+ # amount when the team shows it, text, the before/after pairs and the other photos the
+ # team cleared (a progress photo labelled). Nothing else of them is ever shown
+ # (StoryEntry::getPublicPhotos()). The slider's style and script once a page.
+ #   entries  list<StoryEntry>, published
+ #   unit     show the home's name on each entry, and a link to its page
+ #}
+{% if estate_once('estate-story-assets') %}
+<link rel="stylesheet" href="{{ asset('bundles/estate/css/before-after.css') }}">
+<script src="{{ asset('bundles/estate/js/before-after.js') }}" defer></script>
+{% endif %}
+<ol class="estate-story">
+    {% for entry in entries %}
+    <li class="estate-story-entry" id="histoire-{{ entry.id }}">
+        <p class="estate-story-date"><time datetime="{{ entry.happenedOn|date('Y-m-d') }}">{{ entry.happenedOn|format_date(pattern: 'MMMM yyyy')|capitalize }}</time>{% if unit|default(false) %} · {% if entry.unit.published %}<a href="{{ path('estate_unit', {slug: entry.unit.slug}) }}">{{ entry.unit.name }}</a>{% else %}{{ entry.unit.name }}{% endif %}{% if entry.unit.district %} · {{ entry.unit.district }}{% endif %}{% endif %}</p>
+        <h3>{{ entry.title }}{% if entry.inProgress %} <span class="estate-pill is-progress">{{ '@estate.story.in_progress'|trans }}</span>{% endif %}</h3>
+        {% if entry.publicAmount %}<p class="estate-story-amount">{{ '@estate.works.amount'|trans({amount: entry.publicAmount|euros(true)}) }}</p>{% endif %}
+        {% if entry.text %}<div class="estate-text">{{ entry.text|nl2br }}</div>{% endif %}
+        {% set pairs = entry.getPairs(true) %}
+        {% for pair in pairs %}{% include '@Estate/client/_before_after.html.twig' with {pair: pair} %}{% endfor %}
+        {% set singles = entry.getSinglePhotos(true) %}
+        {% if singles %}
+        <div class="estate-story-photos">
+            {% for photo in singles %}<figure><img src="{{ photo.image|thumbnail(900, 675) }}" alt="{{ photo.label ?: entry.title }}" loading="lazy" width="900" height="675">{% if photo.label or photo.phase %}<figcaption>{% if photo.phase %}<b>{{ ('@estate.story.' ~ photo.phase.value)|trans }}</b>{% if photo.label %} · {% endif %}{% endif %}{{ photo.label }}</figcaption>{% endif %}</figure>{% endfor %}
+        </div>
+        {% endif %}
+        {% if unit|default(false) and entry.unit.published %}<p class="estate-story-more"><a href="{{ path('estate_unit', {slug: entry.unit.slug}) }}">{{ '@estate.works.story_link'|trans({unit: entry.unit.name}) }}</a></p>{% endif %}
+    </li>
+    {% endfor %}
+</ol>

@@ -8,6 +8,7 @@ use Base\Estate\Entity\RentCall;
 use Base\Estate\Form\InsuranceType;
 use Base\Estate\Form\MessageType;
 use Base\Estate\Form\ReportType;
+use Base\Estate\Model\FloorPlan;
 use Base\Estate\Repository\DocumentRepository;
 use Base\Estate\Repository\RentCallRepository;
 use Base\Estate\Repository\WorkOrderRepository;
@@ -27,7 +28,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * The tenant's space: their lease, its rents (to pay online, their notices
- * and receipts to download, a certificate of rent up to date), the lease's
+ * and receipts to download, a certificate of rent up to date), their home's
+ * plan with its rooms and surfaces, the lease's
  * documents and their insurance certificate, their messages with the
  * management, the problems they reported and a form to report one, the
  * notices of their building.
@@ -104,6 +106,7 @@ class TenantController extends AbstractController
             'thread' => $messages->read($lease, false),
             'online' => $online->isAvailable(),
             'methods' => $online->methods(),
+            'plan' => $lease->getUnit()->hasPlan() && $this->isGranted(EstateVoter::UNIT_PLAN, $lease->getUnit()) ? FloorPlan::of($lease->getUnit()) : null,
         ], new Response(null, $invalid ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK));
     }
 

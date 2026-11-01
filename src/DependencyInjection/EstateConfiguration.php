@@ -34,6 +34,20 @@ class EstateConfiguration implements ConfigurationInterface
                     ->info('How many days after its due date an unpaid rent is marked late and reminded (estate:rent:late).')->end()
                 ->scalarNode('documents_route')->defaultNull()
                     ->info('The application\'s documents page, linked from the associates\' space. Null: none.')->end()
+                ->arrayNode('story')
+                    ->info('The homes\' stories: the ready-to-post images made for the networks.')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->scalarNode('font')->defaultNull()
+                            ->info('A TTF/OTF file for the images\' titles and labels (bold). Null: DejaVu Sans Bold where the system has it.')->end()
+                        ->scalarNode('font_regular')->defaultNull()
+                            ->info('A TTF/OTF file for the images\' second line. Null: the bold font\'s regular sibling, else the bold one.')->end()
+                        ->scalarNode('mark')->defaultNull()
+                            ->info('The company\'s mark on the images\' band: a PNG or JPEG file (transparent PNG best). Null: none, the company\'s name is written.')->end()
+                        ->scalarNode('color')->defaultValue('#1f2328')
+                            ->info('The band\'s and the labels\' colour, #rrggbb.')->end()
+                    ->end()
+                ->end()
             ->end();
 
         return $treeBuilder;

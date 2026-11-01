@@ -8,6 +8,7 @@ use Base\Estate\Entity\Lease;
 use Base\Estate\Entity\WorkOrder;
 use Base\Estate\Enum\ActivityKind;
 use Base\Estate\Enum\DocumentKind;
+use Base\Estate\Enum\PhotoPhase;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\File;
 
@@ -42,11 +43,17 @@ class Documents
         return $document;
     }
 
-    /** A contractor's file on a work order: a quote, an invoice (its amount and number then on the order) or a photo. */
-    public function work(WorkOrder $order, DocumentKind $kind, File $file, ?string $title, User $user, string $name, bool $tenantVisible = false): Document
+    /**
+     * A contractor's file on a work order: a quote, an invoice (its amount and number then on the
+     * order) or a photo - taken before or after the works, of a view, which pairs it for the home's
+     * story (StoryEntry).
+     */
+    public function work(WorkOrder $order, DocumentKind $kind, File $file, ?string $title, User $user, string $name, bool $tenantVisible = false, ?PhotoPhase $phase = null, ?string $view = null): Document
     {
-        $document = (new Document($order->getOrganisation(), $kind, $title ?: $this->defaultTitle($kind, $order)))
-            ->setWorkOrder($order)->setFile($file)->setTenantVisible($tenantVisible)->setUploadedBy($user, $name);
+        $photo = DocumentKind::PHOTO === $kind;
+        $document = (new Document($order->getOrganisation(), $kind, $title ?: $this->defaultTitle($kind, $order, $photo ? $phase : null, $photo ? $view : null)))
+            ->setWorkOrder($order)->setFile($file)->setTenantVisible($tenantVisible)->setUploadedBy($user, $name)
+            ->setPhase($photo ? $phase : null)->setView($photo ? $view : null);
         $this->entityManager->persist($document);
         $this->activities->log($order->getOrganisation(), ActivityKind::DOCUMENT, $document->getTitle().' ajouté par '.$name, $order->getUnit());
         $this->entityManager->flush();
@@ -55,12 +62,12 @@ class Documents
         return $document;
     }
 
-    private function defaultTitle(DocumentKind $kind, WorkOrder $order): string
+    private function defaultTitle(DocumentKind $kind, WorkOrder $order, ?PhotoPhase $phase = null, ?string $view = null): string
     {
         return match ($kind) {
             DocumentKind::QUOTE => 'Devis',
             DocumentKind::INVOICE => 'Facture',
-            DocumentKind::PHOTO => 'Photo',
+            DocumentKind::PHOTO => 'Photo'.($phase ? ' '.mb_strtolower($phase->label()) : '').($view ? ' ('.$view.')' : ''),
             default => 'Document',
         }.' — '.$order->getTitle();
     }

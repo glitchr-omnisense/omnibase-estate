@@ -94,6 +94,16 @@
 </div>
 </div>
 
+{% if plan %}
+<section class="estate-panel" id="plan">
+    <div class="estate-works-head">
+        <h2>{{ '@estate.plan.title'|trans }}</h2>
+        <a class="estate-button is-ghost is-small" href="{{ path('estate_unit_plan_print', {id: lease.unit.id}) }}" target="_blank" rel="noopener"><i class="fa-solid fa-print" aria-hidden="true"></i> {{ '@estate.plan.print'|trans }}</a>
+    </div>
+    {% include '@Estate/client/_plan.html.twig' with {plan: plan} %}
+</section>
+{% endif %}
+
 <div class="estate-columns">
 <section class="estate-panel" id="documents">
     <h2>{{ '@estate.tenant.documents_title'|trans }}</h2>

@@ -66,7 +66,8 @@ class ContractorController extends AbstractController
         $file = $this->container->get('form.factory')->createNamed('file', WorkFileType::class);
         $file->handleRequest($request);
         if ($file->isSubmitted() && $file->isValid()) {
-            $documents->work($order, $file->get('kind')->getData(), $file->get('file')->getData(), $file->get('title')->getData(), $user, $order->getContractor()->getCompany());
+            $documents->work($order, $file->get('kind')->getData(), $file->get('file')->getData(), $file->get('title')->getData(), $user, $order->getContractor()->getCompany(),
+                phase: $file->get('phase')->getData(), view: $file->get('view')->getData());
             $this->addFlash('success', 'contractor.file_added');
 
             return $this->redirectToRoute('estate_work_order', ['id' => $order->getId(), '_fragment' => 'files']);

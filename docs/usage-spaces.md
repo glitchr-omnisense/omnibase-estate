@@ -31,6 +31,7 @@ account, what a user is to the organisations (memoised per request, reset betwee
 | `ESTATE_LEASE_VIEW` | `Lease` | its parties |
 | `ESTATE_RENT_VIEW` | `RentCall` | its lease's parties |
 | `ESTATE_UNIT_REPORT` | `Unit` | the parties of its current lease |
+| `ESTATE_UNIT_PLAN` | `Unit` | the tenants and co-tenants of its current lease (not a guarantor), its company's associates, its co-owners, its owners under management ([Plans, stories and works](usage-plans-stories.md#who-sees-it)) |
 | `ESTATE_WORK_VIEW` | `WorkOrder` | its contractor, the parties of the unit's current lease, the organisation's associates |
 | `ESTATE_WORK_DO` | `WorkOrder` | its contractor |
 | `ESTATE_DOCUMENT_VIEW` | `Document` | see below |

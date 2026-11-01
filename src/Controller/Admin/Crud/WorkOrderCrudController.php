@@ -12,7 +12,7 @@ use Base\Field\DateTimeField;
 use Base\Field\TextareaField;
 use Base\Field\TextField;
 
-/** The work orders: "Confier" gives one to a contractor (and tells them), "Clôturer" sends its invoice to the books. */
+/** The work orders: "Confier" gives one to a contractor (and tells them), "Clôturer" sends its invoice to the books, "Raconter" puts works given to a contractor into the home's story. */
 class WorkOrderCrudController extends AbstractEstateCrudController
 {
     public const STATUSES = ['reported' => 'Signalé', 'assigned' => 'Confié', 'scheduled' => 'Planifié', 'done' => 'Terminé', 'closed' => 'Clôturé', 'cancelled' => 'Annulé'];
@@ -30,8 +30,14 @@ class WorkOrderCrudController extends AbstractEstateCrudController
             ->linkToRoute('estate_admin_close', fn (WorkOrder $w) => ['id' => $w->getId(), '_token' => $this->actionToken('estate_close', $w->getId())])
             ->displayIf(fn (WorkOrder $w) => WorkOrderStatus::DONE === $w->getStatus());
 
+        // Works into the home's story, under way or done (their before/after photos come along).
+        $story = Action::new('estateStory', 'Raconter', 'fa-solid fa-book-open')
+            ->linkToRoute('estate_admin_story_from_work', fn (WorkOrder $w) => ['id' => $w->getId(), '_token' => $this->actionToken('estate_story', $w->getId())])
+            ->displayIf(fn (WorkOrder $w) => WorkOrderStatus::CANCELLED !== $w->getStatus() && WorkOrderStatus::REPORTED !== $w->getStatus());
+
         return parent::configureActions($actions)
-            ->add(Action::INDEX, $assign)->add(Action::DETAIL, $assign)->add(Action::INDEX, $close)->add(Action::DETAIL, $close);
+            ->add(Action::INDEX, $assign)->add(Action::DETAIL, $assign)->add(Action::INDEX, $close)->add(Action::DETAIL, $close)
+            ->add(Action::INDEX, $story)->add(Action::DETAIL, $story);
     }
 
     public function configureFields(string $pageName): iterable
