@@ -495,6 +495,15 @@ dashboard:
     rate: "let"
     let_label: "Let"
     vacant_label: "Vacant"
+    vacant_since: "vacant since {date}"
+    vacant_never: "never let"
+    until: "lease ends {date}"
+    notice: "notice given"
+    more: "{count, plural, one {# more home} other {# more homes}}"
+    state:
+      vacant: "Vacant"
+      ending: "Ending"
+      let: "Let"
   rents:
     sub: "By month"
     period: "Period"
@@ -504,10 +513,18 @@ dashboard:
     rate: "Rate"
     month: "Month"
   late:
-    sub: "{count, plural, =0 {no rent} one {# rent} other {# rents}}"
+    sub: "{count, plural, =0 {all up to date} one {# rent} other {# rents}}"
     owed: "owed"
     none: "Every rent due is paid."
     since: "due on {date} · {unit}"
+    month: "{month}"
+    month_none: "No rent called in {month}."
+    paid_on: "paid {date}"
+    due_on: "due {date}"
+    state:
+      paid: "Paid"
+      part: "Partly"
+      due: "Due"
   works:
     sub: "{amount} of works in {year}"
     open: "{count, plural, one {intervention in progress} other {interventions in progress}}"

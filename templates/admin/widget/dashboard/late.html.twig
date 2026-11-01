@@ -1,19 +1,40 @@
-{# Base\Estate\Admin\Widget\Dashboard\LateRentsWidgetType: what is late, by whom, and the way to record its payment. #}
+{# Base\Estate\Admin\Widget\Dashboard\LateRentsWidgetType: what is late, by whom, and the way to record its payment; then the month's rents and where each stands. #}
 {% extends '@Estate/admin/widget/dashboard/_card.html.twig' %}
 {% block subtitle %}{{ 'dashboard.late.sub'|trans({count: late|length}, 'estate') }}{% endblock %}
+{% block actions %}<a class="dash-card-action" href="{{ path('admin_crud_rent_calls_index') }}" title="{{ 'dashboard.open'|trans({}, 'estate') }}"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>{% endblock %}
 {% block body %}
 <div class="es-hero"><span class="es-hero-value{{ total > 0 ? ' es-bad' }}">{{ total|euros(true) }}</span><span class="es-hero-unit">{{ 'dashboard.late.owed'|trans({}, 'estate') }}</span></div>
 {% if late is empty %}
-    <p class="es-muted" style="margin: .6rem 0 0"><i class="fa-solid fa-check es-good"></i> {{ 'dashboard.late.none'|trans({}, 'estate') }}</p>
+    <p class="es-muted es-note"><i class="fa-solid fa-check es-good"></i> {{ 'dashboard.late.none'|trans({}, 'estate') }}</p>
 {% else %}
 <ul class="dash-rows">
     {% for call in late|slice(0, 4) %}
-    <li><div class="dash-row">
+    <li><a class="dash-row" href="{{ path('estate_admin_payment', {id: call.id}) }}">
         <i class="fa-solid fa-hourglass-half dash-row-icon" aria-hidden="true"></i>
         <span class="dash-row-label">{{ call.lease.tenantNames }}<small>{{ 'dashboard.late.since'|trans({date: call.dueOn|format_date('short'), unit: call.lease.unit.name}, 'estate') }}</small></span>
-        <span class="dash-row-value">{{ call.remaining|euros(true) }}</span>
-    </div></li>
+        <span class="dash-row-value es-bad">{{ call.remaining|euros(true) }}</span>
+    </a></li>
     {% endfor %}
 </ul>
 {% endif %}
+<div class="es-month">
+    {% if monthCalled > 0 %}
+    <div class="es-split-row">
+        <span>{{ 'dashboard.late.month'|trans({month: month|format_date(pattern: 'MMMM')|capitalize}, 'estate') }}</span>
+        <span><b>{{ monthReceived|euros(true) }}</b> / {{ monthCalled|euros(true) }}</span>
+        <span class="es-meter"><span style="width: {{ (100 * monthReceived / monthCalled)|round }}%"></span></span>
+    </div>
+    <ul class="dash-rows">
+        {% for call in monthCalls|slice(0, 4) %}
+        {% set state = call.paid ? (call.remaining > 0 ? 'part' : 'paid') : 'due' %}
+        <li><div class="dash-row">
+            <span class="dash-row-label">{{ call.lease.tenantNames }}<small>{{ state == 'paid' and call.paidAt ? 'dashboard.late.paid_on'|trans({date: call.paidAt|format_date(pattern: 'd MMM')}, 'estate') : 'dashboard.late.due_on'|trans({date: call.dueOn|format_date(pattern: 'd MMM')}, 'estate') }} · {{ call.lease.unit.name }}</small></span>
+            <span class="es-status is-{{ state }}">{{ ('dashboard.late.state.' ~ state)|trans({}, 'estate') }}</span>
+        </div></li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="es-muted es-note">{{ 'dashboard.late.month_none'|trans({month: month|format_date(pattern: 'MMMM')}, 'estate') }}</p>
+    {% endif %}
+</div>
 {% endblock %}

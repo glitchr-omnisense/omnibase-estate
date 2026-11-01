@@ -24,11 +24,13 @@
     .es-donut .is-let { stroke: var(--admin-accent); }
     .es-donut .is-vacant { stroke: color-mix(in srgb, var(--admin-accent) 22%, var(--admin-surface)); }
     .es-donut text { text-anchor: middle; fill: var(--admin-text); }
-    .es-donut .es-donut-n { font-size: .6rem; font-weight: 700; }
+    /* The figure inside the ring's hole (26 units across), never on the ring. */
+    .es-donut .es-donut-n { font-size: .47rem; font-weight: 700; }
     .es-donut .es-donut-l { font-size: .3rem; fill: var(--admin-muted); }
     .es-occupancy-legend { display: grid; gap: .35rem; font-size: .84rem; }
     .es-occupancy-legend div { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .45rem; align-items: center; }
     .es-occupancy-legend strong { font-weight: 700; }
+    .es-homes .dash-row { color: inherit; text-decoration: none; }
 
     /* rents */
     .es-rents input.es-choice { position: absolute; opacity: 0; pointer-events: none; }
@@ -68,6 +70,16 @@
     .es-badge.is-on { background: color-mix(in srgb, var(--admin-success) 15%, transparent); color: var(--admin-text); }
     .es-badge.is-off { background: color-mix(in srgb, var(--admin-warning) 18%, transparent); color: var(--admin-text); }
     .es-status { display: inline-block; padding: .1rem .5rem; border-radius: 999px; font-size: .72rem; background: var(--admin-tint-strong); color: var(--admin-text); white-space: nowrap; }
+    /* A home's or a rent's state: the words carry it, the tint only repeats it. */
+    .es-status.is-let, .es-status.is-paid { background: color-mix(in srgb, var(--admin-success) 15%, transparent); }
+    .es-status.is-ending, .es-status.is-part, .es-status.is-due { background: color-mix(in srgb, var(--admin-warning) 18%, transparent); }
+    .es-status.is-vacant { background: color-mix(in srgb, var(--admin-danger) 13%, transparent); }
+    .es-note { margin: .6rem 0 0; }
+    .es-more { display: inline-block; margin-top: .5rem; font-size: .8rem; }
+    /* The month under what is late: its rents received over called, then each one. */
+    .es-month { margin-top: 1rem; padding-top: .9rem; border-top: 1px solid var(--admin-border); }
+    .es-month .dash-rows { margin-top: .6rem; }
+    .es-month .dash-row { grid-template-columns: minmax(0, 1fr) auto; }
 
     /* A compact card, two to a row on a phone: the figure smaller, the list shortened. */
     @container (max-width: 240px) {

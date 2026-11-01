@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Changed
+- The dashboard's Occupation card lists each home and where it stands, the vacant first (since when,
+  or never let), then a lease ending (notice given, or its end within three months), then the let
+  ones with their tenants, each with a state in words; the donut's figure keeps inside its ring. The
+  Loyers en retard card also says how the month goes: its rents received over called, then each one
+  paid, partly paid or due (the current month once called, the last one before); with nothing late
+  its subtitle reads « tout est à jour », not « aucun loyer » beside « 0 € dus ».
+
 ### Added
 - A lease with two occupants or more is a flatshare (a couple too), with omnibase/drive's groups:
   `Drive\FlatshareFolders` gives a signed one a group « Colocation <home> » (`ShareGroup`) of its

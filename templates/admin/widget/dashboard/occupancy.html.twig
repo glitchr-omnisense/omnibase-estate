@@ -1,4 +1,4 @@
-{# Base\Estate\Admin\Widget\Dashboard\OccupancyWidgetType: the homes let and vacant. #}
+{# Base\Estate\Admin\Widget\Dashboard\OccupancyWidgetType: the homes let and vacant, then each home and where it stands. #}
 {% extends '@Estate/admin/widget/dashboard/_card.html.twig' %}
 {% block subtitle %}{{ 'dashboard.occupancy.sub'|trans({count: lettable}, 'estate') }}{% endblock %}
 {% block actions %}<a class="dash-card-action" href="{{ path('admin_crud_units_index') }}" title="{{ 'dashboard.open'|trans({}, 'estate') }}"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>{% endblock %}
@@ -10,14 +10,29 @@
     <svg class="es-donut" viewBox="0 0 42 42" role="img" aria-label="{{ 'dashboard.occupancy.aria'|trans({let: let, count: lettable}, 'estate') }}">
         <circle class="is-vacant" cx="21" cy="21" r="15.9155"></circle>
         {% if let > 0 %}<circle class="is-let" cx="21" cy="21" r="15.9155" stroke-dasharray="{{ letDash }} {{ 100 - letDash }}" stroke-dashoffset="25"><title>{{ 'dashboard.occupancy.let'|trans({count: let}, 'estate') }}</title></circle>{% endif %}
-        <text class="es-donut-n" x="21" y="22.5">{{ share }} %</text>
+        <text class="es-donut-n" x="21" y="22.4">{{ share }} %</text>
         <text class="es-donut-l" x="21" y="27">{{ 'dashboard.occupancy.rate'|trans({}, 'estate') }}</text>
     </svg>
     <div class="es-occupancy-legend">
         <div><span class="es-swatch"></span><span>{{ 'dashboard.occupancy.let_label'|trans({}, 'estate') }}</span><strong>{{ let }}</strong></div>
         <div><span class="es-swatch is-tint"></span><span>{{ 'dashboard.occupancy.vacant_label'|trans({}, 'estate') }}</span><strong>{{ lettable - let }}</strong></div>
-        {% if vacant is not empty %}<span class="es-muted">{{ vacant|join(', ') }}</span>{% endif %}
     </div>
 </div>
+<ul class="dash-rows es-homes">
+    {% for home in homes|slice(0, 5) %}
+    <li><a class="dash-row" href="{{ path('admin_crud_units_edit', {entityId: home.unit.id}) }}">
+        <i class="fa-solid {{ home.state == 'vacant' ? 'fa-door-open' : (home.state == 'ending' ? 'fa-hourglass-end' : 'fa-house') }} dash-row-icon" aria-hidden="true"></i>
+        <span class="dash-row-label">{{ home.unit.name }}<small>
+            {%- if home.state == 'vacant' -%}
+                {{ home.since ? 'dashboard.occupancy.vacant_since'|trans({date: home.since|format_date(pattern: 'd MMM y')}, 'estate') : 'dashboard.occupancy.vacant_never'|trans({}, 'estate') }}
+            {%- else -%}
+                {{ home.lease.tenantNames }}{% if home.until %} · {{ 'dashboard.occupancy.until'|trans({date: home.until|format_date(pattern: 'd MMM y')}, 'estate') }}{% elseif home.state == 'ending' %} · {{ 'dashboard.occupancy.notice'|trans({}, 'estate') }}{% endif %}
+            {%- endif -%}
+        </small></span>
+        <span class="es-status is-{{ home.state }}">{{ ('dashboard.occupancy.state.' ~ home.state)|trans({}, 'estate') }}</span>
+    </a></li>
+    {% endfor %}
+</ul>
+{% if homes|length > 5 %}<a class="es-more" href="{{ path('admin_crud_units_index') }}">{{ 'dashboard.occupancy.more'|trans({count: homes|length - 5}, 'estate') }}</a>{% endif %}
 {% endif %}
 {% endblock %}

@@ -495,6 +495,15 @@ dashboard:
     rate: "occupés"
     let_label: "Loués"
     vacant_label: "Vacants"
+    vacant_since: "vacant depuis le {date}"
+    vacant_never: "jamais loué"
+    until: "fin du bail le {date}"
+    notice: "préavis donné"
+    more: "{count, plural, one {# autre bien} other {# autres biens}}"
+    state:
+      vacant: "Vacant"
+      ending: "Fin proche"
+      let: "Loué"
   rents:
     sub: "Par mois"
     period: "Période"
@@ -504,10 +513,18 @@ dashboard:
     rate: "Taux"
     month: "Mois"
   late:
-    sub: "{count, plural, =0 {aucun loyer} one {# loyer} other {# loyers}}"
+    sub: "{count, plural, =0 {tout est à jour} one {# loyer} other {# loyers}}"
     owed: "dus"
     none: "Tous les loyers échus sont réglés."
     since: "échu le {date} · {unit}"
+    month: "{month}"
+    month_none: "Aucun loyer appelé en {month}."
+    paid_on: "payé le {date}"
+    due_on: "dû le {date}"
+    state:
+      paid: "Payé"
+      part: "En partie"
+      due: "À venir"
   works:
     sub: "{amount} de travaux en {year}"
     open: "{count, plural, =0 {intervention en cours} one {intervention en cours} other {interventions en cours}}"
