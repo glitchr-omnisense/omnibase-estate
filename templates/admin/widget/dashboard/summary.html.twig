@@ -1,0 +1,32 @@
+{# Base\Estate\Admin\Widget\Dashboard\SummaryWidgetType: the figures read first, in one band, each opening its list. #}
+{% extends '@Estate/admin/widget/dashboard/_card.html.twig' %}
+{% block body %}
+<div class="es-summary">
+    <a class="es-kpi" href="{{ path('admin_crud_units_index') }}">
+        <span class="es-kpi-label">{{ 'dashboard.summary.occupancy'|trans({}, 'estate') }}</span>
+        <span class="es-kpi-value">{{ share }} %</span>
+        <span class="es-kpi-note">{{ 'dashboard.summary.let'|trans({let: let, count: lettable}, 'estate') }}</span>
+    </a>
+    <a class="es-kpi" href="{{ path('admin_crud_rent_calls_index') }}">
+        <span class="es-kpi-label">{{ 'dashboard.summary.month'|trans({month: month|format_date(pattern: 'MMMM')}, 'estate') }}</span>
+        <span class="es-kpi-value">{{ received|euros(true) }}</span>
+        <span class="es-kpi-note">{{ called > 0 ? 'dashboard.summary.called'|trans({called: called|euros(true), rate: rate}, 'estate') : 'dashboard.summary.not_called'|trans({}, 'estate') }}</span>
+        {% if called > 0 %}<span class="es-meter"><span style="width: {{ min(100, rate) }}%"></span></span>{% endif %}
+    </a>
+    <a class="es-kpi{{ lateTotal > 0 ? ' is-bad' }}" href="{{ path('admin_crud_rent_calls_index') }}">
+        <span class="es-kpi-label">{{ 'dashboard.summary.late'|trans({}, 'estate') }}</span>
+        <span class="es-kpi-value">{{ lateTotal|euros(true) }}</span>
+        <span class="es-kpi-note">{% if late %}{{ 'dashboard.late.sub'|trans({count: late}, 'estate') }}{% else %}<i class="fa-solid fa-check es-good"></i> {{ 'dashboard.late.sub'|trans({count: 0}, 'estate') }}{% endif %}</span>
+    </a>
+    <a class="es-kpi" href="{{ path('admin_crud_leases_index') }}">
+        <span class="es-kpi-label">{{ 'dashboard.summary.roll'|trans({}, 'estate') }}</span>
+        <span class="es-kpi-value">{{ monthly|euros(true) }}</span>
+        <span class="es-kpi-note">{{ 'dashboard.summary.roll_note'|trans({}, 'estate') }}</span>
+    </a>
+    <a class="es-kpi" href="{{ path('admin_crud_work_orders_index') }}">
+        <span class="es-kpi-label">{{ 'dashboard.summary.works'|trans({}, 'estate') }}</span>
+        <span class="es-kpi-value">{{ works }}</span>
+        <span class="es-kpi-note">{{ 'dashboard.summary.works_note'|trans({count: works, amount: worksSpent|euros(true), year: year}, 'estate') }}</span>
+    </a>
+</div>
+{% endblock %}

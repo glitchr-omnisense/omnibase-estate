@@ -180,6 +180,26 @@ class DashboardWidgetsTest extends TestCase
         self::assertSame(2, substr_count($html, 'es-status is-let">Loué'));
     }
 
+    public function testSummaryOneBandOfTheFiguresReadFirst(): void
+    {
+        $figures = $this->createStub(Figures::class);
+        $figures->method('of')->willReturn(['let' => 4, 'lettable' => 6, 'monthly' => 345000, 'lateTotal' => 0, 'late' => [], 'openWorkOrders' => [1, 2, 3], 'worksSpent' => 235000]);
+        $figures->method('months')->willReturn([
+            ['month' => new \DateTimeImmutable('first day of last month'), 'called' => 345000, 'received' => 345000],
+            ['month' => new \DateTimeImmutable('first day of this month'), 'called' => 345000, 'received' => 101000],
+        ]);
+        $html = $this->render(new Dashboard\SummaryWidgetType($this->entityManager(), $figures));
+
+        self::assertSame(5, preg_match_all('/class="es-kpi( is-bad)?"/', $html), 'occupancy, the month, late, the rent roll, the works');
+        self::assertStringContainsString('<h2 class="dash-card-title">En bref</h2>', $html);
+        self::assertStringContainsString('67 %', $html);
+        self::assertStringContainsString('4 biens loués sur 6', $html);
+        self::assertMatchesRegularExpression('/reçus sur 3\s450\s€ appelés \(29 %\)/u', $html, 'the current month, its rents called');
+        self::assertStringContainsString('width: 29%', $html);
+        self::assertStringContainsString('tout est à jour', $html);
+        self::assertMatchesRegularExpression('/2\s350\s€ dépensés en \d{4}/u', $html);
+    }
+
     public function testRentsMonthByMonthWithLegendAxisAndTable(): void
     {
         $html = $this->render(new Dashboard\RentsWidgetType($this->entityManager(), $this->figures()), ['months' => 12]);

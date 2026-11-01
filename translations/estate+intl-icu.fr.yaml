@@ -487,6 +487,17 @@ application:
     none: "Pas de garantie"
 dashboard:
   open: "Ouvrir la liste"
+  summary:
+    occupancy: "Occupation"
+    let: "{let} biens loués sur {count}"
+    month: "Loyers de {month}"
+    called: "reçus sur {called} appelés ({rate} %)"
+    not_called: "pas encore appelés"
+    late: "En retard"
+    roll: "Loyers mensuels"
+    roll_note: "charges comprises, baux en cours"
+    works: "Travaux en cours"
+    works_note: "{amount} dépensés en {year}"
   occupancy:
     sub: "{count, plural, =0 {aucun bien} one {# bien à louer} other {# biens à louer}}"
     none: "Aucun bien à louer."

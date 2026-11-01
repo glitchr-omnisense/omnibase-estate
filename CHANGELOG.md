@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Changed
+- `estate_summary` (SummaryWidgetType): the dashboard's figures read first in one band across it -
+  the homes let, the month's rents received over called, what is late, the monthly rent roll, the
+  works in progress and the year's cost -, each opening its list. Occupation and Loyers en retard
+  given half the page put the donut beside its legend and each home or rent on one line, two to a
+  row when wider still.
 - The dashboard's Occupation card lists each home and where it stands, the vacant first (since when,
   or never let), then a lease ending (notice given, or its end within three months), then the let
   ones with their tenants, each with a state in words; the donut's figure keeps inside its ring. The

@@ -98,6 +98,7 @@ class ActivityMenu
     /** Dashboard card (block name) => the activities it belongs to. */
     private const BLOCKS = [
         'estate_overview' => Activity::RENTAL,
+        'estate_summary' => Activity::RENTAL,
         'estate_occupancy' => Activity::RENTAL,
         'estate_rents' => Activity::RENTAL,
         'estate_late' => Activity::RENTAL,

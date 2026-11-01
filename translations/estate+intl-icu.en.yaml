@@ -487,6 +487,17 @@ application:
     none: "No guarantee"
 dashboard:
   open: "Open the list"
+  summary:
+    occupancy: "Occupancy"
+    let: "{let} of {count} homes let"
+    month: "{month} rents"
+    called: "received of {called} called ({rate} %)"
+    not_called: "not called yet"
+    late: "Late"
+    roll: "Monthly rents"
+    roll_note: "charges included, running leases"
+    works: "Works in progress"
+    works_note: "{amount} spent in {year}"
   occupancy:
     sub: "{count, plural, =0 {no home} one {# home to let} other {# homes to let}}"
     none: "No home to let."
