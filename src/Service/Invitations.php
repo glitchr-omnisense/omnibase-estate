@@ -3,6 +3,7 @@
 namespace Base\Estate\Service;
 
 use Base\Entity\User;
+use Base\Estate\Drive\LeaseFolders;
 use Base\Estate\Entity\Associate;
 use Base\Estate\Entity\Contractor;
 use Base\Estate\Entity\Invitation;
@@ -12,6 +13,7 @@ use Base\Estate\Entity\Organisation;
 use Base\Estate\Enum\InvitationKind;
 use Base\Service\Invitations as BaseInvitations;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
@@ -21,7 +23,8 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
  * its link creates the account - or, for someone who has one, attaches it.
  * The token, its hash, the expiry, the lookup and the new account are
  * glitchr/omnibase's Base\Service\Invitations; this says what an estate
- * invitation opens and what accepting it does.
+ * invitation opens and what accepting it does - a tenant's cloud folder
+ * shared with their new account (omnibase/drive: Drive\LeaseFolders).
  */
 class Invitations extends BaseInvitations
 {
@@ -31,6 +34,8 @@ class Invitations extends BaseInvitations
         private readonly UrlGeneratorInterface $urls,
         #[Autowire('%estate.invitation_days%')] private readonly int $days = 14,
         #[Autowire('%estate.user_class%')] string $userClass = 'App\Entity\User',
+        private readonly ?LeaseFolders $leaseFolders = null,
+        private readonly ?LoggerInterface $logger = null,
     ) {
         parent::__construct($entityManager, $userClass);
     }
@@ -84,5 +89,13 @@ class Invitations extends BaseInvitations
         }
         $invitation->accept();
         $this->entityManager->flush();
+        // A tenant's folder, shared with them now they have an account; the cloud never stops an invitation.
+        if ($target instanceof LeaseParty && null !== $this->leaseFolders && null !== $target->getLease()) {
+            try {
+                $this->leaseFolders->sync($target->getLease());
+            } catch (\Throwable $e) {
+                $this->logger?->warning('The folder of {name} could not be made: {message}', ['name' => $target->getName(), 'message' => $e->getMessage()]);
+            }
+        }
     }
 }

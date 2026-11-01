@@ -6,7 +6,10 @@ use Base\Entity\User;
 use Base\Estate\Enum\PartyRole;
 use Doctrine\ORM\Mapping as ORM;
 
-/** Someone on a lease: a tenant, a co-tenant, a guarantor - and, once invited, their account. */
+/**
+ * Someone on a lease: a tenant, a co-tenant, a guarantor - and, once invited, their account; a
+ * tenant's cloud folder (omnibase/drive: Locataires/<name>, Drive\LeaseFolders).
+ */
 #[ORM\Entity]
 #[ORM\Table(name: 'estate_lease_party')]
 class LeaseParty
@@ -41,6 +44,10 @@ class LeaseParty
     #[ORM\Column(length: 34, nullable: true)]
     private ?string $iban = null;
 
+    /** A tenant's cloud folder, shared with them read-only (omnibase/drive), once made. */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $folder = null;
+
     public function __construct(string $firstName = '', string $lastName = '', string $email = '', PartyRole $role = PartyRole::TENANT)
     {
         $this->firstName = $firstName;
@@ -67,5 +74,9 @@ class LeaseParty
     public function getPhone(): ?string { return $this->phone; }
     public function setPhone(?string $phone): self { $this->phone = $phone; return $this; }
     public function getIban(): ?string { return $this->iban; }
+    public function getFolder(): ?string { return $this->folder; }
+    public function setFolder(?string $folder): self { $this->folder = $folder; return $this; }
+    /** Who lives in the home: a tenant or a co-tenant, not a guarantor. */
+    public function isOccupant(): bool { return PartyRole::GUARANTOR !== $this->role; }
     public function setIban(?string $iban): self { $this->iban = $iban ? strtoupper(preg_replace('/\s+/', '', $iban)) : null; return $this; }
 }

@@ -18,7 +18,7 @@ What it suggests, each loaded only when present (`config/services.php`):
 | `omnibase/ledger` | rent calls, payments and work invoices posted to the organisation's book (`Service\Books`); bank lines reconciled with rent calls pay them (`Ledger\BankSettlement`), and no longer once taken back (`Ledger\BankUnsettlement`); associates read the books (`Ledger\AssociateBookAccess`) and their accounts in their space (`Ledger\CompanyAccounts`) |
 | `omnisense/omnitrade` with `omnitrade/stripe` | rents paid online by card or SEPA debit (`Service\OnlinePayments`) |
 | `dompdf/dompdf` | notices, receipts and certificates as PDF (without it, printable pages) |
-| `omnibase/drive` | a shared ownership's folder, shared with its co-owners (`Drive\OwnershipFolders`); an owner's folder under management, shared with them read-only (`Drive\MandatorFolders`); a sale mandate's folder, shared read-only with its sellers and its buyer (`Drive\SaleFolders`) |
+| `omnibase/drive` | a shared ownership's folder, shared with its co-owners (`Drive\OwnershipFolders`); an owner's folder under management, shared with them read-only (`Drive\MandatorFolders`); a sale mandate's folder, shared read-only with its sellers and its buyer (`Drive\SaleFolders`); a tenant's folder for each tenant of a signed lease, shared with them read-only (`Drive\LeaseFolders`); each person's space for files shared on upload (`Drive\EstateSpaces`) |
 | `omnibank/files` | the owners' payouts as a SEPA credit transfer file, pain.001.001.03 (`Management::sepa()`) |
 | `omnisense/omnistate` (with `omnistate/annuaire-entreprises`, `omnistate/vies`) | a company's identity read from the registers (`Service\CompanyRecords`, `estate:company:refresh`) |
 

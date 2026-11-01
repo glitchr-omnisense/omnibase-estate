@@ -67,6 +67,27 @@ they live there.
 
 A user who is none of these gets a 403 on that space.
 
+## The cloud folders (optional: omnibase/drive)
+
+With omnibase/drive installed, each business makes its people's folders, shared by name once they
+have an account: a tenant's `Locataires/<name>` (`Drive\LeaseFolders`), an owner's
+`Propriétaires/<name>` (`Drive\MandatorFolders`), a shared ownership's `Indivisions/<name>`
+(`Drive\OwnershipFolders`), a sale's `Transactions/<number>` (`Drive\SaleFolders`).
+
+**A tenant's folder.** A signed lease (running or under notice; an ended one makes none) gives each
+tenant and co-tenant - not its guarantors - `Locataires/<name>`, the team's
+(`drive.default_audience`), shared with them **read only** once they have an account; kept on the
+party (`LeaseParty::$folder`, column `estate_lease_party.folder`). A folder already there under
+that name is reused, what the team said of it kept; a tenant on a second lease keeps the same one.
+Made when the lease or one of its parties is saved in the back office, and when a tenant accepts
+their invitation (`Invitations::accept()`): the cloud never stops any of these, it says so (a flash,
+a log line).
+
+**Each person's space.** `Drive\EstateSpaces` is omnibase/drive's `SpaceProviderInterface`: a file
+the team shares on upload with someone goes into their tenant's folder (their lease running), else
+their owner's folder (with `management`), else their ownership's (a co-owner, with `ownership`) -
+made if missing. Anyone else is none of estate's: the drive's own place (`drive.spaces_root`).
+
 ## Twig
 
 `Base\Estate\Twig\EstateExtension`:

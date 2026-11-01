@@ -4,6 +4,7 @@ namespace Base\Estate\Controller\Admin\Crud;
 
 use Base\Admin\Config\Action;
 use Base\Admin\Config\Actions;
+use Base\Estate\Drive\LeaseFolders;
 use Base\Estate\Entity\Lease;
 use Base\Estate\Enum\LeaseStatus;
 use Base\Estate\Enum\PaymentMethod;
@@ -12,10 +13,24 @@ use Base\Field\DateField;
 use Base\Field\IntegerField;
 use Base\Field\TextareaField;
 use Base\Field\TextField;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Contracts\Service\Attribute\Required;
 
-/** The leases: who, which home, the rent and its index, the insurance - and the yearly rent revision. */
+/**
+ * The leases: who, which home, the rent and its index, the insurance - and the yearly rent
+ * revision. Saved, a signed lease gives each of its tenants their cloud folder (Locataires/<name>,
+ * with omnibase/drive: Drive\LeaseFolders), shared with those who have an account.
+ */
 class LeaseCrudController extends AbstractEstateCrudController
 {
+    private ?LeaseFolders $folders = null;
+
+    #[Required]
+    public function setLeaseFolders(?LeaseFolders $folders = null): void
+    {
+        $this->folders = $folders;
+    }
+
     public const STATUSES = ['active' => 'En cours', 'notice' => 'Congé donné', 'ended' => 'Terminé'];
     public const METHODS = ['transfer' => 'Virement', 'card' => 'Carte', 'sepa_debit' => 'Prélèvement SEPA', 'cheque' => 'Chèque', 'cash' => 'Espèces'];
 
@@ -50,5 +65,27 @@ class LeaseCrudController extends AbstractEstateCrudController
         yield TextField::new('indexValue', 'IRL de référence (valeur)')->setRequired(false)->setColumns(3)->hideOnIndex()->setHelp('La valeur publiée par l\'INSEE pour ce trimestre.');
         yield DateField::new('revisedOn', 'Dernière révision')->setRequired(false)->setColumns(3)->hideOnIndex();
         yield TextareaField::new('notes', 'Notes')->setRequired(false)->setColumns(12)->hideOnIndex();
+    }
+
+    public function persistEntity(EntityManagerInterface $entityManager, object $entity): void
+    {
+        parent::persistEntity($entityManager, $entity);
+        $this->syncFolders($entity);
+    }
+
+    public function updateEntity(EntityManagerInterface $entityManager, object $entity): void
+    {
+        parent::updateEntity($entityManager, $entity);
+        $this->syncFolders($entity);
+    }
+
+    /** Its tenants' folders: the cloud never stops a lease being saved, it says so instead. */
+    private function syncFolders(Lease $lease): void
+    {
+        try {
+            $this->folders?->sync($lease);
+        } catch (\Throwable $e) {
+            $this->addFlash('warning', sprintf('Le dossier cloud des locataires n\'a pas pu être créé : %s', $e->getMessage()));
+        }
     }
 }

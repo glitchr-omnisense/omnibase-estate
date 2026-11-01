@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Added
+- A signed lease gives each of its tenants a cloud folder (with omnibase/drive), as a management
+  mandate gives its owner one: `Drive\LeaseFolders`, `Locataires/<name>` for each tenant and
+  co-tenant (not the guarantors) of a lease running or under notice, the team's, shared by name
+  read only once they have an account, a folder already there reused with what was said of it;
+  `LeaseParty::$folder` (column `estate_lease_party.folder`, a migration in the site),
+  `LeaseParty::isOccupant()`. Made when a lease or a party is saved in the back office and when a
+  tenant accepts their invitation (`Invitations` takes `LeaseFolders` and a logger, both optional).
+- `Drive\EstateSpaces`, omnibase/drive's `SpaceProviderInterface`: a person's space for files the
+  team shares on upload - the tenant's folder, else the owner's (management), else the ownership's
+  (a co-owner) -, made if missing.
+
 ### Changed
 - The withdrawal period counts the property's place's public holidays, by the mandate's postcode
   (Marco, 2026-11-01): `Model\PublicHolidays` (the nation's, plus Alsace-Moselle's Good Friday and
