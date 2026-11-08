@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Changed
+- Accepts omnisense/omnibase 5.0 (`3.x-dev || 4.0.*-dev || 5.0.*-dev`; plan "omnibase agnostic", step S): the bundle runs
+  unchanged on it, `Base\Bundle\AbstractBaseBundle` and the other former names it uses being aliases of
+  omnibridge/symfony's classes there. The sites on 4.x resolve as before.
 - `estate_summary` (SummaryWidgetType): the dashboard's figures read first in one band across it -
   the homes let, the month's rents received over called, what is late, the monthly rent roll, the
   works in progress and the year's cost -, each opening its list. Occupation and Loyers en retard
