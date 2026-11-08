@@ -2,6 +2,7 @@
 
 namespace Base\Estate\Service;
 
+use Base\Database\UnitOfWorks;
 use Base\Entity\User;
 use Base\Estate\Drive\LeaseFolders;
 use Base\Estate\Entity\Associate;
@@ -71,12 +72,18 @@ class Invitations extends BaseInvitations
 
     public function target(Invitation $invitation): Associate|LeaseParty|Contractor|Member|null
     {
-        return $this->entityManager->find(match ($invitation->getKind()) {
+        $class = match ($invitation->getKind()) {
             InvitationKind::ASSOCIATE => Associate::class,
             InvitationKind::TENANT => LeaseParty::class,
             InvitationKind::CONTRACTOR => Contractor::class,
             InvitationKind::MEMBER => Member::class,
-        }, $invitation->getTargetId());
+        };
+
+        // The core's unit of work and its repositories (omnisense/omnibase 5.x, and 4.x since its step F2d); a core
+        // before them keeps the entity manager it was given.
+        return property_exists($this, 'unitOfWork')
+            ? UnitOfWorks::repositories($this->unitOfWork)->of($class)->find($invitation->getTargetId())
+            : $this->entityManager->find($class, $invitation->getTargetId());
     }
 
     /** The invitation's account, attached to what it opens. */
@@ -87,8 +94,7 @@ class Invitations extends BaseInvitations
         if ($target instanceof Member && !\in_array('ROLE_STAFF', $user->getRoles(), true)) {
             $user->setRoles(array_values(array_unique([...$user->getRoles(), 'ROLE_ADMIN'])));
         }
-        $invitation->accept();
-        $this->entityManager->flush();
+        $this->markAccepted($invitation);
         // A tenant's folder, shared with them now they have an account; the cloud never stops an invitation.
         if ($target instanceof LeaseParty && null !== $this->leaseFolders && null !== $target->getLease()) {
             try {

@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Fixed
+- `Service\Invitations` finds what an invitation opens and flushes its acceptance through the core's unit of work and
+  repositories (`UnitOfWorks::repositories()`, `markAccepted()`): omnisense/omnibase 5.x's `Base\Service\Invitations`
+  no longer keeps `$entityManager`, so /invitation/{token} answered 500 ("Call to a member function find() on null").
+  A core without the unit of work (4.x before its step F2d) keeps the entity manager it was given, as before.
+  tests/Service/InvitationsTest.
+
 ### Changed
 - Accepts omnisense/omnibase 5.0 (`3.x-dev || 4.0.*-dev || 5.0.*-dev`; plan "omnibase agnostic", step S): the bundle runs
   unchanged on it, `Base\Bundle\AbstractBaseBundle` and the other former names it uses being aliases of
