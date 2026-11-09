@@ -13,7 +13,7 @@ use Base\Field\BooleanField;
 use Base\Field\EmailField;
 use Base\Field\TextareaField;
 use Base\Field\TextField;
-use Doctrine\ORM\EntityManagerInterface;
+use Omnibridge\Persistence\UnitOfWork;
 use Symfony\Contracts\Service\Attribute\Required;
 
 /**
@@ -78,17 +78,17 @@ class MandatorCrudController extends AbstractEstateCrudController
         yield TextField::new('folder', 'Dossier cloud')->hideOnForm()->hideOnIndex();
     }
 
-    public function persistEntity(EntityManagerInterface $entityManager, object $entity): void
+    public function persistRecord(UnitOfWork $unitOfWork, object $entity): void
     {
-        parent::persistEntity($entityManager, $entity);
+        parent::persistRecord($unitOfWork, $entity);
         if ($this->management?->isActive()) {
             $this->management->syncFolder($entity);
         }
     }
 
-    public function updateEntity(EntityManagerInterface $entityManager, object $entity): void
+    public function updateRecord(UnitOfWork $unitOfWork, object $entity): void
     {
-        parent::updateEntity($entityManager, $entity);
+        parent::updateRecord($unitOfWork, $entity);
         if ($this->management?->isActive()) {
             $this->management->syncFolder($entity);
         }

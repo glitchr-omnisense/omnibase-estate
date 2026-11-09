@@ -21,6 +21,7 @@ use Base\Field\NumberField;
 use Base\Field\TextareaField;
 use Base\Field\TextField;
 use Doctrine\ORM\EntityManagerInterface;
+use Omnibridge\Persistence\UnitOfWork;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Contracts\Service\Attribute\Required;
 
@@ -107,16 +108,16 @@ class SaleMandateCrudController extends AbstractEstateCrudController
     }
 
     /** Numbered in the register of mandates when saved without a number; its folder made. */
-    public function persistEntity(EntityManagerInterface $entityManager, object $entity): void
+    public function persistRecord(UnitOfWork $unitOfWork, object $entity): void
     {
         $this->transactions?->number($entity);
-        parent::persistEntity($entityManager, $entity);
+        parent::persistRecord($unitOfWork, $entity);
         $this->transactions?->syncFolder($entity);
     }
 
-    public function updateEntity(EntityManagerInterface $entityManager, object $entity): void
+    public function updateRecord(UnitOfWork $unitOfWork, object $entity): void
     {
-        parent::updateEntity($entityManager, $entity);
+        parent::updateRecord($unitOfWork, $entity);
         $this->transactions?->syncFolder($entity);
     }
 }

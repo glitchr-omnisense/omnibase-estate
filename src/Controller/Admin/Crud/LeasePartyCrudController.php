@@ -10,7 +10,7 @@ use Base\Estate\Enum\PartyRole;
 use Base\Field\AssociationField;
 use Base\Field\EmailField;
 use Base\Field\TextField;
-use Doctrine\ORM\EntityManagerInterface;
+use Omnibridge\Persistence\UnitOfWork;
 use Symfony\Contracts\Service\Attribute\Required;
 
 /**
@@ -52,24 +52,24 @@ class LeasePartyCrudController extends AbstractEstateCrudController
         yield AssociationField::new('user', 'Compte')->setColumns(4)->setRequired(false)->hideOnIndex()->hideOnForm();
     }
 
-    public function persistEntity(EntityManagerInterface $entityManager, object $entity): void
+    public function persistRecord(UnitOfWork $unitOfWork, object $entity): void
     {
-        parent::persistEntity($entityManager, $entity);
+        parent::persistRecord($unitOfWork, $entity);
         $this->syncFolder($entity);
     }
 
-    public function updateEntity(EntityManagerInterface $entityManager, object $entity): void
+    public function updateRecord(UnitOfWork $unitOfWork, object $entity): void
     {
-        parent::updateEntity($entityManager, $entity);
+        parent::updateRecord($unitOfWork, $entity);
         $this->syncFolder($entity);
     }
 
     /** Deleted alone or with others (batchDelete() comes through here too). */
-    public function removeEntity(EntityManagerInterface $entityManager, object $entity): void
+    public function removeRecord(UnitOfWork $unitOfWork, object $entity): void
     {
         $lease = $entity->getLease();
         $lease?->removeParty($entity);
-        parent::removeEntity($entityManager, $entity);
+        parent::removeRecord($unitOfWork, $entity);
         // Someone off a flatshare's lease is out of its group (the sync's flush takes the removal with it).
         try {
             if (null !== $this->folders && null !== $lease) {

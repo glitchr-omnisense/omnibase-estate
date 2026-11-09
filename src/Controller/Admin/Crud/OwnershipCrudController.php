@@ -12,7 +12,7 @@ use Base\Field\AssociationField;
 use Base\Field\DateTimeField;
 use Base\Field\TextareaField;
 use Base\Field\TextField;
-use Doctrine\ORM\EntityManagerInterface;
+use Omnibridge\Persistence\UnitOfWork;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Contracts\Service\Attribute\Required;
 
@@ -63,15 +63,15 @@ class OwnershipCrudController extends AbstractEstateCrudController
         yield DateTimeField::new('createdAt', 'Créée le')->hideOnForm()->hideOnIndex();
     }
 
-    public function persistEntity(EntityManagerInterface $entityManager, object $entity): void
+    public function persistRecord(UnitOfWork $unitOfWork, object $entity): void
     {
-        parent::persistEntity($entityManager, $entity);
+        parent::persistRecord($unitOfWork, $entity);
         $this->ownerships?->syncFolder($entity);
     }
 
-    public function updateEntity(EntityManagerInterface $entityManager, object $entity): void
+    public function updateRecord(UnitOfWork $unitOfWork, object $entity): void
     {
-        parent::updateEntity($entityManager, $entity);
+        parent::updateRecord($unitOfWork, $entity);
         $this->ownerships?->syncFolder($entity);
     }
 }

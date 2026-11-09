@@ -17,6 +17,7 @@ use Base\Field\NumberField;
 use Base\Field\TextareaField;
 use Base\Field\TextField;
 use Doctrine\ORM\EntityManagerInterface;
+use Omnibridge\Persistence\UnitOfWork;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Contracts\Service\Attribute\Required;
 
@@ -91,9 +92,9 @@ class MandateCrudController extends AbstractEstateCrudController
     }
 
     /** Numbered in the register of mandates when saved without a number. */
-    public function persistEntity(EntityManagerInterface $entityManager, object $entity): void
+    public function persistRecord(UnitOfWork $unitOfWork, object $entity): void
     {
         $this->management?->number($entity);
-        parent::persistEntity($entityManager, $entity);
+        parent::persistRecord($unitOfWork, $entity);
     }
 }

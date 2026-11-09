@@ -13,7 +13,7 @@ use Base\Field\DateField;
 use Base\Field\IntegerField;
 use Base\Field\TextareaField;
 use Base\Field\TextField;
-use Doctrine\ORM\EntityManagerInterface;
+use Omnibridge\Persistence\UnitOfWork;
 use Symfony\Contracts\Service\Attribute\Required;
 
 /**
@@ -68,15 +68,15 @@ class LeaseCrudController extends AbstractEstateCrudController
         yield TextareaField::new('notes', 'Notes')->setRequired(false)->setColumns(12)->hideOnIndex();
     }
 
-    public function persistEntity(EntityManagerInterface $entityManager, object $entity): void
+    public function persistRecord(UnitOfWork $unitOfWork, object $entity): void
     {
-        parent::persistEntity($entityManager, $entity);
+        parent::persistRecord($unitOfWork, $entity);
         $this->syncFolders($entity);
     }
 
-    public function updateEntity(EntityManagerInterface $entityManager, object $entity): void
+    public function updateRecord(UnitOfWork $unitOfWork, object $entity): void
     {
-        parent::updateEntity($entityManager, $entity);
+        parent::updateRecord($unitOfWork, $entity);
         $this->syncFolders($entity);
     }
 

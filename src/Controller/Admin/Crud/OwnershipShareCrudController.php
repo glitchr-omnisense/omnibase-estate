@@ -14,6 +14,7 @@ use Base\Field\EmailField;
 use Base\Field\IntegerField;
 use Base\Field\TextField;
 use Doctrine\ORM\EntityManagerInterface;
+use Omnibridge\Persistence\UnitOfWork;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Contracts\Service\Attribute\Required;
 
@@ -70,17 +71,17 @@ class OwnershipShareCrudController extends AbstractEstateCrudController
         return $share;
     }
 
-    public function persistEntity(EntityManagerInterface $entityManager, object $entity): void
+    public function persistRecord(UnitOfWork $unitOfWork, object $entity): void
     {
         $this->complete($entity);
-        parent::persistEntity($entityManager, $entity);
+        parent::persistRecord($unitOfWork, $entity);
         $this->checked($entity);
     }
 
-    public function updateEntity(EntityManagerInterface $entityManager, object $entity): void
+    public function updateRecord(UnitOfWork $unitOfWork, object $entity): void
     {
         $this->complete($entity);
-        parent::updateEntity($entityManager, $entity);
+        parent::updateRecord($unitOfWork, $entity);
         $this->checked($entity);
     }
 

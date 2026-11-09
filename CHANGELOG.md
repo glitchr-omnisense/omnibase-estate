@@ -3,6 +3,13 @@
 ## [Unreleased]
 
 ### Fixed
+- The back office's screens write through omnibase/admin's hooks on the persistence the site chose: Lease, LeaseParty,
+  Mandate, MandateExpense, Mandator, Ownership, OwnershipCall, OwnershipShare and SaleMandate override `persistRecord()`,
+  `updateRecord()` and `removeRecord()` (the admin's step B1a, a `Omnibridge\Persistence\UnitOfWork`) in place of the
+  former `persistEntity()`, `updateEntity()` and `removeEntity()` on Doctrine's entity manager, deprecated there. They do
+  what they did: a mandate, a sale mandate or a call numbered, a lease's and a flatmate's folders and group, an expense
+  posted, a share completed and checked. Needs omnibase/admin from its step B1a, which every site on omnisense/omnibase 5.x
+  has. tests/Controller/Admin/RecordHooksTest.
 - `Service\Invitations` finds what an invitation opens and flushes its acceptance through the core's unit of work and
   repositories (`UnitOfWorks::repositories()`, `markAccepted()`): omnisense/omnibase 5.x's `Base\Service\Invitations`
   no longer keeps `$entityManager`, so /invitation/{token} answered 500 ("Call to a member function find() on null").
