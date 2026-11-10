@@ -8,10 +8,11 @@
 
 <h3>I. Les parties</h3>
 <p><strong>Le bailleur</strong> : {{ organisation.legalName ?? organisation.name }}{% if organisation.legalForm %}, {{ organisation.legalForm|lower }}{% endif %}{% if organisation.siren %}, SIREN {{ organisation.siren }}{% endif %}, {{ organisation.fullAddress }}.</p>
-{% set occupants = lease.parties|filter(p => p.role.value != 'guarantor') %}
-{% set guarantors = lease.parties|filter(p => p.role.value == 'guarantor') %}
-<p><strong>{{ occupants|length > 1 ? 'Les locataires' : 'Le locataire' }}</strong> : {% for p in occupants %}{{ p.name }} ({{ p.email }}){{ not loop.last ? ', ' : '' }}{% endfor %}{% if occupants|length > 1 %}, tenus solidairement{% endif %}.</p>
-{% if guarantors|length %}<p><strong>{{ guarantors|length > 1 ? 'Les garants' : 'Le garant' }}</strong> : {% for p in guarantors %}{{ p.name }} ({{ p.email }}){{ not loop.last ? ', ' : '' }}{% endfor %} — l'engagement de caution fait l'objet d'un acte distinct.</p>{% endif %}
+{% set occupants = lease.parties|filter(p => p.role.value != 'guarantor')|map(p => p.name ~ ' (' ~ p.email ~ ')') %}
+{% set guarantors = lease.parties|filter(p => p.role.value == 'guarantor')|map(p => p.name ~ ' (' ~ p.email ~ ')') %}
+{% set occupants = [] | merge(occupants) %}{% set guarantors = [] | merge(guarantors) %}
+<p><strong>{{ occupants|length > 1 ? 'Les locataires' : 'Le locataire' }}</strong> : {{ occupants|join(', ') }}{% if occupants|length > 1 %}, tenus solidairement{% endif %}.</p>
+{% if guarantors|length %}<p><strong>{{ guarantors|length > 1 ? 'Les garants' : 'Le garant' }}</strong> : {{ guarantors|join(', ') }} — l'engagement de caution fait l'objet d'un acte distinct.</p>{% endif %}
 
 <h3>II. Le logement</h3>
 <p>{{ lease.unit.name }}{% if lease.unit.address %}, {{ lease.unit.address }}{% if lease.unit.door %}, {{ lease.unit.door }}{% endif %}, {{ lease.unit.postcode }} {{ lease.unit.city }}{% endif %}{% if lease.unit.rooms %} — {{ lease.unit.rooms }} pièce(s) principale(s){% endif %}{% if lease.unit.livingArea %}, {{ lease.unit.livingArea|number_format(2, ',', ' ') }} m² habitables{% endif %}. Usage d'habitation principale.</p>
