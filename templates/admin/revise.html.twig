@@ -35,7 +35,7 @@
     {% if proposal is defined and proposal.quarter %}
     <div class="card estate-index" data-status="{{ proposal.status }}">
         {% if proposal.status == 'ready' %}
-        <p style="margin: 0"><strong>IRL {{ proposal.value.quarter }} : {{ proposal.value.value|number_format(2, ',', ' ') }}</strong>{% if proposal.value.provisional %} (provisoire){% endif %} — lu à l'INSEE{% if proposal.value.publishedOn %}, publié au Journal officiel le {{ proposal.value.publishedOn|format_date('long') }}{% endif %}. Nouveau loyer proposé : <strong>{{ proposal.rent|euros }}</strong>{% if proposal.capped %} (hausse plafonnée à {{ (proposal.capped * 100)|number_format(1, ',', ' ') }} %){% endif %}. Vérifiez, puis appliquez : rien n'est appliqué sans vous.</p>
+        <p style="margin: 0"><strong>IRL {{ proposal.value.quarter }} : {{ proposal.value.value|number_format(2, ',', ' ') }}</strong>{% if proposal.value.provisional %} (provisoire){% endif %} — lu à l'INSEE{% if proposal.value.publishedOn %}, publié au Journal officiel le {{ proposal.value.publishedOn|format_date('long', timezone: false) }}{% endif %}. Nouveau loyer proposé : <strong>{{ proposal.rent|euros }}</strong>{% if proposal.capped %} (hausse plafonnée à {{ (proposal.capped * 100)|number_format(1, ',', ' ') }} %){% endif %}. Vérifiez, puis appliquez : rien n'est appliqué sans vous.</p>
         {% elseif proposal.status == 'waiting' %}
         <p style="margin: 0">L'IRL du <strong>{{ proposal.quarter }}</strong> n'est pas encore publié par l'INSEE : la révision attend sa publication.</p>
         {% elseif proposal.status == 'unavailable' %}
