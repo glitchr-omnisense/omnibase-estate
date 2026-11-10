@@ -7,7 +7,9 @@ namespace Symfony\Component\DependencyInjection\Loader\Configurator;
  * models are not services; the admin controllers are loaded only when
  * omnibase/admin is there, the books only when omnibase/ledger is, the
  * registers (CompanyRecords) only when glitchr/omnistate is, the official
- * indices (Index\OfficialIndex) only when omnistate's statistics are, a shared
+ * indices (Index\OfficialIndex) only when omnistate's statistics are, the
+ * leases signed electronically (Signature\LeaseSignatures) only when
+ * omnisense/omnisign and the core's Signatures are, a shared
  * ownership's, an owner's, a tenant's and a flatshare's cloud folders
  * (Drive\OwnershipFolders, Drive\MandatorFolders, Drive\LeaseFolders,
  * Drive\FlatshareFolders) only when omnibase/drive is.
@@ -36,6 +38,8 @@ return function (ContainerConfigurator $configurator) {
             // The IRL read from INSEE: omnistate's statistics (omnisense/omnistate with its statistics capability, omnistate/insee).
             ...(interface_exists('Omnistate\\Registry\\StatisticsRegistryInterface') && class_exists('Omnistate\\Insee\\Insee') ? [] : [$src.'/Index/']),
             ...(class_exists('Base\\Drive\\Share\\FileShare') ? [] : [$src.'/Drive/']),
+            // Leases signed electronically: omnisense/omnisign and the core's Signatures (Base\Service\Signatures).
+            ...(class_exists('Omnisign\\Registry') && class_exists('Base\\Service\\Signatures') ? [] : [$src.'/Signature/']),
             // Each person's space: omnibase/drive's providers, from the release that has them.
             ...(interface_exists('Base\\Drive\\Space\\SpaceProviderInterface') ? [] : [$src.'/Drive/EstateSpaces.php']),
             // A flatshare's group: omnibase/drive's groups, from the release that has them.

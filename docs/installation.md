@@ -21,6 +21,7 @@ What it suggests, each loaded only when present (`config/services.php`):
 | `omnibase/drive` | a shared ownership's folder, shared with its co-owners (`Drive\OwnershipFolders`); an owner's folder under management, shared with them read-only (`Drive\MandatorFolders`); a sale mandate's folder, shared read-only with its sellers and its buyer (`Drive\SaleFolders`); a tenant's folder for each tenant of a signed lease, shared with them read-only (`Drive\LeaseFolders`); a flatshare's common folder and group of occupants, for a lease with two occupants or more (`Drive\FlatshareFolders`, with omnibase/drive's groups); each person's space for files shared on upload (`Drive\EstateSpaces`) |
 | `omnibank/files` | the owners' payouts as a SEPA credit transfer file, pain.001.001.03 (`Management::sepa()`) |
 | `omnisense/omnistate` (with `omnistate/annuaire-entreprises`, `omnistate/vies`) | a company's identity read from the registers (`Service\CompanyRecords`, `estate:company:refresh`) |
+| `omnisense/omnisign` with `omnisign/docuseal` or `omnisign/yousign` (and omnisense/omnibase's `Base\Service\Signatures`) | the lease and its inventory signed electronically (`Signature\LeaseSignatures`, [Signatures](usage-signature.md)); its envelopes in the core's `signature_envelope` table |
 | `omnisense/omnistate` with `omnistate/insee` (its statistics) | the IRL of a revision read from INSEE, its credit beside it (`Index\OfficialIndex`, `RentRevisions::propose()`, `estate:rent:revisions`); without it the value is typed by hand |
 
 ## The bundle

@@ -1,0 +1,34 @@
+{% extends '@Estate/pdf/_document.html.twig' %}
+{# The lease's particular conditions, generated from its record when the team has not uploaded its own lease (a Document « Bail » of the lease): what is signed through omnisign (Signature\LeaseSignatures), with the signature page. #}
+{% set title = 'Bail ' ~ lease.reference ~ ' — ' ~ lease.unit.name %}
+{% block recipient %}<strong>Bail d'habitation</strong><br>{{ lease.reference }}{% endblock %}
+{% block document %}
+<h1>Contrat de location</h1>
+<div class="ref">Bail {{ lease.reference }} · {{ lease.unit.name }} · conditions particulières</div>
+
+<h3>I. Les parties</h3>
+<p><strong>Le bailleur</strong> : {{ organisation.legalName ?? organisation.name }}{% if organisation.legalForm %}, {{ organisation.legalForm|lower }}{% endif %}{% if organisation.siren %}, SIREN {{ organisation.siren }}{% endif %}, {{ organisation.fullAddress }}.</p>
+{% set occupants = lease.parties|filter(p => p.role.value != 'guarantor') %}
+{% set guarantors = lease.parties|filter(p => p.role.value == 'guarantor') %}
+<p><strong>{{ occupants|length > 1 ? 'Les locataires' : 'Le locataire' }}</strong> : {% for p in occupants %}{{ p.name }} ({{ p.email }}){{ not loop.last ? ', ' : '' }}{% endfor %}{% if occupants|length > 1 %}, tenus solidairement{% endif %}.</p>
+{% if guarantors|length %}<p><strong>{{ guarantors|length > 1 ? 'Les garants' : 'Le garant' }}</strong> : {% for p in guarantors %}{{ p.name }} ({{ p.email }}){{ not loop.last ? ', ' : '' }}{% endfor %} — l'engagement de caution fait l'objet d'un acte distinct.</p>{% endif %}
+
+<h3>II. Le logement</h3>
+<p>{{ lease.unit.name }}{% if lease.unit.address %}, {{ lease.unit.address }}{% if lease.unit.door %}, {{ lease.unit.door }}{% endif %}, {{ lease.unit.postcode }} {{ lease.unit.city }}{% endif %}{% if lease.unit.rooms %} — {{ lease.unit.rooms }} pièce(s) principale(s){% endif %}{% if lease.unit.livingArea %}, {{ lease.unit.livingArea|number_format(2, ',', ' ') }} m² habitables{% endif %}. Usage d'habitation principale.</p>
+
+<h3>III. Prise d'effet et durée</h3>
+<p>Le bail prend effet le <strong>{{ lease.startOn|format_date('long') }}</strong>{% if lease.endOn %} jusqu'au {{ lease.endOn|format_date('long') }}{% else %}, pour la durée prévue par la loi du 6 juillet 1989{% endif %}.</p>
+
+<h3>IV. Conditions financières</h3>
+<table class="amounts">
+    <tr><td>Loyer mensuel hors charges</td><td class="num">{{ lease.rent|euros }}</td></tr>
+    <tr><td>Provision mensuelle sur charges</td><td class="num">{{ lease.charges|euros }}</td></tr>
+    <tr class="total"><td>Total mensuel</td><td class="num">{{ lease.monthly|euros }}</td></tr>
+    <tr><td>Dépôt de garantie</td><td class="num">{{ lease.deposit|euros }}</td></tr>
+</table>
+<p>Payable le {{ lease.dueDay }} de chaque mois. {% if lease.indexQuarter %}Le loyer est révisé chaque année à la date anniversaire du bail selon l'indice de référence des loyers (IRL) publié par l'INSEE ; indice de référence : IRL du {{ lease.indexQuarter }}{% if lease.indexValue %} ({{ lease.indexValue|number_format(2, ',', ' ') }}){% endif %}.{% endif %}</p>
+
+{% if lease.notes %}<h3>V. Autres conditions</h3><p>{{ lease.notes|nl2br }}</p>{% endif %}
+
+<p class="note">Les conditions générales, la notice d'information, le dossier de diagnostic technique et l'état des lieux sont annexés au présent contrat. Signé électroniquement par chacune des parties sur la page de signature jointe.</p>
+{% endblock %}

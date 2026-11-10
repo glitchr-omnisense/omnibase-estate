@@ -1,0 +1,13 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ url('estate_admin_signature', {id: lease.id, kind: kind}) }}{% endblock %}
+{% block action_text %}Voir la signature{% endblock %}
+{% block content %}
+<p>Bonjour,</p>
+{% if status == 'completed' %}
+<p>{{ kind == 'lease' ? 'Le bail' : 'L\'état des lieux du bail' }} {{ lease.reference }} ({{ lease.unit.name }}) est signé par toutes les parties. Le document signé et son dossier de preuve sont conservés ; une copie est classée dans les documents du bail, visible des locataires.</p>
+{% else %}
+<p>{{ kind == 'lease' ? 'Le bail' : 'L\'état des lieux du bail' }} {{ lease.reference }} ({{ lease.unit.name }}) n'a pas été signé : {{ status == 'declined' ? 'un signataire a refusé' : 'la demande a expiré' }}. Vous pouvez le renvoyer.</p>
+{% endif %}
+<p>{{ organisation.name }}</p>
+{% endblock %}

@@ -41,7 +41,9 @@ from what they are to the organisation, never from a role stored on the account.
 - [Organisations, homes and leases](concepts.md): every entity, its fields and methods, the
   enums.
 - [Rents](usage-rents.md): calling, reminding, payments, receipts, online payment, the IRL
-  revision, the books.
+  revision (read from INSEE with omnistate), the books.
+- [Signatures](usage-signature.md): the lease and its inventory signed electronically through
+  omnisign, followed by the provider's webhook, the signed PDF and its evidence kept.
 - [Shared ownership](usage-ownership.md): indivisions, co-owners' shares over time, shared
   invoices, calls for funds, statements, the co-owner's space, the cloud folder, and how it is
   kept in the books.

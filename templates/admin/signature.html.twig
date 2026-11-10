@@ -1,0 +1,74 @@
+{% extends '@Admin/layout.html.twig' %}
+
+{% set what = kind == 'lease' ? 'le bail' : 'l\'état des lieux' %}
+{% block page_title %}Signature électronique — {{ lease.reference }}{% endblock %}
+
+{% block content_header %}
+<div class="admin-header">
+    <span class="admin-header-icon"><i class="fa-solid fa-file-signature"></i></span>
+    <div class="admin-header-titles">
+        <h1>Faire signer {{ what }}</h1>
+        <div class="admin-header-subtitle">{{ lease.tenantNames }} · {{ lease.unit.name }} · bail {{ lease.reference }}</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .estate-signature { display: grid; gap: 1rem; max-width: 46rem; }
+    .estate-signature .card { padding: 1rem 1.25rem; }
+    .estate-signature table { width: 100%; border-collapse: collapse; }
+    .estate-signature td, .estate-signature th { padding: .4rem .5rem; border-bottom: 1px solid rgba(127,127,127,.2); text-align: left; }
+    .estate-signature .state { font-size: 1.1rem; font-weight: 600; }
+    .estate-signature .actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .estate-signature .help { opacity: .7; font-size: .9rem; margin: 0; }
+</style>
+<div class="estate-signature">
+    <nav class="actions">
+        <a class="btn {{ kind == 'lease' ? 'btn-success' : '' }}" href="{{ path('estate_admin_signature', {id: lease.id, kind: 'lease'}) }}">Bail</a>
+        <a class="btn {{ kind == 'inventory' ? 'btn-success' : '' }}" href="{{ path('estate_admin_signature', {id: lease.id, kind: 'inventory'}) }}">État des lieux</a>
+        <a class="btn" href="{{ path('admin_crud_leases_detail', {entityId: lease.id}) }}">Retour au bail</a>
+    </nav>
+    {% if not installed %}
+    <div class="card"><p>La signature électronique n'est pas installée : ajoutez <code>omnisense/omnisign</code> et un fournisseur (<code>omnisign/docuseal</code>, <code>omnisign/yousign</code>), puis <code>estate.signature.gateway</code>.</p></div>
+    {% elseif not enabled %}
+    <div class="card"><p>Aucun service de signature configuré : <code>estate.signature.gateway</code> doit nommer une passerelle de <code>omnisign.gateways</code>.</p></div>
+    {% endif %}
+
+    <div class="card" data-signature-status="{{ state ? state.status : 'none' }}">
+        {% if state %}
+        <p class="state">{{ state.label }}</p>
+        <p class="help">Envoyé le {{ state.sentAt|format_date('long') }} par {{ gateway ?? state.envelope.gateway }}.</p>
+        <table>
+            <thead><tr><th>Signataire</th><th>E-mail</th><th>État</th></tr></thead>
+            <tbody>
+            {% for s in state.signers %}
+                <tr><td>{{ s.name }}</td><td>{{ s.email }}</td><td>{{ {signed: 'Signé', declined: 'Refusé', waiting: 'En attente', opened: 'Ouvert', sent: 'Envoyé'}[s.status] ?? s.status }}{% if s.signedAt %} le {{ s.signedAt|date('d/m/Y') }}{% endif %}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% if state.status == 'completed' %}
+        <p class="actions" style="margin-top: .8rem">
+            <a class="btn btn-success" href="{{ path('estate_admin_signature_file', {id: lease.id, kind: kind, file: 'document'}) }}">Document signé</a>
+            {% if state.envelope.evidenceFile %}<a class="btn" href="{{ path('estate_admin_signature_file', {id: lease.id, kind: kind, file: 'evidence'}) }}">Dossier de preuve</a>{% endif %}
+        </p>
+        {% endif %}
+        {% else %}
+        <p class="state">Pas encore envoyé à la signature.</p>
+        {% endif %}
+    </div>
+
+    {% if enabled %}
+    <form method="post" class="card actions">
+        <input type="hidden" name="_token" value="{{ csrf_token('estate_signature_' ~ lease.id) }}">
+        {% if can_send %}<button class="btn btn-success" formaction="{{ path('estate_admin_signature_do', {id: lease.id, kind: kind, do: 'send'}) }}">{{ state ? 'Renvoyer' : 'Envoyer' }} {{ what }} à la signature</button>{% endif %}
+        {% if state and state.status == 'sent' %}
+        <button class="btn" formaction="{{ path('estate_admin_signature_do', {id: lease.id, kind: kind, do: 'refresh'}) }}">Actualiser</button>
+        <button class="btn" formaction="{{ path('estate_admin_signature_do', {id: lease.id, kind: kind, do: 'remind'}) }}">Relancer</button>
+        <button class="btn" formaction="{{ path('estate_admin_signature_do', {id: lease.id, kind: kind, do: 'cancel'}) }}">Annuler la demande</button>
+        {% endif %}
+        <p class="help" style="flex-basis: 100%">{% if kind == 'lease' %}Le bail déposé dans les documents du bail, sinon ses conditions particulières générées, avec une page de signature. Ordre : le bailleur (vous), les locataires, les garants.{% else %}L'état des lieux déposé dans les documents du bail, avec une page de signature. Ordre : le bailleur (vous), les locataires.{% endif %} Signature électronique d'un acte sous seing privé, pas un acte authentique.</p>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

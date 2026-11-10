@@ -78,6 +78,9 @@ answer for one item.
 | `estate_admin_application` | `/application/{id}/{shortlist,visit,decline,accept}` (GET, POST) | the next step: a date and a word for a visit, a word to decline, the lease's start (and decline the others) to accept |
 | `estate_admin_revise` | `/lease/{id}/revise` (GET, POST) | the IRL revision: the quarter (`T2 2025`) and the value - filled from INSEE with omnistate, its credit beside them -, "calculate", then "apply" |
 | `estate_admin_company_refresh` | `/company/{id}/refresh` | the registers (Sirene / RNE, VIES); 404 without omnisense/omnistate |
+| `estate_admin_signature` | `/lease/{id}/signature/{lease,inventory}` | the lease or its inventory signed electronically: its state, each signer's, the signed PDF and its evidence ([Signatures](usage-signature.md)); without omnisign it says how to turn it on |
+| `estate_admin_signature_do` | `/lease/{id}/signature/{kind}/{send,refresh,remind,cancel}` (POST, `_token` `estate_signature_<id>`) | send it, ask the provider again, remind, cancel; 404 without a gateway |
+| `estate_admin_signature_file` | `/lease/{id}/signature/{kind}/file/{document,evidence}` | the signed PDF, its evidence; 404 before completion |
 
 Links carry a CSRF token in their query (`<action>_<id>`), forms in `_token`. After an action the
 page goes back to the back-office page it came from, and only to one under `/admin`.

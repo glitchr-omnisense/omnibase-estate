@@ -8,6 +8,7 @@ use Base\Estate\Drive\LeaseFolders;
 use Base\Estate\Entity\Lease;
 use Base\Estate\Enum\LeaseStatus;
 use Base\Estate\Enum\PaymentMethod;
+use Base\Estate\Signature\LeaseSignatures;
 use Base\Field\AssociationField;
 use Base\Field\DateField;
 use Base\Field\IntegerField;
@@ -26,10 +27,19 @@ class LeaseCrudController extends AbstractEstateCrudController
 {
     private ?LeaseFolders $folders = null;
 
+    private ?LeaseSignatures $signatures = null;
+
     #[Required]
     public function setLeaseFolders(?LeaseFolders $folders = null): void
     {
         $this->folders = $folders;
+    }
+
+    /** The lease signed electronically, with omnisense/omnisign: its state on the lease's page. */
+    #[Required]
+    public function setLeaseSignatures(?LeaseSignatures $signatures = null): void
+    {
+        $this->signatures = $signatures;
     }
 
     public const STATUSES = ['active' => 'En cours', 'notice' => 'Congé donné', 'ended' => 'Terminé'];
@@ -44,7 +54,14 @@ class LeaseCrudController extends AbstractEstateCrudController
             ->linkToRoute('estate_admin_revise', fn (Lease $l) => ['id' => $l->getId()])
             ->displayIf(fn (Lease $l) => LeaseStatus::ENDED !== $l->getStatus());
 
-        return parent::configureActions($actions)->add(Action::INDEX, $revise)->add(Action::DETAIL, $revise);
+        $actions = parent::configureActions($actions)->add(Action::INDEX, $revise)->add(Action::DETAIL, $revise);
+        if (null !== $this->signatures) {
+            $sign = Action::new('estateSignature', 'Signature', 'fa-solid fa-signature')
+                ->linkToRoute('estate_admin_signature', fn (Lease $l) => ['id' => $l->getId()]);
+            $actions->add(Action::DETAIL, $sign);
+        }
+
+        return $actions;
     }
 
     public function configureFields(string $pageName): iterable
@@ -66,6 +83,11 @@ class LeaseCrudController extends AbstractEstateCrudController
         yield TextField::new('indexValue', 'IRL de référence (valeur)')->setRequired(false)->setColumns(3)->hideOnIndex()->setHelp('La valeur publiée par l\'INSEE pour ce trimestre.');
         yield DateField::new('revisedOn', 'Dernière révision')->setRequired(false)->setColumns(3)->hideOnIndex();
         yield TextareaField::new('notes', 'Notes')->setRequired(false)->setColumns(12)->hideOnIndex();
+        if (null !== $this->signatures) {
+            // Where its electronic signature stands: sent, signed, refused, expired.
+            yield TextField::new('id', 'Signature électronique')->onlyOnDetail()
+                ->formatValue(fn ($id, ?Lease $lease) => null === $lease ? '' : $this->signatureState($lease));
+        }
     }
 
     public function persistRecord(UnitOfWork $unitOfWork, object $entity): void
@@ -78,6 +100,19 @@ class LeaseCrudController extends AbstractEstateCrudController
     {
         parent::updateRecord($unitOfWork, $entity);
         $this->syncFolders($entity);
+    }
+
+    private function signatureState(Lease $lease): string
+    {
+        $parts = [];
+        foreach ([LeaseSignatures::LEASE => 'Bail', LeaseSignatures::INVENTORY => 'État des lieux'] as $kind => $label) {
+            $state = $this->signatures?->state($lease, $kind);
+            if (null !== $state) {
+                $parts[] = $label.' : '.$state['label'];
+            }
+        }
+
+        return $parts ? implode(' · ', $parts) : 'Pas encore envoyé à la signature';
     }
 
     /** Its tenants' folders: the cloud never stops a lease being saved, it says so instead. */

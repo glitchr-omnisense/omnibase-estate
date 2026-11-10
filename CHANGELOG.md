@@ -33,6 +33,18 @@
   its subtitle reads « tout est à jour », not « aucun loyer » beside « 0 € dus ».
 
 ### Added
+- The lease and its inventory of fixtures signed electronically, with omnisense/omnisign (optional,
+  `Signature\LeaseSignatures`, loaded only with it and the core's `Base\Service\Signatures`): the
+  lease uploaded by the team, else its particular conditions generated (`@Estate/pdf/lease.html.twig`),
+  or the inventory uploaded, each with a signature page naming it by its SHA-256 and one box per
+  signer; signed in order by the landlord, the tenants, then the guarantors (the lease); followed
+  through the provider's webhook (the core's `POST /signatures/{gateway}/webhook`): completed, the
+  signed PDF filed as the lease's document (« (signé) », seen by its tenants), the team e-mailed
+  (`lease_signature`); declined or expired, the team told. `estate.signature` (`gateway`,
+  `template`, `inventory_template`, `level`); the back office's page `estate_admin_signature`
+  (state, signers, send, refresh, remind, cancel, the signed PDF and its evidence) and the state on
+  the lease's page. Not the notary's authentic act; the guarantee's own deed is not sent yet.
+  docs/usage-signature.md.
 - The rent revision read from the official index, with omnisense/omnistate's statistics and
   omnistate/insee (optional, `Index\OfficialIndex`, loaded only with them): `RentRevisions::propose()`
   gives a lease's anniversary, its reference quarter and value, the new quarter, INSEE's value with
