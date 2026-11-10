@@ -225,7 +225,8 @@ class ActionController extends AbstractController
             'on' => (string) $request->request->get('on', $from->format('Y-m-d')),
         ];
         $fromIndex = '' !== $values['from_index'] ? $values['from_index'] : null;
-        $rent = null;
+        // INSEE's value read: the new rent shown at once, applied only by the button.
+        $rent = $request->isMethod('GET') ? $proposal->rent : null;
         $error = null;
         if ($request->isMethod('POST')) {
             if (!$this->isCsrfTokenValid('estate_revise_'.$lease->getId(), (string) $request->request->get('_token'))) {
