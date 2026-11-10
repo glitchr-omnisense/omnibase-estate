@@ -21,6 +21,7 @@ What it suggests, each loaded only when present (`config/services.php`):
 | `omnibase/drive` | a shared ownership's folder, shared with its co-owners (`Drive\OwnershipFolders`); an owner's folder under management, shared with them read-only (`Drive\MandatorFolders`); a sale mandate's folder, shared read-only with its sellers and its buyer (`Drive\SaleFolders`); a tenant's folder for each tenant of a signed lease, shared with them read-only (`Drive\LeaseFolders`); a flatshare's common folder and group of occupants, for a lease with two occupants or more (`Drive\FlatshareFolders`, with omnibase/drive's groups); each person's space for files shared on upload (`Drive\EstateSpaces`) |
 | `omnibank/files` | the owners' payouts as a SEPA credit transfer file, pain.001.001.03 (`Management::sepa()`) |
 | `omnisense/omnistate` (with `omnistate/annuaire-entreprises`, `omnistate/vies`) | a company's identity read from the registers (`Service\CompanyRecords`, `estate:company:refresh`) |
+| `omnisense/omnistate` with `omnistate/insee` (its statistics) | the IRL of a revision read from INSEE, its credit beside it (`Index\OfficialIndex`, `RentRevisions::propose()`, `estate:rent:revisions`); without it the value is typed by hand |
 
 ## The bundle
 
@@ -121,6 +122,7 @@ homes' plans and stories room, story_entry, story_entry_work_order, story_photo 
 0 7 * * *   bin/console estate:rent:late              # late rents marked, tenants reminded once
 0 3 * * *   bin/console estate:applications:purge     # applications decided over three months ago
 0 4 * * 1   bin/console estate:company:refresh        # the companies read again from the registers
+15 8 * * 1  bin/console estate:rent:revisions --mail  # the revisions due proposed to the team, never applied
 ```
 
 | Command | Options |
@@ -129,3 +131,4 @@ homes' plans and stories room, story_entry, story_entry_work_order, story_photo 
 | `estate:rent:late` | `--no-mail` |
 | `estate:applications:purge` | `--months=3` |
 | `estate:company:refresh` | - (with omnisense/omnistate); exit 1 when a register did not answer |
+| `estate:rent:revisions` | `--days=45` (the revisions due within), `--mail` (each organisation e-mailed its list, `revisions_due`); applies nothing |

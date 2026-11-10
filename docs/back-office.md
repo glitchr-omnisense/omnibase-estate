@@ -76,7 +76,7 @@ answer for one item.
 | `estate_admin_close` | `/work-order/{id}/close` | close |
 | `estate_admin_notice_send` | `/notice/{id}/send` | send to the tenants |
 | `estate_admin_application` | `/application/{id}/{shortlist,visit,decline,accept}` (GET, POST) | the next step: a date and a word for a visit, a word to decline, the lease's start (and decline the others) to accept |
-| `estate_admin_revise` | `/lease/{id}/revise` (GET, POST) | the IRL revision: the quarter (`T2 2025`) and the value, "calculate", then "apply" |
+| `estate_admin_revise` | `/lease/{id}/revise` (GET, POST) | the IRL revision: the quarter (`T2 2025`) and the value - filled from INSEE with omnistate, its credit beside them -, "calculate", then "apply" |
 | `estate_admin_company_refresh` | `/company/{id}/refresh` | the registers (Sirene / RNE, VIES); 404 without omnisense/omnistate |
 
 Links carry a CSRF token in their query (`<action>_<id>`), forms in `_token`. After an action the

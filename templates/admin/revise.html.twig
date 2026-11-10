@@ -23,6 +23,7 @@
     .estate-admin-form .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
     .estate-admin-form .result { font-size: 1.15rem; } .estate-admin-form .result strong { font-size: 1.5rem; }
     .estate-admin-form .help { opacity: .7; font-size: .9rem; margin: 0; }
+    .estate-admin-form .source { font-size: .85rem; opacity: .75; margin: .35rem 0 0; }
 </style>
 <div class="estate-admin-form">
     <div class="card"><dl>
@@ -31,6 +32,21 @@
         <dt>Indice de référence</dt><dd>{% if lease.indexValue %}IRL {{ lease.indexQuarter }} : {{ lease.indexValue|number_format(2, ',', ' ') }}{% else %}<span style="color: #d0312d">non renseigné</span> — <a href="{{ path('admin_crud_leases_edit', {entityId: lease.id}) }}">compléter le bail</a>{% endif %}</dd>
         <dt>Dernière révision</dt><dd>{{ lease.revisedOn ? lease.revisedOn|format_date('long') : 'aucune' }}</dd>
     </dl></div>
+    {% if proposal is defined and proposal.quarter %}
+    <div class="card estate-index" data-status="{{ proposal.status }}">
+        {% if proposal.status == 'ready' %}
+        <p style="margin: 0"><strong>IRL {{ proposal.value.quarter }} : {{ proposal.value.value|number_format(2, ',', ' ') }}</strong>{% if proposal.value.provisional %} (provisoire){% endif %} — lu à l'INSEE{% if proposal.value.publishedOn %}, publié au Journal officiel le {{ proposal.value.publishedOn|format_date('long') }}{% endif %}. Nouveau loyer proposé : <strong>{{ proposal.rent|euros }}</strong>{% if proposal.capped %} (hausse plafonnée à {{ (proposal.capped * 100)|number_format(1, ',', ' ') }} %){% endif %}. Vérifiez, puis appliquez : rien n'est appliqué sans vous.</p>
+        {% elseif proposal.status == 'waiting' %}
+        <p style="margin: 0">L'IRL du <strong>{{ proposal.quarter }}</strong> n'est pas encore publié par l'INSEE : la révision attend sa publication.</p>
+        {% elseif proposal.status == 'unavailable' %}
+        <p style="margin: 0">L'INSEE ne répond pas pour l'instant : saisissez la valeur de l'IRL du {{ proposal.quarter }} à la main.</p>
+        {% else %}
+        <p style="margin: 0">Trimestre à appliquer : <strong>{{ proposal.quarter }}</strong>.</p>
+        {% endif %}
+        {% if proposal.waived %}<p class="help">{{ proposal.waived }} année(s) de révision non réclamée(s) dans l'année : perdue(s) (loi du 6 juillet 1989, art. 17-1). La hausse se mesure depuis l'IRL du {{ proposal.fromQuarter }}{% if proposal.fromValue %} ({{ proposal.fromValue|number_format(2, ',', ' ') }}){% endif %}.</p>{% endif %}
+        {% if proposal.value and proposal.value.credit %}<p class="source">Source : {{ proposal.value.credit }}{% if proposal.value.licence %} — {{ proposal.value.licence }}{% endif %}{% if proposal.value.url %} — <a href="{{ proposal.value.url }}" target="_blank" rel="noopener">la série</a>{% endif %}</p>{% endif %}
+    </div>
+    {% endif %}
     {% if error %}<div class="alert alert-warning">{{ error }}</div>{% endif %}
     <form method="post" class="card">
         <input type="hidden" name="_token" value="{{ csrf_token('estate_revise_' ~ lease.id) }}">
@@ -39,6 +55,7 @@
             <label>Valeur de l'IRL<input class="form-control" name="index" required inputmode="decimal" placeholder="146,68" value="{{ values.index }}"></label>
             <label>À partir du<input class="form-control" type="date" name="on" value="{{ values.on }}"></label>
         </div>
+        {% if values.from_index is defined and values.from_index %}<label>IRL de base (années non réclamées)<input class="form-control" name="from_index" inputmode="decimal" value="{{ values.from_index }}"></label>{% endif %}
         <p class="help">Le même trimestre que celui du bail, l'année suivante : sa valeur est publiée par l'INSEE (<a href="https://www.insee.fr/fr/statistiques/serie/001515333" target="_blank" rel="noopener">série de l'IRL</a>).</p>
         {% if rent %}
         <p class="result">Nouveau loyer hors charges : <strong>{{ rent|euros }}</strong> ({{ rent >= lease.rent ? '+' : '' }}{{ (rent - lease.rent)|euros }}), soit {{ (rent + lease.charges)|euros }} par mois charges comprises.</p>

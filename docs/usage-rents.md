@@ -123,16 +123,52 @@ online payment is off.
 
 - `nextOn(Lease $lease, ?$today)` - a year after the start or the last revision, moved on year
   by year while it is more than eleven months behind;
-- `rentAt(Lease $lease, string $newIndex)` - the rent (charges aside) times the new index over
-  the reference index, rounded to the cent; both indices are needed;
-- `apply(Lease $lease, string $newQuarter, string $newIndex, \DateTimeImmutable $on)` - the new
-  rent, the new reference (quarter and value), `revisedOn`, an activity line and the tenants'
-  letter (`rent_revision` e-mail); returns the former rent;
+- `quarters(Lease $lease, $on)` - the quarter a revision on `$on` is measured at (the lease's
+  reference quarter, the years after: "T2 2025" → "T2 2026") and the one it is measured from: the
+  lease's, or - a year whose revision was not claimed within the year being lost (art. 17-1, I) -
+  the year before the new quarter's;
+- `rentAt(Lease $lease, string $newIndex, ?string $newQuarter, ?string $fromIndex)` - the rent
+  (charges aside) times the new index over the reference index (`$fromIndex`, else the lease's),
+  the change capped where the law capped it for the new quarter (`Model\IndexCaps`), rounded to the
+  cent;
+- `propose(Lease $lease, ?$today)` - a `Model\RevisionProposal`: the anniversary, the quarters,
+  and with the official index read the new value (`Model\IndexValue`: value, source's credit and
+  licence, date in the Journal officiel) and the new rent; its `status` says what waits:
+  `ready`, `waiting` (the quarter is not published yet: the revision waits), `unavailable` (INSEE
+  did not answer: typed by hand), `manual` (no source installed), `no_reference`. Nothing is saved;
+- `apply(Lease $lease, string $newQuarter, string $newIndex, \DateTimeImmutable $on, ?User $by, ?string $fromIndex)` -
+  the new rent, the new reference (quarter and value), `revisedOn`, an activity line and the
+  tenants' letter (`rent_revision` e-mail); returns the former rent. Only a person calls it, from
+  the revision page;
 - `due(int $days = 45)` - the active leases with a reference index whose revision falls within
-  that many days, for the dashboard.
+  that many days, for the dashboard; `proposals($days)` - their proposals.
 
 The back office's revision page takes the quarter ("T2 2025") and the INSEE value, shows the new
-rent, then applies it from the anniversary - never backdated: from today when asked later.
+rent, then applies it from the anniversary - never backdated: from today when asked later. With
+omnistate's statistics both come filled from INSEE, the source's credit and licence beside them
+(« Insee, BDM, série 001515333, extraction au … — Licence Ouverte 2.0 »); the value can still be
+typed over, and nothing is applied without the button.
+
+### The official index (omnistate)
+
+With `omnisense/omnistate` and `omnistate/insee`, `Index\OfficialIndex::value('IRL', 'T2 2026')`
+asks INSEE's BDM for that quarter (`series('insee:IRL', $quarter, $quarter)`): its answers are kept
+in omnistate's cache pool (`omnistate.cache`, `omnistate.ttl`: a day), within INSEE's 30 calls a
+minute. Only the published value comes from there: the quarter, the anniversary, the caps and the
+rounding are estate's. An error of the service is an `Exception\IndexUnavailableException`, which
+the proposal turns into `unavailable`: the screen never fails on it.
+
+`estate:rent:revisions` lists the revisions due within `--days` (45) with their proposals and the
+source's credit; `--mail` sends each organisation its list (`revisions_due` e-mail), each line
+opening the revision page. It applies nothing.
+
+The caps (`Model\IndexCaps`): the « bouclier loyer » (loi n° 2022-1158, art. 12, extended by loi
+n° 2023-568) - a revision on an IRL of T3 2022 to T1 2024 moves by 3.5 % at most, 2.5 % in the
+overseas departments (postcodes 971 to 976); INSEE's IRL of those quarters already moves by 3.5 %.
+To confirm with a lawyer: Corsica's own cap (3.5 % is applied there), and the year lost when a
+revision was not claimed (the change measured from the year before, no catch-up). The ILC and ILAT
+of commercial and professional leases are read the same way (`OfficialIndex::INDICES`) but estate
+does not model those leases yet: `propose()` uses the IRL.
 
 ## The books
 

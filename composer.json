@@ -25,7 +25,8 @@
         "omnisense/omnitrade": "Rent paid online (omnitrade/stripe: card and SEPA debit)",
         "dompdf/dompdf": "Rent notices, receipts, co-owners' and owners' statements as PDF",
         "omnibase/drive": "A shared ownership's cloud folder, shared with its co-owners; an owner's folder under management; a sale's folder, shared with its seller and buyer; a tenant's folder; each person's space for files shared on upload",
-        "omnibank/files": "The owners' payouts as a SEPA credit transfer file (pain.001) for the bank"
+        "omnibank/files": "The owners' payouts as a SEPA credit transfer file (pain.001) for the bank",
+        "omnistate/insee": "The IRL of a rent revision read from INSEE (with omnisense/omnistate's statistics), its source credited; without it the value is typed by hand"
     },
     "config": {"sort-packages": true, "allow-plugins": {"omnibridge/composer": true, "php-http/discovery": true}},
     "minimum-stability": "dev",

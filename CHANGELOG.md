@@ -33,6 +33,18 @@
   its subtitle reads « tout est à jour », not « aucun loyer » beside « 0 € dus ».
 
 ### Added
+- The rent revision read from the official index, with omnisense/omnistate's statistics and
+  omnistate/insee (optional, `Index\OfficialIndex`, loaded only with them): `RentRevisions::propose()`
+  gives a lease's anniversary, its reference quarter and value, the new quarter, INSEE's value with
+  its credit and licence, and the new rent by `rentAt()` - or why it waits: the quarter not yet
+  published, INSEE silent (typed by hand, as without omnistate), no reference. `quarters()`: a year
+  not claimed within the year is lost (art. 17-1), the change then measured from the year before;
+  `Model\IndexCaps`: the « bouclier loyer » caps (3.5 %, 2.5 % overseas) for the IRL of T3 2022 to
+  T1 2024. The revision page comes filled, the source credited beside the figure; nothing is
+  applied without the button. `estate:rent:revisions` (`--days`, `--mail`: the `revisions_due`
+  e-mail) proposes the revisions due and applies none. `rentAt()` and `apply()` take the new quarter
+  and the base index (optional, last). Tests on the BDM's answer recorded on 2026-11-10
+  (tests/Fixtures/insee-irl.xml), no live call.
 - A home's plan for its tenants, private: `Entity\Room` (`estate_room`: name, `Enum\RoomKind`,
   level, a polygon in centimetres on a 10 cm grid, a measured surface that prevails, counted in the
   living area or not), `Unit::getPlanRooms()`, `getLivingArea()` (`Unit::$surface` stays the

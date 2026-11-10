@@ -1,0 +1,20 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ url('admin') }}{% endblock %}
+{% block action_text %}Ouvrir le back-office{% endblock %}
+{% block content %}
+<p>Bonjour,</p>
+<p>Les loyers suivants arrivent à leur date de révision annuelle. Rien n'est appliqué : ouvrez chaque révision pour la vérifier et la confirmer.</p>
+<ul>
+{% for p in proposals %}
+    <li><a href="{{ url('estate_admin_revise', {id: p.lease.id}) }}">{{ p.lease.unit.name }} — bail {{ p.lease.reference }}</a>, au {{ p.on|format_date('long') }} :
+    {% if p.status == 'ready' %}IRL {{ p.value.quarter }} {{ p.value.value|number_format(2, ',', ' ') }}, loyer hors charges {{ p.lease.rent|euros }} → <strong>{{ p.rent|euros }}</strong>{% if p.capped %} (hausse plafonnée){% endif %}.
+    {% elseif p.status == 'waiting' %}l'IRL du {{ p.quarter }} n'est pas encore publié, la révision attend.
+    {% elseif p.status == 'no_reference' %}le bail n'a pas d'indice de référence.
+    {% else %}IRL du {{ p.quarter }} à saisir.{% endif %}</li>
+{% endfor %}
+</ul>
+{% set credits = proposals|filter(p => p.value and p.value.credit)|map(p => p.value.credit ~ (p.value.licence ? ' — ' ~ p.value.licence : '')) %}
+{% for credit in credits|reduce((c, x) => x in c ? c : c|merge([x]), []) %}<p style="font-size: 12px; color: #666">Source : {{ credit }}</p>{% endfor %}
+<p>{{ organisation.name }}</p>
+{% endblock %}

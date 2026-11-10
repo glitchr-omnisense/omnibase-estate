@@ -207,15 +207,24 @@ class ActionController extends AbstractController
     /**
      * The yearly IRL revision of a lease's rent: the new quarter and its index, the date it
      * applies from (the anniversary); "Calculer" shows the new rent, "Appliquer" saves it and
-     * sends the tenants the letter.
+     * sends the tenants the letter. With omnistate's statistics the quarter and its value come
+     * filled from INSEE, its credit beside them; INSEE silent or the quarter not yet published,
+     * the value is typed by hand as before. Nothing is applied without the button.
      */
     #[Route('/lease/{id}/revise', name: 'estate_admin_revise', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
     public function revise(Request $request, Lease $lease, RentRevisions $revisions): Response
     {
-        $on = $revisions->nextOn($lease);
+        $proposal = $revisions->propose($lease);
+        $on = $proposal->on;
         // A revision asked after the anniversary applies from the day it is asked: never backdated.
         $from = max($on, new \DateTimeImmutable('today'));
-        $values = ['quarter' => (string) $request->request->get('quarter', ''), 'index' => (string) $request->request->get('index', ''), 'on' => (string) $request->request->get('on', $from->format('Y-m-d'))];
+        $values = [
+            'quarter' => (string) $request->request->get('quarter', $proposal->quarter ?? ''),
+            'index' => (string) $request->request->get('index', $proposal->value?->value ?? ''),
+            'from_index' => (string) $request->request->get('from_index', $proposal->waived > 0 ? (string) $proposal->fromValue : ''),
+            'on' => (string) $request->request->get('on', $from->format('Y-m-d')),
+        ];
+        $fromIndex = '' !== $values['from_index'] ? $values['from_index'] : null;
         $rent = null;
         $error = null;
         if ($request->isMethod('POST')) {
@@ -224,14 +233,15 @@ class ActionController extends AbstractController
             }
             if (null === $lease->getIndexValue()) {
                 $error = 'Renseignez d\'abord l\'indice de référence du bail (trimestre et valeur de l\'IRL à la signature ou à la dernière révision).';
-            } elseif (!preg_match('/^T[1-4] \d{4}$/', strtoupper(trim($values['quarter']))) || (float) str_replace(',', '.', $values['index']) <= 0) {
+            } elseif (!preg_match('/^T[1-4] \d{4}$/', strtoupper(trim($values['quarter']))) || (float) str_replace(',', '.', $values['index']) <= 0 || (null !== $fromIndex && (float) str_replace(',', '.', $fromIndex) <= 0)) {
                 $error = 'Indiquez le trimestre (« T2 2025 ») et la valeur de l\'IRL publiée par l\'INSEE.';
             } else {
-                $rent = $revisions->rentAt($lease, $values['index']);
+                $quarter = strtoupper(trim($values['quarter']));
+                $rent = $revisions->rentAt($lease, $values['index'], $quarter, $fromIndex);
                 if ('apply' === $request->request->get('do')) {
                     /** @var User $user */
                     $user = $this->getUser();
-                    $former = $revisions->apply($lease, strtoupper(trim($values['quarter'])), $values['index'], new \DateTimeImmutable($values['on']), $user);
+                    $former = $revisions->apply($lease, $quarter, $values['index'], new \DateTimeImmutable($values['on']), $user, $fromIndex);
                     $this->addFlash('success', sprintf('Loyer révisé : %s → %s à partir du %s ; les locataires ont reçu le courrier.', number_format($former / 100, 2, ',', ' ').' €', number_format($rent / 100, 2, ',', ' ').' €', (new \DateTimeImmutable($values['on']))->format('d/m/Y')));
 
                     return $this->redirectToRoute('admin');
@@ -239,7 +249,7 @@ class ActionController extends AbstractController
             }
         }
 
-        return $this->render('@Estate/admin/revise.html.twig', ['lease' => $lease, 'values' => $values, 'rent' => $rent, 'error' => $error, 'next' => $on]);
+        return $this->render('@Estate/admin/revise.html.twig', ['lease' => $lease, 'values' => $values, 'rent' => $rent, 'error' => $error, 'next' => $on, 'proposal' => $proposal]);
     }
 
     /** The company's identity read again from the registers (Sirene / RNE, VIES), by its SIREN - with glitchr/omnistate. */
