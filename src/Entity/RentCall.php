@@ -11,7 +11,10 @@ use Doctrine\ORM\Mapping as ORM;
 /**
  * A month's rent asked of a lease (the avis d'échéance): rent and charges,
  * due on the lease's day, settled by payments. Paid in full, its receipt
- * (quittance) is numbered and can be downloaded.
+ * (quittance) is numbered and can be downloaded. A lease whose landlord opted
+ * for VAT has its rent (and, if it says so, its charges) called with the VAT
+ * of its code, fixed when the call is made (Service\Books::vatOf()): rent and
+ * charges are then before tax, the total with it.
  */
 #[ORM\Entity(repositoryClass: RentCallRepository::class)]
 #[ORM\Table(name: 'estate_rent_call')]
@@ -41,6 +44,13 @@ class RentCall
 
     #[ORM\Column]
     private int $charges = 0;
+
+    /** The VAT called with it (cents), 0 without; its code in the book. */
+    #[ORM\Column(options: ['default' => 0])]
+    private int $vat = 0;
+
+    #[ORM\Column(length: 16, nullable: true)]
+    private ?string $taxCode = null;
 
     #[ORM\Column]
     private int $paid = 0;
@@ -96,7 +106,13 @@ class RentCall
     public function setRent(int $rent): self { $this->rent = $rent; return $this; }
     public function getCharges(): int { return $this->charges; }
     public function setCharges(int $charges): self { $this->charges = $charges; return $this; }
-    public function getTotal(): int { return $this->rent + $this->charges; }
+    public function getVat(): int { return $this->vat; }
+    public function getTaxCode(): ?string { return $this->taxCode; }
+    /** The VAT of the call, under $code; 0 or a null code: none. */
+    public function setVat(int $vat, ?string $code = null): self { $this->vat = max(0, $vat); $this->taxCode = $this->vat > 0 ? $code : null; return $this; }
+    /** Rent and charges before tax, when it carries VAT. */
+    public function getNet(): int { return $this->rent + $this->charges; }
+    public function getTotal(): int { return $this->rent + $this->charges + $this->vat; }
     public function getPaid(): int { return $this->paid; }
     public function getRemaining(): int { return max(0, $this->getTotal() - $this->paid); }
     public function getStatus(): RentStatus { return $this->status; }

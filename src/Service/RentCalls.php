@@ -52,6 +52,10 @@ class RentCalls
         }
 
         $call = new RentCall($lease, $period);
+        // A landlord who opted for VAT: the call's VAT fixed now, at the code's rate (Books::vatOf()).
+        if (null !== $vat = $this->books?->vatOf($lease, $call->getRent(), $call->getCharges(), $period)) {
+            $call->setVat($vat['vat'], $vat['code']);
+        }
         $this->entityManager->persist($call);
         $this->entityManager->flush();
 

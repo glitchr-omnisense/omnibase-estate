@@ -29,3 +29,15 @@ Read, not coded: art. L145-32-1 (a tenant of such premises may ask to pay monthl
 rents monthly anyway), art. L145-33 (the valeur locative), art. L145-36, L145-38-1 (the « tunnel »
 clause on the ILC), the rest of art. L145-40 (interest on rents paid in advance beyond two terms,
 the deposit's return within three months of the keys).
+
+## VAT on rents
+
+No rule of tax law is coded: the landlord's option for VAT, its scope (the charges) and its rate
+are the team's and the book's (a code of omnibase/ledger). estate only applies the code the lease
+names, when the book says it is liable.
+
+| Decision | Where | To confirm |
+|---|---|---|
+| A lease with VAT is called and posted with the VAT of its code, the charges only if the lease says so | `Books::vatOf()`, `Books::rentCalled()` | whether the option covers the charges (left to the team, off by default) - CGI art. 260 not read |
+| A commercial tenant's proof of payment is the same quittance, VAT included | `@Estate/pdf/receipt.html.twig` | estate's quittance was written for homes; no text was read, for this step, that asks a commercial landlord for one or shapes it |
+| The rent notice of a lease with VAT is not an invoice | `@Estate/pdf/notice.html.twig` | the invoice's mentions (CGI, annex II, art. 242 nonies A), not read: **not coded** |

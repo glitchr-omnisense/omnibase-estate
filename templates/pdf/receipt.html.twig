@@ -3,10 +3,11 @@
 {% block document %}
 <h1>Quittance de loyer</h1>
 <div class="ref">N° {{ call.receiptNumber }} · {{ call.period|format_date(pattern: 'MMMM yyyy')|capitalize }} · bail {{ lease.reference }}</div>
-<p>Je soussigné·e, {{ organisation.name }}, bailleur du logement {{ lease.unit.name }}{% if lease.unit.address %} situé {{ lease.unit.address }}, {{ lease.unit.postcode }} {{ lease.unit.city }}{% endif %}, déclare avoir reçu de <strong>{{ lease.tenantNames }}</strong> la somme de <strong>{{ call.paid|euros }}</strong> au titre du loyer et des charges de la période du {{ call.period|format_date('long') }} au {{ call.period|date_modify('last day of this month')|format_date('long') }}, et lui en donne quittance, sous réserve de tous mes droits.</p>
+<p>Je soussigné·e, {{ organisation.name }}, bailleur {{ lease.residential ? 'du logement' : 'du local' }} {{ lease.unit.name }}{% if lease.unit.address %} situé {{ lease.unit.address }}, {{ lease.unit.postcode }} {{ lease.unit.city }}{% endif %}, déclare avoir reçu de <strong>{{ lease.tenantNames }}</strong> la somme de <strong>{{ call.paid|euros }}</strong> au titre du loyer et des charges{% if call.vat %}, taxe sur la valeur ajoutée comprise,{% endif %} de la période du {{ call.period|format_date('long') }} au {{ call.period|date_modify('last day of this month')|format_date('long') }}, et lui en donne quittance, sous réserve de tous mes droits.</p>
 <table class="amounts">
-    <tr><td>Loyer</td><td class="num">{{ call.rent|euros }}</td></tr>
-    <tr><td>Provision sur charges</td><td class="num">{{ call.charges|euros }}</td></tr>
+    <tr><td>Loyer{% if call.vat %} hors taxes{% endif %}</td><td class="num">{{ call.rent|euros }}</td></tr>
+    <tr><td>Provision sur charges{% if call.vat and lease.taxCharges %} hors taxes{% endif %}</td><td class="num">{{ call.charges|euros }}</td></tr>
+    {% if call.vat %}<tr><td>TVA{% if call.taxCode %} ({{ call.taxCode }}){% endif %}</td><td class="num">{{ call.vat|euros }}</td></tr>{% endif %}
     <tr class="total"><td>Total reçu{% if call.paidAt %} le {{ call.paidAt|format_date('long') }}{% endif %}</td><td class="num">{{ call.paid|euros }}</td></tr>
 </table>
 <div class="sign">Fait à {{ organisation.city ?? 'Strasbourg' }}, le {{ (call.paidAt ?? 'now')|format_date('long') }}<br><strong>{{ organisation.name }}</strong></div>

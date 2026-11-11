@@ -204,9 +204,27 @@ posts:
 
 | Event | Entry (journal) | Source |
 |---|---|---|
-| a rent called | `VT`: the tenant's account (411, party `lease:<reference>`) debited the total; 706 credited the rent, 708 the charges | `estate:rent:<call reference>` |
+| a rent called | `VT`: the tenant's account (411, party `lease:<reference>`) debited the total; 706 credited the rent, 708 the charges (before tax, 44571 the VAT, when the lease carries VAT) | `estate:rent:<call reference>` |
 | a payment | `BQ`: 512 (5112 for a card or SEPA payment, until the provider's payout) debited; the tenant credited | `estate:payment:<id>` |
 | a work order closed with an invoice | `AC`: 615 debited; the contractor's account (401, party `contractor:<id>`) credited | `estate:work:<id>` |
+
+A lease whose landlord opted for VAT names its code in the company's book (`Lease::$taxCode`,
+« Code TVA du loyer »: `V20` in the SCI chart's codes) and whether the charges carry it too
+(`taxCharges`, the team's to decide with its accountant). Each call made then carries its VAT,
+fixed at the code's rate when it is made (`Books::vatOf()`, `RentCall::getVat()`, `getTaxCode()`;
+rent and charges stay before tax, `getTotal()` includes the VAT, which the tenant pays and the bank
+line matches), and is posted 706 (708) before tax and 44571 its VAT, with its base
+(`EntryDraft::taxed()`), which ledger's VAT return reads. Only when the book is liable (its VAT
+regime), knows the code and the code collects VAT; otherwise no VAT is called and the lease's page
+says why. A managed home's rent is never called with VAT. The VAT is fixed on the call: a call
+edited afterwards keeps its VAT.
+
+The notice, its e-mail and the receipt show the rent before tax, the VAT and its code. A commercial
+tenant gets the same receipt (quittance: the landlord acknowledges the sum received, VAT included),
+« du local » instead of « du logement ». The notice is not presented as an invoice: the mentions
+an invoice must carry (code général des impôts, art. 242 nonies A of its annex II) were not
+read, and estate adds none of them - to confirm with an accountant before the notice of a lease
+with VAT stands for an invoice.
 
 A call paid in full has its entry and its payments' lettered on the tenant's account. Each
 posting carries its source: nothing is posted twice.

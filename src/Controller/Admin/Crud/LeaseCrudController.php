@@ -11,6 +11,7 @@ use Base\Estate\Enum\LeaseStatus;
 use Base\Estate\Enum\PaymentMethod;
 use Base\Estate\Enum\RevisionRule;
 use Base\Estate\Model\LeaseRules;
+use Base\Estate\Service\Books;
 use Base\Estate\Signature\LeaseSignatures;
 use Base\Field\AssociationField;
 use Base\Field\BooleanField;
@@ -32,6 +33,15 @@ class LeaseCrudController extends AbstractEstateCrudController
     private ?LeaseFolders $folders = null;
 
     private ?LeaseSignatures $signatures = null;
+
+    private ?Books $books = null;
+
+    /** The rent's VAT read from the company's book (omnibase/ledger): said on the lease's page. */
+    #[Required]
+    public function setBooks(?Books $books = null): void
+    {
+        $this->books = $books;
+    }
 
     #[Required]
     public function setLeaseFolders(?LeaseFolders $folders = null): void
@@ -92,6 +102,10 @@ class LeaseCrudController extends AbstractEstateCrudController
         yield BooleanField::new('smallBusiness', 'Locataire PME')->setColumns(4)->hideOnIndex()->setHelp('Petite ou moyenne entreprise (annexe I du règlement (UE) n° 651/2014) : la variation de l\'ILC était plafonnée à 3,5 % du T2 2022 au T1 2024 (loi n° 2022-1158, art. 14).');
         yield TextField::new('indexQuarter', 'Indice de référence (trimestre)')->setRequired(false)->setColumns(3)->hideOnIndex()->setHelp('« T2 2025 » : celui du bail, ou de la dernière révision.');
         yield TextField::new('indexValue', 'Indice de référence (valeur)')->setRequired(false)->setColumns(3)->hideOnIndex()->setHelp('La valeur publiée par l\'INSEE pour ce trimestre.');
+        yield TextField::new('taxCode', 'Code TVA du loyer')->setRequired(false)->setColumns(3)->hideOnIndex()
+            ->setHelp('Si le bailleur a opté pour la TVA sur ce loyer : le code du livre comptable (« V20 » : 20 %). Vide : pas de TVA.')
+            ->formatValue(fn ($code, ?Lease $lease) => null === $lease ? '' : $this->vatState($lease));
+        yield BooleanField::new('taxCharges', 'TVA sur les charges aussi')->setColumns(3)->hideOnIndex()->setHelp('À décider avec votre expert-comptable.');
         yield DateField::new('revisedOn', 'Dernière révision')->setRequired(false)->setColumns(3)->hideOnIndex();
         yield TextareaField::new('notes', 'Notes')->setRequired(false)->setColumns(12)->hideOnIndex();
         // What the law asks to check on this lease (Model\LeaseRules), only when there is something.
@@ -114,6 +128,20 @@ class LeaseCrudController extends AbstractEstateCrudController
     {
         parent::updateRecord($unitOfWork, $entity);
         $this->syncFolders($entity);
+    }
+
+    /** Whether the rent is called with VAT, and why not when a code is named. */
+    private function vatState(Lease $lease): string
+    {
+        if (null === $lease->getTaxCode()) {
+            return 'Pas de TVA';
+        }
+        $tax = $this->books?->tax($lease);
+        if (null === $tax) {
+            return sprintf('%s : pas de TVA appelée - le livre de la société n\'est pas assujetti, ne connaît pas ce code ou n\'y collecte pas de TVA.', $lease->getTaxCode());
+        }
+
+        return sprintf('%s (%s %%) sur le loyer%s', $tax->getCode(), number_format($tax->getRate() / 100, 2, ',', ' '), $lease->isTaxCharges() ? ' et les charges' : '');
     }
 
     private function signatureState(Lease $lease): string

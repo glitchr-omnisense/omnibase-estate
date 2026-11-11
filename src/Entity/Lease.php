@@ -105,6 +105,18 @@ class Lease
     private bool $smallBusiness = false;
 
     /**
+     * The VAT code (in the company's book, omnibase/ledger's Tax) its rent is called with, when
+     * the landlord opted for VAT on this lease; null: no VAT. Whether the option is open and its
+     * rate are the landlord's and the book's: estate reads the code's rate, it decides nothing.
+     */
+    #[ORM\Column(length: 16, nullable: true)]
+    private ?string $taxCode = null;
+
+    /** The charges called with VAT too - the team's to say (with its accountant), not estate's. */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $taxCharges = false;
+
+    /**
      * A flatshare's common folder in the site's cloud (omnibase/drive: Colocations/<home>,
      * Drive\FlatshareFolders), kept once made: a later lease of the same home gets its own.
      */
@@ -178,6 +190,10 @@ class Lease
     public function setIndexName(?string $indexName): self { $this->indexName = strtoupper(trim((string) $indexName)) ?: 'IRL'; return $this; }
     public function getRevisionRule(): RevisionRule { return $this->revisionRule; }
     public function setRevisionRule(RevisionRule $revisionRule): self { $this->revisionRule = $revisionRule; return $this; }
+    public function getTaxCode(): ?string { return $this->taxCode; }
+    public function setTaxCode(?string $taxCode): self { $this->taxCode = null === $taxCode || '' === trim($taxCode) ? null : strtoupper(trim($taxCode)); return $this; }
+    public function isTaxCharges(): bool { return $this->taxCharges; }
+    public function setTaxCharges(?bool $taxCharges): self { $this->taxCharges = (bool) $taxCharges; return $this; }
     public function isSmallBusiness(): bool { return $this->smallBusiness; }
     public function setSmallBusiness(?bool $smallBusiness): self { $this->smallBusiness = (bool) $smallBusiness; return $this; }
 

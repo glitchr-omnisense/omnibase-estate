@@ -3,6 +3,13 @@
 ## [Unreleased]
 
 ### Added
+- VAT on rents, where the landlord opted for it: `Lease::$taxCode` (a VAT code of the company's book) and `taxCharges`;
+  each rent call made fixes its VAT at the code's rate (`Books::vatOf()`, `RentCall::$vat`, `$taxCode`; `getTotal()`
+  includes it) and is posted 706 / 708 before tax and 44571 with its base (`EntryDraft::taxed()`), only when the book is
+  liable and the code collects VAT; never on a managed home's rent. The notice, its e-mail and the receipt show the rent
+  before tax and the VAT; a commercial tenant's receipt is the same quittance, « du local ». The lease's page says whether
+  VAT is called and why not. Needs a migration (`estate_lease.taxCode`, `taxCharges`; `estate_rent_call.vat`, `taxCode`).
+  tests/Service/BooksTest.
 - Commercial and professional leases (Plan 0, chantier I): `Lease::$kind` (`Enum\LeaseKind`: residential, the default,
   commercial, professional), the index it follows (`indexName`: IRL, ILC or ILAT), its revision rule
   (`Enum\RevisionRule`: yearly, indexation, triennial, none) and whether its tenant is a small business. `RentRevisions::propose()`

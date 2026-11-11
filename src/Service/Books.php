@@ -2,6 +2,7 @@
 
 namespace Base\Estate\Service;
 
+use Base\Estate\Entity\Lease;
 use Base\Estate\Entity\Organisation;
 use Base\Estate\Entity\Payment;
 use Base\Estate\Entity\RentCall;
@@ -11,7 +12,10 @@ use Base\Estate\Ledger\UnitDimensionLabeler;
 use Base\Ledger\Entity\Book;
 use Base\Ledger\Entity\Entry;
 use Base\Ledger\Entity\EntryLine;
+use Base\Ledger\Entity\Tax;
+use Base\Ledger\Enum\TaxKind;
 use Base\Ledger\Model\EntryDraft;
+use Base\Ledger\Repository\TaxRepository;
 use Base\Ledger\Service\Lettering;
 use Base\Ledger\Service\Parties;
 use Base\Ledger\Service\Posting;
@@ -29,6 +33,12 @@ use Doctrine\ORM\EntityManagerInterface;
  * owner's way instead: its rent called for them, its money on the escrow
  * account, its work invoices charged to them (Service\Management,
  * Ledger\ManagementBooks).
+ * A lease whose landlord opted for VAT (Lease::getTaxCode()) has its rent -
+ * and its charges, if it says so - called with that code's VAT (vatOf(), fixed
+ * on the call) and posted 706 / 708 before tax, the VAT on the code's account
+ * (44571), its base on the line (EntryDraft::taxed()), which ledger's VAT
+ * return reads. Only when the book is liable and the code collects VAT; a
+ * managed home's rent is its owner's and is never called with VAT here.
  * Only loaded when omnibase/ledger is installed (config/services.php).
  */
 class Books
@@ -39,7 +49,38 @@ class Books
         private readonly Parties $parties,
         private readonly Lettering $lettering,
         private readonly ?Management $management = null,
+        private readonly ?TaxRepository $taxes = null,
     ) {
+    }
+
+    /**
+     * The VAT a call of $lease carries on $rent and $charges (cents, before tax), and its code: null
+     * when the lease names no code, or the book is not liable, does not know it or it collects none.
+     *
+     * @return array{vat: int, code: string}|null
+     */
+    public function vatOf(Lease $lease, int $rent, int $charges, ?\DateTimeImmutable $on = null): ?array
+    {
+        $tax = $this->tax($lease, $on);
+        if (null === $tax) {
+            return null;
+        }
+        $vat = $tax->split($rent, false)[1] + ($lease->isTaxCharges() ? $tax->split($charges, false)[1] : 0);
+
+        return $vat > 0 ? ['vat' => $vat, 'code' => $tax->getCode()] : null;
+    }
+
+    /** The lease's VAT code in its book, when the rent can be called with it. */
+    public function tax(Lease $lease, ?\DateTimeImmutable $on = null): ?Tax
+    {
+        $book = $this->bookFor($lease->getOrganisation());
+        if (null === $lease->getTaxCode() || null === $book || null === $this->taxes || !$book->getVatRegime()->isLiable()
+            || $this->management?->isManaged($lease->getUnit(), $on ?? new \DateTimeImmutable('today'))) {
+            return null;
+        }
+        $tax = $this->taxes->findOneByCode($book, $lease->getTaxCode());
+
+        return null !== $tax && TaxKind::COLLECTED === $tax->getKind() ? $tax : null;
     }
 
     public function bookFor(Organisation $organisation): ?Book
@@ -63,9 +104,17 @@ class Books
         $unit = self::unit($lease->getUnit());
         $draft = new EntryDraft($book, 'VT', $call->getPeriod(), sprintf('Loyer %s %s', $call->getPeriod()->format('m/Y'), $lease->getReference()), 'estate:rent:'.$call->getReference(), $call->getReference());
         $draft->line($party->getAccountNumber(), $call->getTotal(), 0, $party, dimensions: $unit);
-        $draft->line('706', 0, $call->getRent(), dimensions: $unit);
+        // Called with VAT: the rent (and the charges, if the lease says so) before tax, the VAT on the code's account.
+        $tax = $call->getVat() > 0 && null !== $call->getTaxCode() ? $this->taxes?->findOneByCode($book, $call->getTaxCode()) : null;
+        if (null !== $tax) {
+            $draft->taxed('706', 0, $call->getRent(), $tax, false, dimensions: $unit);
+        } else {
+            $draft->line('706', 0, $call->getRent(), dimensions: $unit);
+        }
         if ($call->getCharges() > 0) {
-            $draft->line('708', 0, $call->getCharges(), dimensions: $unit);
+            null !== $tax && $lease->isTaxCharges()
+                ? $draft->taxed('708', 0, $call->getCharges(), $tax, false, dimensions: $unit)
+                : $draft->line('708', 0, $call->getCharges(), dimensions: $unit);
         }
         $this->posting->post($draft);
     }

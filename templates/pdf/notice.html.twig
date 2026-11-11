@@ -3,10 +3,11 @@
 {% block document %}
 <h1>Avis d'échéance</h1>
 <div class="ref">{{ call.reference }} · {{ call.period|format_date(pattern: 'MMMM yyyy')|capitalize }} · bail {{ lease.reference }}</div>
-<p>Logement : {{ lease.unit.name }}{% if lease.unit.address %}, {{ lease.unit.address }}, {{ lease.unit.postcode }} {{ lease.unit.city }}{% endif %}</p>
+<p>{{ lease.residential ? 'Logement' : 'Local' }} : {{ lease.unit.name }}{% if lease.unit.address %}, {{ lease.unit.address }}, {{ lease.unit.postcode }} {{ lease.unit.city }}{% endif %}</p>
 <table class="amounts">
-    <tr><td>Loyer</td><td class="num">{{ call.rent|euros }}</td></tr>
-    <tr><td>Provision sur charges</td><td class="num">{{ call.charges|euros }}</td></tr>
+    <tr><td>Loyer{% if call.vat %} hors taxes{% endif %}</td><td class="num">{{ call.rent|euros }}</td></tr>
+    <tr><td>Provision sur charges{% if call.vat and lease.taxCharges %} hors taxes{% endif %}</td><td class="num">{{ call.charges|euros }}</td></tr>
+    {% if call.vat %}<tr><td>TVA{% if call.taxCode %} ({{ call.taxCode }}){% endif %}</td><td class="num">{{ call.vat|euros }}</td></tr>{% endif %}
     {% if call.paid %}<tr><td>Déjà réglé</td><td class="num">- {{ call.paid|euros }}</td></tr>{% endif %}
     <tr class="total"><td>À régler avant le {{ call.dueOn|format_date('long') }}</td><td class="num">{{ call.remaining|euros }}</td></tr>
 </table>
