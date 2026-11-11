@@ -48,6 +48,26 @@ class LeaseParty
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $folder = null;
 
+    /**
+     * A guarantor's commitment, as their deed states it (Signature\SuretySignatures): the limit in
+     * principal and accessories (cents) it is given for - written out in words and figures in the
+     * statement the guarantor makes (code civil, art. 2297) -, until when (null: no duration
+     * stated) and whether it is joint (solidaire: the landlord need not sue the tenant first,
+     * nor divide between guarantors).
+     */
+    #[ORM\Column(nullable: true)]
+    private ?int $suretyLimit = null;
+
+    #[ORM\Column(type: 'date_immutable', nullable: true)]
+    private ?\DateTimeImmutable $suretyUntil = null;
+
+    #[ORM\Column(options: ['default' => true])]
+    private bool $suretyJoint = true;
+
+    /** The guarantor's postal address, printed on their deed. */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $address = null;
+
     public function __construct(string $firstName = '', string $lastName = '', string $email = '', PartyRole $role = PartyRole::TENANT)
     {
         $this->firstName = $firstName;
@@ -76,6 +96,15 @@ class LeaseParty
     public function getIban(): ?string { return $this->iban; }
     public function getFolder(): ?string { return $this->folder; }
     public function setFolder(?string $folder): self { $this->folder = $folder; return $this; }
+    public function isGuarantor(): bool { return PartyRole::GUARANTOR === $this->role; }
+    public function getSuretyLimit(): ?int { return $this->suretyLimit; }
+    public function setSuretyLimit(?int $suretyLimit): self { $this->suretyLimit = null === $suretyLimit || $suretyLimit <= 0 ? null : $suretyLimit; return $this; }
+    public function getSuretyUntil(): ?\DateTimeImmutable { return $this->suretyUntil; }
+    public function setSuretyUntil(?\DateTimeImmutable $suretyUntil): self { $this->suretyUntil = $suretyUntil; return $this; }
+    public function isSuretyJoint(): bool { return $this->suretyJoint; }
+    public function setSuretyJoint(?bool $suretyJoint): self { $this->suretyJoint = (bool) $suretyJoint; return $this; }
+    public function getAddress(): ?string { return $this->address; }
+    public function setAddress(?string $address): self { $this->address = null === $address || '' === trim($address) ? null : trim($address); return $this; }
     /** Who lives in the home: a tenant or a co-tenant, not a guarantor. */
     public function isOccupant(): bool { return PartyRole::GUARANTOR !== $this->role; }
     public function setIban(?string $iban): self { $this->iban = $iban ? strtoupper(preg_replace('/\s+/', '', $iban)) : null; return $this; }

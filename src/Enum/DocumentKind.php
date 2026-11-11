@@ -7,6 +7,8 @@ enum DocumentKind: string
 {
     case LEASE = 'lease';
     case INVENTORY = 'inventory';
+    /** A guarantor's deed (acte de cautionnement). */
+    case GUARANTEE = 'guarantee';
     case DIAGNOSTIC = 'diagnostic';
     case RULES = 'rules';
     case INSURANCE = 'insurance';
@@ -20,6 +22,7 @@ enum DocumentKind: string
         return match ($this) {
             self::LEASE => 'fa-solid fa-file-signature',
             self::INVENTORY => 'fa-solid fa-clipboard-check',
+            self::GUARANTEE => 'fa-solid fa-handshake',
             self::DIAGNOSTIC => 'fa-solid fa-leaf',
             self::RULES => 'fa-solid fa-scale-balanced',
             self::INSURANCE => 'fa-solid fa-shield-halved',

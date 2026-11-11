@@ -49,6 +49,7 @@ no Flex recipe). The provider's webhook is the core's: `POST /signatures/{gatewa
 |---|---|---|
 | `lease` | the lease the team uploaded (a `Document` of kind `lease` of the lease), else its particular conditions generated from the record (`@Estate/pdf/lease.html.twig`, with dompdf) | the landlord (the person who sends it, for the company), the tenants and co-tenants, the guarantors |
 | `inventory` | the inventory the team uploaded (a `Document` of kind `inventory`): refused until there is one | the landlord, the tenants and co-tenants |
+| `surety` | a guarantor's deed, generated (below) | the guarantor |
 
 Each goes with a signature page (`@Estate/pdf/signatures.html.twig`) naming the document by its
 file name and SHA-256, one box per signer, two to a row; each signer's signature field is placed on
@@ -81,10 +82,59 @@ $signatures->state($lease);                                        // status, la
 $signatures->file($lease, LeaseSignatures::LEASE, 'evidence');     // the evidence, once completed
 ```
 
+## The guarantor's deed
+
+**A starting point, to be validated by a lawyer.** The template was written from the texts read on
+Légifrance on 2026-11-11 and checked by nobody who practises law. The back office's page says so,
+until the site's owner (`ROLE_SUPERADMIN`) ticks « Modèle d'acte de cautionnement validé par un
+avocat » on the company's settings (`Organisation::setSuretyTemplateConfirmed()`, its date kept).
+
+`Signature\SuretySignatures` gives each guarantor of a lease (`LeaseParty` of role `guarantor`) a
+deed of their own (acte de cautionnement), generated from the record
+(`@Estate/pdf/surety.html.twig`) and signed through omnisign in its own envelope, about the
+guarantor (`Signatures::of($guarantor)`, key `surety:<lease>:<party id>`):
+
+- the parties: the guarantor (name, address, e-mail), the landlord as creditor, the tenants as
+  debtors; the lease it secures;
+- the rent and its revision terms « tels qu'ils figurent au contrat de location », in the words the
+  generated lease uses (`@Estate/pdf/_revision_terms.html.twig`);
+- the commitment: its limit in principal and accessories in words and figures
+  (`SuretySignatures::inWords()`, `figures()`), its end date or « aucune indication de durée »,
+  joint (the benefits of discussion and division given up) or not - set by the team on the deeds'
+  page (`LeaseParty::$suretyLimit`, `$suretyUntil`, `$suretyJoint`, `$address`; `Form\SuretyTermsType`);
+- for a home's lease, the reproduction word for word of art. 22-1's last paragraph but one
+  (`SuretySignatures::PARAGRAPH_4`);
+- the mention of art. 2297 of the code civil, which the guarantor types themselves on the signature
+  page (`@Estate/pdf/surety_signatures.html.twig`): one text field (`FieldType::TEXT`) a sentence -
+  the engagement and its limit; for a joint guarantee, the benefits given up -, then their signature;
+- a copy of the lease in the same envelope, to read (`signable: false`).
+
+The guarantor alone signs. The deed cannot be sent without its limit, the guarantor's e-mail, and -
+for a revisable rent - the lease's reference index (`SuretySignatures::missing()`). Completed, the
+signed deed is filed as the lease's document « Acte de cautionnement de … (signé) », kind
+`guarantee`, **not** shown to the tenants; the team is e-mailed (`surety_signature`). The lease's
+page shows each guarantor's deed and its state (« Actes de cautionnement »), and a « Cautionnement »
+button opens the deeds' page (`estate_admin_surety`): the notice, the conditions of art. 22-1, al. 1
+to 3 to check (never decided: estate does not know whether the landlord insured the rent, nor the
+tenant's situation), each guarantor's commitment, « Lire l'acte » (the PDF as it would go), send,
+refresh, remind, cancel, the signed deed and its evidence.
+
+For a commercial or professional lease art. 22-1 does not apply: the deed carries art. 2297's
+mention, no reproduction. With `signature.surety_template`, a provider's template (role `Garant`)
+is signed instead - it must then carry the deed's statements itself. The rules and their sources:
+[Legal rules](legal.md#the-guarantors-deed).
+
+```php
+$sureties->deeds($lease);                 // each guarantor, its state, what is missing
+$sureties->send($guarantor, $user);       // the deed, the lease to read, the page with the mention
+$sureties->statement($guarantor);         // the mention the guarantor types, one sentence a field
+$sureties->deedPdf($guarantor);           // the deed as it goes
+```
+
 ## Not yet
 
-- The guarantee (the surety's own deed, art. 22-1 of the loi du 6 juillet 1989, with its
-  mentions): the guarantors sign the lease, not yet their own deed.
+- A guarantee given by a company or a body (Visale): the deed is a natural person's.
+- The guarantor's identity checked by the provider (an advanced signature: `signature.level`).
 - Signing in the site's page (embedded): each signer signs from the provider's e-mail.
 - DocuSeal's fields placed by points: checked against omnisign's DocuSeal gateway as written, not
   yet on a DocuSeal Pro instance (its open-source edition signs templates only).

@@ -5,6 +5,7 @@ namespace Base\Estate\Controller\Admin\Crud;
 use Base\Admin\Config\Action;
 use Base\Admin\Config\Actions;
 use Base\Estate\Entity\Organisation;
+use Base\Field\BooleanField;
 use Base\Field\DateField;
 use Base\Field\DateTimeField;
 use Base\Field\EmailField;
@@ -52,5 +53,9 @@ class OrganisationCrudController extends AbstractEstateCrudController
         yield TextField::new('phone', 'Téléphone')->setRequired(false)->setColumns(4)->hideOnIndex();
         yield TextField::new('iban', 'IBAN des loyers')->setRequired(false)->setColumns(4)->hideOnIndex()->setHelp('Imprimé sur les avis d\'échéance pour les virements.');
         yield IntegerField::new('bookId', 'Comptabilité (n° du livre)')->setRequired(false)->setColumns(4)->hideOnIndex()->setHelp('Le livre comptable (omnibase/ledger) où loyers et travaux sont passés.');
+        // The guarantor's deed's template (Signature\SuretySignatures) validated by a lawyer: the site's owner says so, and the notice goes.
+        yield BooleanField::new('suretyTemplateConfirmed', 'Modèle d\'acte de cautionnement validé par un avocat')->setColumns(6)->hideOnIndex()->setPermission('ROLE_SUPERADMIN')
+            ->setHelp('À cocher par le titulaire du site, une fois le modèle relu par un avocat : la mention « à faire valider » disparaît alors du back-office.');
+        yield DateTimeField::new('suretyTemplateConfirmedAt', 'Modèle d\'acte de cautionnement confirmé le')->onlyOnDetail();
     }
 }

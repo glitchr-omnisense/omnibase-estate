@@ -400,6 +400,7 @@ document:
   kinds:
     lease: "Lease"
     inventory: "Inventory of fixtures"
+    guarantee: "Guarantee deed"
     diagnostic: "Diagnostic"
     rules: "Rules"
     insurance: "Insurance certificate"
@@ -655,3 +656,12 @@ works:
   none_in_progress: "No works under way at the moment."
   none_done: "Nothing finished to show yet."
   story_link: "See {unit}"
+surety:
+  limit: "Maximum amount of the commitment"
+  limit_help: "Principal and accessories: written in words and figures in the deed and in the guarantor's statement (code civil, art. 2297)."
+  limit_needed: "Give the maximum amount of the commitment."
+  until: "Commitment until"
+  until_help: "Empty: no duration stated - for a home, the guarantor may then end it (loi du 6 juillet 1989, art. 22-1)."
+  joint: "Joint guarantor"
+  joint_help: "They give up the benefits of discussion and division, and acknowledge it in their statement."
+  address: "Guarantor's address"

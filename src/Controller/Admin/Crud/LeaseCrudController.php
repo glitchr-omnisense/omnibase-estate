@@ -13,6 +13,7 @@ use Base\Estate\Enum\RevisionRule;
 use Base\Estate\Model\LeaseRules;
 use Base\Estate\Service\Books;
 use Base\Estate\Signature\LeaseSignatures;
+use Base\Estate\Signature\SuretySignatures;
 use Base\Field\AssociationField;
 use Base\Field\BooleanField;
 use Base\Field\DateField;
@@ -35,6 +36,15 @@ class LeaseCrudController extends AbstractEstateCrudController
     private ?LeaseSignatures $signatures = null;
 
     private ?Books $books = null;
+
+    private ?SuretySignatures $sureties = null;
+
+    /** The guarantors' deeds, with omnisense/omnisign: their state on the lease's page. */
+    #[Required]
+    public function setSuretySignatures(?SuretySignatures $sureties = null): void
+    {
+        $this->sureties = $sureties;
+    }
 
     /** The rent's VAT read from the company's book (omnibase/ledger): said on the lease's page. */
     #[Required]
@@ -74,6 +84,11 @@ class LeaseCrudController extends AbstractEstateCrudController
                 ->linkToRoute('estate_admin_signature', fn (Lease $l) => ['id' => $l->getId()]);
             $actions->add(Action::DETAIL, $sign);
         }
+        // The guarantors' deeds, readable even without omnisign (sent only with it).
+        $surety = Action::new('estateSurety', 'Cautionnement', 'fa-solid fa-handshake')
+            ->linkToRoute('estate_admin_surety', fn (Lease $l) => ['id' => $l->getId()])
+            ->displayIf(fn (Lease $l) => array_filter($l->getParties()->toArray(), fn ($p) => $p->isGuarantor()) !== []);
+        $actions->add(Action::DETAIL, $surety);
 
         return $actions;
     }
@@ -116,6 +131,9 @@ class LeaseCrudController extends AbstractEstateCrudController
             yield TextField::new('id', 'Signature électronique')->onlyOnDetail()
                 ->formatValue(fn ($id, ?Lease $lease) => null === $lease ? '' : $this->signatureState($lease));
         }
+        // Each guarantor's deed and where it stands.
+        yield TextField::new('folder', 'Actes de cautionnement')->onlyOnDetail()
+            ->formatValue(fn ($v, ?Lease $lease) => null === $lease ? '' : $this->suretyState($lease));
     }
 
     public function persistRecord(UnitOfWork $unitOfWork, object $entity): void
@@ -128,6 +146,20 @@ class LeaseCrudController extends AbstractEstateCrudController
     {
         parent::updateRecord($unitOfWork, $entity);
         $this->syncFolders($entity);
+    }
+
+    private function suretyState(Lease $lease): string
+    {
+        $parts = [];
+        foreach ($lease->getParties() as $party) {
+            if (!$party->isGuarantor()) {
+                continue;
+            }
+            $state = $this->sureties?->state($party);
+            $parts[] = $party->getName().' : '.($state['label'] ?? (null === $party->getSuretyLimit() ? 'engagement à compléter' : 'pas encore envoyé à la signature'));
+        }
+
+        return $parts ? implode(' · ', $parts) : 'Pas de caution';
     }
 
     /** Whether the rent is called with VAT, and why not when a code is named. */

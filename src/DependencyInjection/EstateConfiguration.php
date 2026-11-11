@@ -44,6 +44,8 @@ class EstateConfiguration implements ConfigurationInterface
                             ->info('A template of the provider\'s to sign instead of the lease\'s PDF and its signature page: DocuSeal\'s open-source edition signs its own templates only. Its roles: Bailleur, Locataire 1, Locataire 2..., Garant 1...')->end()
                         ->scalarNode('inventory_template')->defaultNull()
                             ->info('The same for the inventory of fixtures (roles Bailleur, Locataire 1...).')->end()
+                        ->scalarNode('surety_template')->defaultNull()
+                            ->info('The same for a guarantor\'s deed (Signature\\SuretySignatures, role Garant): the provider\'s template must then carry the deed\'s statements itself.')->end()
                         ->enumNode('level')->values(['simple', 'advanced'])->defaultValue('simple')
                             ->info('The eIDAS level asked: simple (any provider), advanced (Yousign, DocuSign).')->end()
                     ->end()

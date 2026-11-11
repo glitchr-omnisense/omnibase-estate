@@ -1,0 +1,13 @@
+{% extends 'email.html.twig' %}
+{% block subject %}{{ subject }}{% endblock %}
+{% block action_url %}{{ url('estate_admin_surety', {id: lease.id}) }}{% endblock %}
+{% block action_text %}Voir les actes de cautionnement{% endblock %}
+{% block content %}
+<p>Bonjour,</p>
+{% if status == 'completed' %}
+<p>L'acte de cautionnement de {{ guarantor.name }} pour le bail {{ lease.reference }} ({{ lease.unit.name }}) est signé. L'acte signé et son dossier de preuve sont conservés ; une copie est classée dans les documents du bail.</p>
+{% else %}
+<p>L'acte de cautionnement de {{ guarantor.name }} pour le bail {{ lease.reference }} ({{ lease.unit.name }}) n'a pas été signé : {{ status == 'declined' ? 'la caution a refusé' : 'la demande a expiré' }}. Vous pouvez le renvoyer.</p>
+{% endif %}
+<p>{{ organisation.name }}</p>
+{% endblock %}

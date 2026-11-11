@@ -3,6 +3,17 @@
 ## [Unreleased]
 
 ### Added
+- The guarantor's deed (acte de cautionnement) signed through omnisign (Plan 0, chantier I): `Signature\SuretySignatures`
+  generates one deed per guarantor (`@Estate/pdf/surety.html.twig`: the parties, the lease, the rent and its revision terms
+  as the lease states them, the commitment's limit in words and figures, its duration or none, joint or not, for a home's
+  lease art. 22-1's paragraph reproduced) and sends it in its own envelope about the guarantor, with a copy of the lease to
+  read and a signature page where the guarantor types art. 2297's mention; followed by the webhook, the signed deed filed
+  (`DocumentKind::GUARANTEE`, not the tenants'), the team e-mailed (`surety_signature`). `LeaseParty::$suretyLimit`,
+  `$suretyUntil`, `$suretyJoint`, `$address` (`Form\SuretyTermsType`); the deeds' page `estate_admin_surety`, a
+  « Cautionnement » button and each deed's state on the lease's page; `signature.surety_template`. The template is a starting
+  point to be validated by a lawyer: said on the page until the owner confirms it (`Organisation::$suretyTemplateConfirmedAt`,
+  « Modèle d'acte de cautionnement validé par un avocat », ROLE_SUPERADMIN). Texts and what remains to confirm:
+  docs/legal.md. Needs a migration. tests/Signature/SuretySignaturesTest.
 - VAT on rents, where the landlord opted for it: `Lease::$taxCode` (a VAT code of the company's book) and `taxCharges`;
   each rent call made fixes its VAT at the code's rate (`Books::vatOf()`, `RentCall::$vat`, `$taxCode`; `getTotal()`
   includes it) and is posted 706 / 708 before tax and 44571 with its base (`EntryDraft::taxed()`), only when the book is

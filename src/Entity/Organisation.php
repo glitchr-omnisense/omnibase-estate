@@ -70,6 +70,13 @@ class Organisation
     #[ORM\Column(type: 'date_immutable', nullable: true)]
     private ?\DateTimeImmutable $foundedOn = null;
 
+    /**
+     * When the site's owner confirmed that a lawyer validated estate's template of the guarantor's
+     * deed (@Estate/pdf/surety.html.twig): until then the back office says it is a starting point.
+     */
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $suretyTemplateConfirmedAt = null;
+
     public function __construct(string $name = '', string $slug = '')
     {
         $this->name = $name;
@@ -108,6 +115,16 @@ class Organisation
     public function setBookId(?int $bookId): self { $this->bookId = $bookId; return $this; }
     public function getFoundedOn(): ?\DateTimeImmutable { return $this->foundedOn; }
     public function setFoundedOn(?\DateTimeImmutable $foundedOn): self { $this->foundedOn = $foundedOn; return $this; }
+
+    public function getSuretyTemplateConfirmedAt(): ?\DateTimeImmutable { return $this->suretyTemplateConfirmedAt; }
+    public function isSuretyTemplateConfirmed(): bool { return null !== $this->suretyTemplateConfirmedAt; }
+    /** Confirmed (stamped now, kept if it already was) or withdrawn. */
+    public function setSuretyTemplateConfirmed(?bool $confirmed): self
+    {
+        $this->suretyTemplateConfirmedAt = $confirmed ? ($this->suretyTemplateConfirmedAt ?? new \DateTimeImmutable()) : null;
+
+        return $this;
+    }
 
     /** "12 rue …, 67000 Strasbourg" */
     public function getFullAddress(): string

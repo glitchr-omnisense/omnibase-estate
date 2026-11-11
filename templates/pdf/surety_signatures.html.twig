@@ -1,0 +1,30 @@
+{# The page a guarantor signs (Signature\SuretySignatures): the deed it seals by its SHA-256, the mention they type themselves in each text field (code civil, art. 2297 and 1174), their signature; points from the page's top left corner, A4 595 × 842, no margin. #}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>{{ title }}</title>
+<style>
+    @page { margin: 0; }
+    body { margin: 0; font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #14171c; }
+    .head { position: absolute; left: 51pt; top: 56pt; width: 493pt; }
+    h1 { font-size: 16pt; margin: 0 0 6pt; }
+    .muted { color: #5d636b; font-size: 8.5pt; }
+    .label { position: absolute; font-size: 8.5pt; }
+    .box { position: absolute; border: .6pt solid #9aa0a6; }
+</style>
+</head>
+<body>
+<div class="head">
+    <h1>{{ title }}</h1>
+    <p>Bail {{ lease.reference }}, {{ lease.unit.name }}. La caution, {{ guarantor.name }}, recopie elle-même dans chaque cadre la phrase indiquée au-dessus, puis signe.</p>
+    <p class="muted">Document signé : {{ filename }} — empreinte SHA-256 {{ sha256 }}</p>
+</div>
+{% for box in mentions %}
+<div class="label" style="left: {{ box.x }}pt; top: {{ box.y - 40 }}pt; width: {{ box.width }}pt">« {{ box.text }} »</div>
+<div class="box" style="left: {{ box.x }}pt; top: {{ box.y }}pt; width: {{ box.width }}pt; height: {{ box.height }}pt"></div>
+{% endfor %}
+<div class="label" style="left: {{ signature.x }}pt; top: {{ signature.y - 16 }}pt; width: {{ signature.width }}pt"><strong>La caution</strong> — {{ guarantor.name }}</div>
+<div class="box" style="left: {{ signature.x }}pt; top: {{ signature.y }}pt; width: {{ signature.width }}pt; height: {{ signature.height }}pt"></div>
+</body>
+</html>

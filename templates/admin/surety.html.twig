@@ -1,0 +1,106 @@
+{% extends '@Admin/layout.html.twig' %}
+
+{# A lease's guarantors' deeds (Signature\SuretySignatures): the commitment, the deed to read, its signature through omnisign. #}
+{% block page_title %}Actes de cautionnement — {{ lease.reference }}{% endblock %}
+
+{% block content_header %}
+<div class="admin-header">
+    <span class="admin-header-icon"><i class="fa-solid fa-handshake"></i></span>
+    <div class="admin-header-titles">
+        <h1>Actes de cautionnement</h1>
+        <div class="admin-header-subtitle">{{ lease.tenantNames }} · {{ lease.unit.name }} · {{ lease.kind.label|lower }} {{ lease.reference }}</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    .estate-surety { display: grid; gap: 1rem; max-width: 48rem; }
+    .estate-surety .card { padding: 1rem 1.25rem; }
+    .estate-surety table { width: 100%; border-collapse: collapse; }
+    .estate-surety td, .estate-surety th { padding: .4rem .5rem; border-bottom: 1px solid rgba(127,127,127,.2); text-align: left; }
+    .estate-surety .state { font-size: 1.05rem; font-weight: 600; margin: 0 0 .4rem; }
+    .estate-surety .actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+    .estate-surety .help { opacity: .75; font-size: .9rem; margin: .3rem 0 0; }
+    .estate-surety .lawyer { border-left: 4px solid #d0312d; }
+    .estate-surety ul { margin: .3rem 0 0; padding-left: 1.2rem; }
+</style>
+<div class="estate-surety">
+    <nav class="actions">
+        <a class="btn" href="{{ path('admin_crud_leases_detail', {entityId: lease.id}) }}">Retour au bail</a>
+        <a class="btn" href="{{ path('estate_admin_signature', {id: lease.id}) }}">Signature du bail</a>
+    </nav>
+
+    {% if not organisation.suretyTemplateConfirmed %}
+    <div class="card lawyer" data-surety-template="unconfirmed">
+        <p class="state">Modèle à faire valider par un avocat</p>
+        <p style="margin: 0">L'acte généré est un point de départ, écrit d'après les textes lus sur Légifrance le 11 novembre 2026 (loi du 6 juillet 1989, art. 22-1 ; code civil, art. 2297 et 1174) : il n'a été relu par aucun juriste. Un acte qui ne contient pas ce que la loi exige est nul. Faites-le valider avant de l'envoyer, puis confirmez-le dans les réglages de la société (« Modèle d'acte de cautionnement validé par un avocat »).</p>
+    </div>
+    {% endif %}
+
+    {% if lease.residential %}
+    <div class="card">
+        <p class="state">Avant de demander une caution (loi du 6 juillet 1989, art. 22-1)</p>
+        <ul>
+            <li>Un bailleur qui a souscrit une assurance ou une autre garantie des loyers ne peut pas demander de caution, à peine de nullité, sauf pour un logement loué à un étudiant ou un apprenti.</li>
+            <li>Un bailleur personne morale, autre qu'une société civile constituée exclusivement entre parents et alliés jusqu'au quatrième degré, ne peut demander une caution que si elle est apportée par un organisme dont la liste est fixée par décret, ou si le logement est loué à un étudiant sans bourse de l'enseignement supérieur.</li>
+            <li>Une caution ne peut pas être refusée parce qu'elle n'a pas la nationalité française ou ne réside pas en métropole.</li>
+        </ul>
+        <p class="help">Ces conditions dépendent de faits qu'estate ne connaît pas : elles ne sont pas vérifiées ici.</p>
+    </div>
+    {% else %}
+    <div class="card"><p style="margin: 0">{{ lease.kind.label }} : l'article 22-1 de la loi du 6 juillet 1989 ne s'y applique pas ; l'acte porte la mention de l'article 2297 du code civil.</p></div>
+    {% endif %}
+
+    {% if not installed %}
+    <div class="card"><p style="margin: 0">La signature électronique n'est pas installée : ajoutez <code>omnisense/omnisign</code> et un fournisseur, puis <code>estate.signature.gateway</code>.</p></div>
+    {% elseif not enabled %}
+    <div class="card"><p style="margin: 0">Aucun service de signature configuré : <code>estate.signature.gateway</code> doit nommer une passerelle de <code>omnisign.gateways</code>.</p></div>
+    {% endif %}
+
+    {% for deed in deeds %}
+    {% set g = deed.guarantor %}
+    <div class="card" id="caution-{{ g.id }}" data-surety-status="{{ deed.state ? deed.state.status : 'none' }}">
+        <p class="state">{{ g.name }} <small style="font-weight: 400">· {{ g.email }}</small></p>
+        <p style="margin: 0 0 .6rem">{{ deed.state ? deed.state.label : 'Acte pas encore envoyé à la signature.' }}</p>
+        {% if deed.state %}
+        <table>
+            <thead><tr><th>Signataire</th><th>État</th></tr></thead>
+            <tbody>{% for s in deed.state.signers %}<tr><td>{{ s.name }}</td><td>{{ {signed: 'Signé', declined: 'Refusé', waiting: 'En attente', opened: 'Ouvert', sent: 'Envoyé'}[s.status] ?? s.status }}{% if s.signedAt %} le {{ s.signedAt|date('d/m/Y') }}{% endif %}</td></tr>{% endfor %}</tbody>
+        </table>
+        {% if deed.state.status == 'completed' %}
+        <p class="actions" style="margin-top: .6rem">
+            <a class="btn btn-success" href="{{ path('estate_admin_surety_file', {id: lease.id, party: g.id, file: 'document'}) }}">Acte signé</a>
+            {% if deed.state.envelope.evidenceFile %}<a class="btn" href="{{ path('estate_admin_surety_file', {id: lease.id, party: g.id, file: 'evidence'}) }}">Dossier de preuve</a>{% endif %}
+        </p>
+        {% endif %}
+        {% endif %}
+
+        {% if forms[g.id] is defined %}
+        <details {{ g.suretyLimit ? '' : 'open' }} style="margin-top: .8rem">
+            <summary>L'engagement{% if g.suretyLimit %} : {{ g.suretyLimit|euros }}{{ g.suretyUntil ? ', jusqu\'au ' ~ g.suretyUntil|format_date('long') : ', sans indication de durée' }}{{ g.suretyJoint ? ', solidaire' : '' }}{% endif %}</summary>
+            {{ form_start(forms[g.id]) }}
+            {{ form_widget(forms[g.id]) }}
+            <button class="btn btn-success" type="submit">Enregistrer l'engagement</button>
+            {{ form_end(forms[g.id]) }}
+        </details>
+        {% endif %}
+
+        {% if deed.missing|length %}<p class="help">Il manque à l'acte : {{ deed.missing|join(', ') }}.</p>{% endif %}
+        <form method="post" class="actions" style="margin-top: .8rem">
+            <input type="hidden" name="_token" value="{{ csrf_token('estate_surety_' ~ g.id) }}">
+            {% if installed and not deed.missing|length %}<a class="btn" href="{{ path('estate_admin_surety_deed', {id: lease.id, party: g.id}) }}" target="_blank" rel="noopener">Lire l'acte</a>{% endif %}
+            {% if deed.canSend %}<button class="btn btn-success" formaction="{{ path('estate_admin_surety_do', {id: lease.id, party: g.id, do: 'send'}) }}">{{ deed.state ? 'Renvoyer' : 'Envoyer' }} l'acte à la signature</button>{% endif %}
+            {% if enabled and deed.state and deed.state.status == 'sent' %}
+            <button class="btn" formaction="{{ path('estate_admin_surety_do', {id: lease.id, party: g.id, do: 'refresh'}) }}">Actualiser</button>
+            <button class="btn" formaction="{{ path('estate_admin_surety_do', {id: lease.id, party: g.id, do: 'remind'}) }}">Relancer</button>
+            <button class="btn" formaction="{{ path('estate_admin_surety_do', {id: lease.id, party: g.id, do: 'cancel'}) }}">Annuler la demande</button>
+            {% endif %}
+        </form>
+        <p class="help">Signé par la caution seule, qui recopie elle-même la mention de l'article 2297 du code civil sur la page de signature ; un exemplaire du bail lui est joint.</p>
+    </div>
+    {% else %}
+    <div class="card"><p style="margin: 0">Ce bail n'a pas de caution : ajoutez-en une parmi les parties du bail (rôle « Garant »).</p></div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -400,6 +400,7 @@ document:
   kinds:
     lease: "Bail"
     inventory: "État des lieux"
+    guarantee: "Acte de cautionnement"
     diagnostic: "Diagnostic"
     rules: "Règlement"
     insurance: "Attestation d'assurance"
@@ -655,3 +656,12 @@ works:
   none_in_progress: "Aucun chantier en cours en ce moment."
   none_done: "Rien de terminé à montrer pour l'instant."
   story_link: "Voir {unit}"
+surety:
+  limit: "Montant maximal de l'engagement"
+  limit_help: "En principal et accessoires : il est écrit en lettres et en chiffres dans l'acte et dans la mention de la caution (code civil, art. 2297)."
+  limit_needed: "Indiquez le montant maximal de l'engagement."
+  until: "Engagement jusqu'au"
+  until_help: "Vide : sans indication de durée - pour un logement, la caution peut alors le résilier (loi du 6 juillet 1989, art. 22-1)."
+  joint: "Caution solidaire"
+  joint_help: "Elle renonce aux bénéfices de discussion et de division, et le reconnaît dans sa mention."
+  address: "Adresse de la caution"

@@ -54,8 +54,8 @@ use Twig\Environment;
  *             inventory_template: ~
  *
  * Not the notary's authentic act: a simple (or advanced) electronic
- * signature of a private deed. The guarantee - the surety's own deed, with
- * its mentions - is not sent yet.
+ * signature of a private deed. Each guarantor's own deed, with its mentions,
+ * is SuretySignatures'.
  *
  * This folder is registered only when omnisense/omnisign and the core's
  * Signatures are there; nothing of it implements an omnisign interface.

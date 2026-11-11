@@ -56,6 +56,9 @@ estate:
         # The same for the inventory of fixtures (roles Bailleur, Locataire 1...).
         inventory_template:   null
 
+        # The same for a guarantor's deed (Signature\SuretySignatures, role Garant): the provider's template must then carry the deed's statements itself.
+        surety_template:      null
+
         # The eIDAS level asked: simple (any provider), advanced (Yousign, DocuSign).
         level:                simple # One of "simple"; "advanced"
 
@@ -86,7 +89,7 @@ estate:
 | `reminder_days` | int, 1 or more | `5` | `RentCalls::markLate()` |
 | `documents_route` | route name or null | `null` | `AssociateController` |
 | `signature.gateway` | string or null | `null` | `Signature\LeaseSignatures`: the omnisign gateway; null: no electronic signature |
-| `signature.template`, `signature.inventory_template` | string or null | `null` | a provider's template signed in place of the PDF (DocuSeal's open-source edition) |
+| `signature.template`, `signature.inventory_template`, `signature.surety_template` | string or null | `null` | a provider's template signed in place of the PDF (DocuSeal's open-source edition) |
 | `signature.level` | `simple`, `advanced` | `simple` | the eIDAS level asked |
 | `story.font`, `story.font_regular` | font file or null | `null` (DejaVu Sans) | `StoryImages` (FreeType reads TTF, OTF and WOFF) |
 | `story.mark` | image file or null | `null` | `StoryImages` |
@@ -123,6 +126,6 @@ has its screens, postings and space ([Shared ownership](usage-ownership.md)), ma
 omnibase/admin is installed. `Books` is an optional argument of `Payments`, `RentCalls` and
 `WorkOrders`; omnitrade's `Registry` of `OnlinePayments`. `Spaces` implements `ResetInterface`.
 The e-mails are `@Estate/email/<name>.html.twig`: `rent_call`, `rent_reminder`, `receipt`,
-`rent_revision`, `revisions_due`, `lease_signature`, `invitation`, `message`, `notice`, `document_added`, `work_reported`,
+`rent_revision`, `revisions_due`, `lease_signature`, `surety_signature`, `invitation`, `message`, `notice`, `document_added`, `work_reported`,
 `work_assigned`, `work_update`, `visit_request`, `application_received`, `application_ack`,
 `application_visit`, `application_declined`.

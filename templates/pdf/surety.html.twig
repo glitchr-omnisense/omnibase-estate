@@ -1,0 +1,49 @@
+{% extends '@Estate/pdf/_document.html.twig' %}
+{#
+ # A guarantor's deed (acte de cautionnement), generated from the record and signed through omnisign (Signature\SuretySignatures).
+ # Written from loi n° 89-462 du 6 juillet 1989, art. 22-1 (version of 1 January 2022) for a home's lease, and code civil,
+ # art. 2297 (version of 1 January 2022), read on Légifrance on 2026-11-11 (docs/legal.md). A starting point, to be validated
+ # by a lawyer: the back office says so until the site's owner confirms it.
+ #}
+{% set title = 'Acte de cautionnement — ' ~ guarantor.name ~ ' — bail ' ~ lease.reference %}
+{% block recipient %}<strong>Acte de cautionnement</strong><br>Bail {{ lease.reference }}{% endblock %}
+{% block document %}
+<h1>Acte de cautionnement</h1>
+<div class="ref">{{ lease.kind.label }} {{ lease.reference }} · {{ lease.unit.name }} · caution : {{ guarantor.name }}</div>
+
+<h3>I. Les parties</h3>
+<p><strong>La caution</strong> : {{ guarantor.name }}{% if guarantor.address %}, demeurant {{ guarantor.address }}{% endif %} ({{ guarantor.email }}{% if guarantor.phone %}, {{ guarantor.phone }}{% endif %}).</p>
+<p><strong>Le bailleur, créancier</strong> : {{ organisation.legalName ?? organisation.name }}{% if organisation.legalForm %}, {{ organisation.legalForm|lower }}{% endif %}{% if organisation.siren %}, SIREN {{ organisation.siren }}{% endif %}, {{ organisation.fullAddress }}.</p>
+{% set tenants = lease.tenants %}
+<p><strong>{{ tenants|length > 1 ? 'Les locataires, débiteurs' : 'Le locataire, débiteur' }}</strong> : {{ lease.tenantNames }}.</p>
+
+<h3>II. Le bail garanti</h3>
+<p>{{ lease.kind.label }} n° {{ lease.reference }} portant sur {{ lease.unit.name }}{% if lease.unit.address %}, {{ lease.unit.address }}{% if lease.unit.door %}, {{ lease.unit.door }}{% endif %}, {{ lease.unit.postcode }} {{ lease.unit.city }}{% endif %}, prenant effet le {{ lease.startOn|format_date('long') }}{% if lease.endOn %} jusqu'au {{ lease.endOn|format_date('long') }}{% endif %}.</p>
+
+<h3>III. Le loyer et les conditions de sa révision, tels qu'ils figurent au contrat de location</h3>
+<table class="amounts">
+    <tr><td>Loyer mensuel hors charges{% if lease.taxCode %}, hors taxes{% endif %}</td><td class="num">{{ lease.rent|euros }}</td></tr>
+    <tr><td>Provision mensuelle sur charges</td><td class="num">{{ lease.charges|euros }}</td></tr>
+    <tr><td>Payable le</td><td class="num">{{ lease.dueDay }} de chaque mois</td></tr>
+</table>
+<p>{% if lease.indexQuarter or lease.revisionRule.value == 'none' %}{{ include('@Estate/pdf/_revision_terms.html.twig') }}{% endif %}</p>
+
+<h3>IV. L'engagement de la caution</h3>
+<p>La caution s'engage envers le bailleur à payer ce que lui {{ tenants|length > 1 ? 'doivent les locataires' : 'doit le locataire' }} au titre du bail ci-dessus en cas de défaillance de {{ tenants|length > 1 ? 'ceux-ci' : 'celui-ci' }}, dans la limite de la somme de <strong>{{ limit_words }} ({{ limit_figures }})</strong> en principal et accessoires.</p>
+<p>{% if guarantor.suretyUntil %}Le cautionnement est donné jusqu'au <strong>{{ guarantor.suretyUntil|format_date('long') }}</strong>.{% else %}Le cautionnement ne comporte aucune indication de durée.{% endif %}</p>
+<p>{% if guarantor.suretyJoint %}La caution s'engage solidairement : elle renonce aux bénéfices de discussion et de division et ne peut exiger du bailleur qu'il poursuive d'abord {{ tenants|length > 1 ? 'les locataires' : 'le locataire' }} ou qu'il divise ses poursuites entre les cautions.{% else %}La caution conserve les bénéfices de discussion et de division.{% endif %}</p>
+
+{% if lease.residential %}
+<h3>V. Reproduction de l'avant-dernier alinéa de l'article 22-1 de la loi n° 89-462 du 6 juillet 1989</h3>
+<p>« {{ paragraph4 }} »</p>
+{% endif %}
+
+<h3>{{ lease.residential ? 'VI' : 'V' }}. La mention de la caution</h3>
+<p>La caution appose elle-même, sur la page de signature, la mention suivante (code civil, art. 2297) :</p>
+<div style="border: .3mm solid #9aa0a6; padding: 3mm 4mm;">{% for sentence in statement %}<p style="margin: 1mm 0">« {{ sentence }} »</p>{% endfor %}</div>
+
+<h3>{{ lease.residential ? 'VII' : 'VI' }}. L'exemplaire du bail</h3>
+<p>Un exemplaire du contrat de location est remis à la caution avec le présent acte.</p>
+
+<p class="note">Signé électroniquement par la caution sur la page de signature jointe, la mention saisie par elle-même au cours de sa signature. Établi d'après : {{ texts }}.</p>
+{% endblock %}

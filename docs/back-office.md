@@ -81,6 +81,11 @@ answer for one item.
 | `estate_admin_signature` | `/lease/{id}/signature/{lease,inventory}` | the lease or its inventory signed electronically: its state, each signer's, the signed PDF and its evidence ([Signatures](usage-signature.md)); without omnisign it says how to turn it on |
 | `estate_admin_signature_do` | `/lease/{id}/signature/{kind}/{send,refresh,remind,cancel}` (POST, `_token` `estate_signature_<id>`) | send it, ask the provider again, remind, cancel; 404 without a gateway |
 | `estate_admin_signature_file` | `/lease/{id}/signature/{kind}/file/{document,evidence}` | the signed PDF, its evidence; 404 before completion |
+| `estate_admin_surety` | `/lease/{id}/surety` | the guarantors' deeds: the notice « Modèle à faire valider par un avocat » until the owner confirms it, art. 22-1's conditions to check, each guarantor's commitment and deed's state ([Signatures](usage-signature.md#the-guarantors-deed)) |
+| `estate_admin_surety_terms` | `/lease/{id}/surety/{party}/terms` (POST) | a guarantor's commitment saved: limit, end date, joint, address |
+| `estate_admin_surety_deed` | `/lease/{id}/surety/{party}/deed` | the deed's PDF as it would be sent |
+| `estate_admin_surety_do` | `/lease/{id}/surety/{party}/{send,refresh,remind,cancel}` (POST, `_token` `estate_surety_<party id>`) | send it to the guarantor, ask the provider again, remind, cancel; 404 without a gateway |
+| `estate_admin_surety_file` | `/lease/{id}/surety/{party}/file/{document,evidence}` | the signed deed, its evidence; 404 before completion |
 
 Links carry a CSRF token in their query (`<action>_<id>`), forms in `_token`. After an action the
 page goes back to the back-office page it came from, and only to one under `/admin`.

@@ -45,7 +45,7 @@ from what they are to the organisation, never from a role stored on the account.
   ILAT, the books.
 - [Legal rules](legal.md): every rule of French law estate codes, its source and its version,
   and what remains to confirm with a lawyer.
-- [Signatures](usage-signature.md): the lease and its inventory signed electronically through
+- [Signatures](usage-signature.md): the lease, its inventory and each guarantor's deed signed electronically through
   omnisign, followed by the provider's webhook, the signed PDF and its evidence kept.
 - [Shared ownership](usage-ownership.md): indivisions, co-owners' shares over time, shared
   invoices, calls for funds, statements, the co-owner's space, the cloud folder, and how it is

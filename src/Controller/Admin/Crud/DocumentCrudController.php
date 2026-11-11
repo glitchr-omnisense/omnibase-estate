@@ -25,7 +25,7 @@ use Symfony\Bridge\Doctrine\Form\Type\EntityType;
  */
 class DocumentCrudController extends AbstractEstateCrudController
 {
-    private const KINDS = ['lease' => 'Bail', 'inventory' => 'État des lieux', 'diagnostic' => 'Diagnostic', 'rules' => 'Règlement', 'insurance' => 'Attestation d\'assurance', 'quote' => 'Devis', 'invoice' => 'Facture', 'photo' => 'Photo', 'other' => 'Document'];
+    private const KINDS = ['lease' => 'Bail', 'inventory' => 'État des lieux', 'guarantee' => 'Acte de cautionnement', 'diagnostic' => 'Diagnostic', 'rules' => 'Règlement', 'insurance' => 'Attestation d\'assurance', 'quote' => 'Devis', 'invoice' => 'Facture', 'photo' => 'Photo', 'other' => 'Document'];
 
     public static function getEntityFqcn(): string { return Document::class; }
     public static function getPreferredIcon(): ?string { return 'fa-solid fa-file-lines'; }
