@@ -3,6 +3,12 @@
 ## [Unreleased]
 
 ### Changed
+- The guarantor's mention on omnisense/omnisign 1.2's statements: each field is a statement the guarantor types
+  (`Field::forStatement()`, `StatementMode::TYPED`), in place of a bare text field with a label. The whole mention goes
+  in one field where the provider's documented limit takes it (`Capabilities::fits()`), one field a sentence otherwise
+  (`SuretySignatures::mentions()`), which was the only layout before; a provider that cannot take a sentence typed is
+  named among what the deed is missing (`missing()`), so the deed is never sent to fail at the provider. Needs
+  omnisense/omnisign 1.2 and its providers of that version.
 - The dashboard's cards scale with the number of organisations: each figure is one query for every organisation
   together - grouped or summed in the database, scalars rather than entities -, and only the rows a card lists are
   loaded (four late rents and four of the month's, five homes, four work orders), with their lease, home and parties.

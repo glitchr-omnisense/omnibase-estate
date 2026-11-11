@@ -19,9 +19,17 @@ use Base\Estate\Signature\SuretySignatures;
 use Base\Service\Signatures;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
+use Omnisign\Docuseal\DocusealGatewayFactory;
+use Omnisign\Model\Capabilities;
 use Omnisign\Model\Envelope as SignatureRequest;
 use Omnisign\Model\FieldType;
+use Omnisign\Model\Level;
+use Omnisign\Model\StatementLimit;
+use Omnisign\Model\StatementMode;
+use Omnisign\Registry;
+use Omnisign\Yousign\YousignGatewayFactory;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpClient\MockHttpClient;
 use Twig\Environment;
 
 /** What a guarantor's deed sent to be signed asks the provider, and what the deed says. */
@@ -37,9 +45,29 @@ final class SuretySignaturesTest extends TestCase
         if (!class_exists(\Omnisign\Registry::class) || !class_exists(\Dompdf\Dompdf::class)) {
             self::markTestSkipped('omnisense/omnisign and dompdf/dompdf are needed.');
         }
+        if (!class_exists(StatementMode::class) || !class_exists(DocusealGatewayFactory::class) || !class_exists(YousignGatewayFactory::class)) {
+            self::markTestSkipped('omnisense/omnisign 1.2 (its statements), omnisign/docuseal and omnisign/yousign are needed.');
+        }
     }
 
-    private function sureties(): SuretySignatures
+    /**
+     * The signature gateways as a site configures them, nothing sent (a MockHttpClient that answers
+     * nothing): DocuSeal and Yousign as they declare their statements, and a provider whose typed
+     * field takes $narrow characters, or none at all (0).
+     */
+    private static function registry(?int $narrow = null): Registry
+    {
+        $http = new MockHttpClient([]);
+        $narrowed = null === $narrow ? [] : ['omnisign.capabilities' => new Capabilities([Level::SIMPLE], statements: 0 === $narrow ? [] : [new StatementLimit(StatementMode::TYPED, $narrow)])];
+
+        return new Registry([new DocusealGatewayFactory($http), new YousignGatewayFactory($http)], [
+            'docuseal' => ['factory' => 'docuseal', 'options' => ['url' => 'https://sign.example', 'api_key' => 'k']],
+            'yousign' => ['factory' => 'yousign', 'options' => ['api_key' => 'k', 'sandbox' => true]],
+            'narrow' => ['factory' => 'docuseal', 'options' => ['url' => 'https://sign.example', 'api_key' => 'k'] + $narrowed],
+        ]);
+    }
+
+    private function sureties(string $gateway = 'docuseal', ?Registry $registry = null): SuretySignatures
     {
         $core = $this->createStub(Signatures::class);
         $core->method('isEnabled')->willReturn(true);
@@ -59,9 +87,9 @@ final class SuretySignaturesTest extends TestCase
             return '<html><body><h1>'.$name.'</h1></body></html>';
         });
         $receipts = new Receipts($this->createStub(RentCallRepository::class), $twig);
-        $leases = new LeaseSignatures($core, $receipts, $entityManager, $this->createStub(ActivityLog::class), $this->createStub(EstateMailer::class), $twig, null, 'docuseal');
+        $leases = new LeaseSignatures($core, $receipts, $entityManager, $this->createStub(ActivityLog::class), $this->createStub(EstateMailer::class), $twig, null, $gateway);
 
-        return new SuretySignatures($core, $leases, $receipts, $entityManager, $this->createStub(ActivityLog::class), $this->createStub(EstateMailer::class), $twig);
+        return new SuretySignatures($core, $leases, $receipts, $entityManager, $this->createStub(ActivityLog::class), $this->createStub(EstateMailer::class), $twig, registry: $registry ?? self::registry());
     }
 
     /** @return array{Lease, LeaseParty} */
@@ -108,7 +136,10 @@ final class SuretySignaturesTest extends TestCase
         self::assertSame(['guarantor-7'], array_map(static fn ($s) => $s->key, $request->signers));
         self::assertSame(['deed', 'lease', 'signatures'], array_map(static fn ($d) => $d->key, $request->documents));
         self::assertSame([true, false, true], array_map(static fn ($d) => $d->signable, $request->documents), 'the lease is given to read, not to sign');
-        self::assertSame([FieldType::TEXT, FieldType::TEXT, FieldType::SIGNATURE], array_map(static fn ($f) => $f->type, $request->fields));
+        // DocuSeal states no limit: the whole mention in one field, a statement the guarantor types.
+        $mention = implode(' ', $this->sureties()->statement($guarantor));
+        self::assertSame([FieldType::TEXT, FieldType::SIGNATURE], array_map(static fn ($f) => $f->type, $request->fields));
+        self::assertSame([$mention, StatementMode::TYPED, 'Mention de la caution'], [$request->fields[0]->statement, $request->fields[0]->mode(), $request->fields[0]->label]);
         self::assertSame(['signatures'], array_values(array_unique(array_map(static fn ($f) => $f->document, $request->fields))));
 
         // A home's deed reproduces art. 22-1's paragraph and states the rent's revision; the page names what to copy.
@@ -116,8 +147,45 @@ final class SuretySignaturesTest extends TestCase
         self::assertStringStartsWith('Lorsque le cautionnement d\'obligations résultant d\'un contrat de location conclu en application du présent titre ne comporte aucune indication de durée', $deed['paragraph4']);
         self::assertStringEndsWith('au cours duquel le bailleur reçoit notification de la résiliation.', $deed['paragraph4']);
         self::assertSame('vingt-quatre mille euros', $deed['limit_words']);
-        self::assertSame($this->sureties()->statement($guarantor), array_column($this->rendered['@Estate/pdf/surety_signatures.html.twig']['mentions'], 'text'));
+        self::assertSame([$mention], array_column($this->rendered['@Estate/pdf/surety_signatures.html.twig']['mentions'], 'text'));
         self::assertTrue($lease->isResidential());
+    }
+
+    public function testTheMentionGoesInAsFewFieldsAsTheProviderTakesTypedAndNeverAcknowledged(): void
+    {
+        [, $guarantor] = self::lease();
+        $user = (new \ReflectionClass(User::class))->newInstanceWithoutConstructor();
+        $sentences = $this->sureties()->statement($guarantor);
+        $statements = fn () => array_map(static fn ($f) => [$f->statement, $f->mode()], array_values(array_filter($this->sent->fields, static fn ($f) => FieldType::TEXT === $f->type)));
+        self::assertGreaterThan(300, mb_strlen(implode(' ', $sentences)));
+        self::assertLessThan(300, max(array_map('mb_strlen', $sentences)));
+
+        // Yousign takes 32,767 characters in a typed field: the whole mention in one.
+        $this->sureties('yousign')->send($guarantor, $user);
+        self::assertSame([[implode(' ', $sentences), StatementMode::TYPED]], $statements());
+
+        // A provider whose typed field takes 300 characters: one field a sentence, each a statement typed.
+        $narrow = $this->sureties('narrow', self::registry(300));
+        self::assertSame($sentences, $narrow->mentions($guarantor));
+        $narrow->send($guarantor, $user);
+        self::assertSame([[$sentences[0], StatementMode::TYPED], [$sentences[1], StatementMode::TYPED]], $statements());
+        self::assertSame(['Mention de la caution', 'Mention de la caution (solidarité)'], array_map(static fn ($f) => $f->label, array_slice($this->sent->fields, 0, 2)));
+
+        // One whose field takes 100, or that carries no typed statement (an acknowledged one would not do, art. 2297):
+        // said among what is missing, never sent.
+        foreach ([100, 0] as $limit) {
+            $sureties = $this->sureties('narrow', self::registry($limit));
+            self::assertNull($sureties->mentions($guarantor));
+            self::assertStringContainsString('« narrow » ne prend pas une phrase de la mention', implode(' ', $sureties->missing($guarantor)));
+            self::assertFalse($sureties->canSend($guarantor));
+        }
+        $this->sent = null;
+        try {
+            $sureties->send($guarantor, $user);
+            self::fail('A deed whose mention the provider cannot take is not sent.');
+        } catch (\DomainException) {
+        }
+        self::assertNull($this->sent);
     }
 
     public function testWhatTheDeedNeedsBeforeItGoes(): void

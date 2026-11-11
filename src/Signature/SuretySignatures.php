@@ -18,11 +18,14 @@ use Base\Service\Signatures;
 use Doctrine\ORM\EntityManagerInterface;
 use Omnisign\Model\Document as SignedDocument;
 use Omnisign\Model\Envelope as SignatureRequest;
+use Omnisign\Exception\OmnisignException;
+use Omnisign\Model\Capabilities;
 use Omnisign\Model\Field;
-use Omnisign\Model\FieldType;
 use Omnisign\Model\File;
 use Omnisign\Model\Level;
 use Omnisign\Model\Signer;
+use Omnisign\Model\StatementMode;
+use Omnisign\Registry;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
@@ -57,6 +60,10 @@ use Twig\Environment;
  *   by the person's own hand may be put electronically « si les conditions de cette apposition sont
  *   de nature à garantir qu'elle ne peut être effectuée que par lui-même »: the guarantor types the
  *   mention in the provider's text fields, during their own signing session - not printed for them.
+ *   Each field is an omnisign statement the guarantor types (Field::forStatement(),
+ *   StatementMode::TYPED, never an acknowledged one): the whole mention in one field where the
+ *   provider's limit takes it (Capabilities::fits()), one field a sentence otherwise; a provider
+ *   that cannot take a sentence in one typed field is said before anything is sent (missing()).
  *
  * The guarantor alone signs: art. 22-1 asks the guarantor's signature, the text read asks none of
  * the landlord. Art. 22-1, al. 1 to 3 (no guarantee where the landlord insured the rent, save a
@@ -103,6 +110,7 @@ class SuretySignatures
         private readonly ?LoggerInterface $logger = null,
         #[Autowire('%estate.signature.surety_template%')] private readonly ?string $template = null,
         #[Autowire('%estate.signature.level%')] private readonly string $level = 'simple',
+        private readonly ?Registry $registry = null,
     ) {
     }
 
@@ -188,6 +196,9 @@ class SuretySignatures
         }
         if (null !== $lease && RevisionRule::NONE !== $lease->getRevisionRule() && (null === $lease->getIndexQuarter() || null === $lease->getIndexValue())) {
             $missing[] = 'l\'indice de référence du bail (les conditions de révision du loyer)';
+        }
+        if (null !== $guarantor->getSuretyLimit() && null !== $lease && null === $this->mentions($guarantor)) {
+            $missing[] = sprintf('un prestataire de signature où la caution tape elle-même sa mention : « %s » ne prend pas une phrase de la mention dans un champ', $this->gateway());
         }
 
         return $missing;
@@ -310,6 +321,48 @@ class SuretySignatures
         return $sentences;
     }
 
+    /**
+     * The mention as the guarantor types it, field by field: the whole of it in one field where the
+     * provider takes it, one sentence a field otherwise; null when a sentence does not fit in one
+     * typed field of the provider's (its documented limit, Capabilities::$statements). Not asked of
+     * a provider's template, which places its own fields.
+     *
+     * @return list<string>|null
+     */
+    public function mentions(LeaseParty $guarantor): ?array
+    {
+        $sentences = $this->statement($guarantor);
+        $capabilities = null === $this->template || '' === $this->template ? $this->capabilities() : null;
+        if (null === $capabilities) {
+            return $sentences;
+        }
+        $whole = implode(' ', $sentences);
+        if ($capabilities->fits($whole, StatementMode::TYPED)) {
+            return [$whole];
+        }
+        foreach ($sentences as $sentence) {
+            if (!$capabilities->fits($sentence, StatementMode::TYPED)) {
+                return null;
+            }
+        }
+
+        return $sentences;
+    }
+
+    /** What the signature gateway carries; null when it cannot be told (no registry, a gateway not configured). */
+    private function capabilities(): ?Capabilities
+    {
+        $gateway = $this->gateway();
+        if (null === $this->registry || null === $gateway || '' === $gateway) {
+            return null;
+        }
+        try {
+            return $this->registry->get($gateway)->capabilities();
+        } catch (OmnisignException) {
+            return null;
+        }
+    }
+
     /** The deed's PDF, generated from the record. */
     public function deedPdf(LeaseParty $guarantor): File
     {
@@ -361,20 +414,25 @@ class SuretySignatures
     }
 
     /**
-     * The page the guarantor signs: what it seals (the deed's SHA-256), the mention to type in each
-     * text field - one sentence a field, each within the providers' limits -, the signature box.
+     * The page the guarantor signs: what it seals (the deed's SHA-256), the mention to type - a
+     * statement the guarantor types (Field::forStatement()), in one field or one a sentence as the
+     * provider takes it (mentions()) -, the signature box.
      *
      * @return array{File, list<Field>}
      */
     private function signaturePage(LeaseParty $guarantor, File $deed, Signer $signer): array
     {
+        $mentions = $this->mentions($guarantor) ?? throw new \DomainException(sprintf('« %s » ne prend pas la mention de la caution dans un champ qu\'elle tape.', $this->gateway()));
+        $sentences = \count($this->statement($guarantor));
         $boxes = [];
         $fields = [];
         $y = self::MENTION['y'];
-        foreach ($this->statement($guarantor) as $i => $sentence) {
-            $height = 0 === $i ? self::MENTION['height'] : (int) (self::MENTION['height'] * 0.6);
-            $boxes[] = ['x' => self::MENTION['x'], 'y' => $y, 'width' => self::MENTION['width'], 'height' => $height, 'text' => $sentence];
-            $fields[] = new Field($signer->key, 'signatures', FieldType::TEXT, 1, self::MENTION['x'], $y, self::MENTION['width'], $height, label: 0 === $i ? 'Mention de la caution' : 'Mention de la caution (solidarité)');
+        foreach ($mentions as $i => $mention) {
+            // The first sentence's box, and three fifths of it for each sentence after it (the whole mention in one box: all of them).
+            $lines = 1 === \count($mentions) ? $sentences : 1;
+            $height = (0 === $i ? self::MENTION['height'] : (int) (self::MENTION['height'] * 0.6)) + (int) (self::MENTION['height'] * 0.6) * ($lines - 1);
+            $boxes[] = ['x' => self::MENTION['x'], 'y' => $y, 'width' => self::MENTION['width'], 'height' => $height, 'text' => $mention];
+            $fields[] = Field::forStatement($signer->key, 'signatures', $mention, StatementMode::TYPED, 1, self::MENTION['x'], $y, self::MENTION['width'], $height, 0 === $i ? 'Mention de la caution' : 'Mention de la caution (solidarité)');
             $y += $height + self::MENTION['gap'] + 40;
         }
         $signature = ['x' => self::SIGNATURE['x'], 'y' => $y, 'width' => self::SIGNATURE['width'], 'height' => self::SIGNATURE['height']];

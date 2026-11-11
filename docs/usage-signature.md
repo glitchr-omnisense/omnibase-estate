@@ -105,12 +105,19 @@ guarantor (`Signatures::of($guarantor)`, key `surety:<lease>:<party id>`):
 - for a home's lease, the reproduction word for word of art. 22-1's last paragraph but one
   (`SuretySignatures::PARAGRAPH_4`);
 - the mention of art. 2297 of the code civil, which the guarantor types themselves on the signature
-  page (`@Estate/pdf/surety_signatures.html.twig`): one text field (`FieldType::TEXT`) a sentence -
-  the engagement and its limit; for a joint guarantee, the benefits given up -, then their signature;
+  page (`@Estate/pdf/surety_signatures.html.twig`) - the engagement and its limit; for a joint
+  guarantee, the benefits given up -, then their signature. The mention is an omnisign statement the
+  guarantor types (`Field::forStatement()`, `StatementMode::TYPED`; never an acknowledged one, which
+  art. 2297 does not allow): the whole of it in one field where the provider's documented limit takes
+  it (`Capabilities::fits()`: Yousign 32,767 characters, DocuSign 4,000 bytes, DocuSeal none stated),
+  one field a sentence otherwise (`SuretySignatures::mentions()`). A provider that cannot take a
+  sentence in one typed field is named among what the deed is missing, before anything is sent
+  (needs omnisense/omnisign 1.2);
 - a copy of the lease in the same envelope, to read (`signable: false`).
 
 The guarantor alone signs. The deed cannot be sent without its limit, the guarantor's e-mail, and -
-for a revisable rent - the lease's reference index (`SuretySignatures::missing()`). Completed, the
+for a revisable rent - the lease's reference index, nor on a provider that cannot take the
+mention typed (`SuretySignatures::missing()`). Completed, the
 signed deed is filed as the lease's document « Acte de cautionnement de … (signé) », kind
 `guarantee`, **not** shown to the tenants; the team is e-mailed (`surety_signature`). The lease's
 page shows each guarantor's deed and its state (« Actes de cautionnement »), and a « Cautionnement »
@@ -127,7 +134,8 @@ is signed instead - it must then carry the deed's statements itself. The rules a
 ```php
 $sureties->deeds($lease);                 // each guarantor, its state, what is missing
 $sureties->send($guarantor, $user);       // the deed, the lease to read, the page with the mention
-$sureties->statement($guarantor);         // the mention the guarantor types, one sentence a field
+$sureties->statement($guarantor);         // the mention the guarantor types, sentence by sentence
+$sureties->mentions($guarantor);          // as its fields: all of it in one where the provider takes it; null: it cannot
 $sureties->deedPdf($guarantor);           // the deed as it goes
 ```
 
