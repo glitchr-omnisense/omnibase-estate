@@ -132,3 +132,13 @@ yield MenuItem::block('estate_payments', 'estate_widget.payments', 'fa-solid fa-
 ```
 
 `Figures::months($organisation, $count)` gives the rents called and received month by month.
+
+The cards read every organisation together, one query per figure for them all, whatever their
+number: sums and counts in the database (`RentCallRepository::overdueTotals()`, `monthTotals()`,
+`overdueByOrganisation()`, `WorkOrderRepository::openTotals()`, `spentBy()`,
+`ApplicationRepository::countNewByOrganisation()`, `MessageRepository::unreadByOrganisation()`,
+`PaymentRepository::totalsByMethod()`), where each home stands as scalars
+(`PortfolioFigures::homes()`, through `UnitRepository::homes()`), the months through
+`PortfolioFigures::months()`; only the rows a card lists are read as entities (four late rents,
+four of the month's, five homes, four work orders). A dashboard of 10 or 100 companies runs the
+same queries (meyers' DashboardScaleTest).

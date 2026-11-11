@@ -46,6 +46,28 @@ class MessageRepository extends ServiceEntityRepository
         return array_values($threads);
     }
 
+    /**
+     * unreadByManagement() for several organisations in one query.
+     *
+     * @param list<Organisation> $organisations
+     *
+     * @return array<int, int> by organisation id, the organisations with unread messages only
+     */
+    public function unreadByOrganisation(array $organisations): array
+    {
+        if ([] === $organisations) {
+            return [];
+        }
+        $rows = $this->createQueryBuilder('m')->join('m.lease', 'l')->join('l.unit', 'u')
+            ->select('IDENTITY(u.organisation) AS organisation', 'COUNT(m.id) AS messages')
+            ->where('u.organisation IN (:organisations)')->setParameter('organisations', $organisations)
+            ->andWhere('m.fromManagement = false AND m.readAt IS NULL')
+            ->groupBy('u.organisation')
+            ->getQuery()->getScalarResult();
+
+        return array_column(array_map(static fn (array $r) => [(int) $r['organisation'], (int) $r['messages']], $rows), 1, 0);
+    }
+
     /** Tenant messages the management has not read yet, for the back office's badge. */
     public function unreadByManagement(Organisation $organisation): int
     {

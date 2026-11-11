@@ -4,10 +4,9 @@ namespace Base\Estate\Admin\Widget;
 
 use Base\Admin\Config\Menu\MenuItem;
 use Base\Admin\Widget\PaletteDashboardWidgetTypeInterface;
-use Base\Estate\Entity\Payment;
 use Base\Estate\Enum\PaymentMethod;
+use Base\Estate\Repository\PaymentRepository;
 use Base\Estate\Service\OnlinePayments;
-use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * Money in: the latest rents received and how - transfer, card or SEPA
@@ -17,7 +16,7 @@ use Doctrine\ORM\EntityManagerInterface;
 final class PaymentsWidgetType implements PaletteDashboardWidgetTypeInterface
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly PaymentRepository $payments,
         private readonly OnlinePayments $online,
     ) {
     }
@@ -44,21 +43,19 @@ final class PaymentsWidgetType implements PaletteDashboardWidgetTypeInterface
 
     public function getTemplateVars(MenuItem $widget): array
     {
-        $since = new \DateTimeImmutable('first day of this month midnight');
-        $month = $this->entityManager->getRepository(Payment::class)->createQueryBuilder('p')
-            ->where('p.paidOn >= :since')->setParameter('since', $since, 'date_immutable')->getQuery()->getResult();
         $byMethod = [];
         foreach (PaymentMethod::cases() as $method) {
             $byMethod[$method->value] = 0;
         }
-        foreach ($month as $payment) {
-            $byMethod[$payment->getMethod()->value] += $payment->getAmount();
+        // The month's total per way, summed in the database.
+        foreach ($this->payments->totalsByMethod(new \DateTimeImmutable('first day of this month midnight')) as $method => $amount) {
+            $byMethod[$method] = ($byMethod[$method] ?? 0) + $amount;
         }
 
         return [
             'card' => 'payments',
             'compact' => false,
-            'latest' => $this->entityManager->getRepository(Payment::class)->findBy([], ['paidOn' => 'DESC', 'id' => 'DESC'], 4),
+            'latest' => $this->payments->findBy([], ['paidOn' => 'DESC', 'id' => 'DESC'], 4),
             'byMethod' => array_filter($byMethod),
             'total' => array_sum($byMethod),
             'online' => $this->online->isAvailable(),

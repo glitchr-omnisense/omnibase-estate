@@ -6,19 +6,23 @@ use Base\Estate\Entity\Lease;
 use Base\Estate\Entity\Unit;
 use Base\Estate\Enum\LeaseStatus;
 use Base\Estate\Repository\UnitRepository;
+use Base\Estate\Service\PortfolioFigures;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * Occupancy: a donut of the homes let and vacant, then each home and where it stands - vacant since
  * when, its lease ending (notice given or an end date within three months), or let and to whom.
- * The vacant and ending homes first: they are what the team acts on. A compact card.
+ * The vacant and ending homes first: they are what the team acts on. A compact card. Where every
+ * home stands is read as scalars for every organisation together (PortfolioFigures::homes()); only
+ * the five it lists are read as entities, with their leases.
  */
 final class OccupancyWidgetType extends AbstractEstateWidgetType
 {
     protected const COMPACT = true;
-    private const ENDING_WITHIN = '+3 months';
+    /** The homes the card lists; the donut counts them all. */
+    private const ROWS = 5;
 
-    public function __construct(EntityManagerInterface $entityManager, private readonly UnitRepository $units)
+    public function __construct(EntityManagerInterface $entityManager, private readonly PortfolioFigures $figures, private readonly UnitRepository $units)
     {
         parent::__construct($entityManager);
     }
@@ -31,19 +35,13 @@ final class OccupancyWidgetType extends AbstractEstateWidgetType
     protected function data(array $organisations, array $params): array
     {
         $today = new \DateTimeImmutable('today');
-        $homes = [];
-        foreach ($organisations as $organisation) {
-            foreach ($this->units->findByOrganisation($organisation) as $unit) {
-                if ('parking' !== $unit->getKind()->value) {
-                    $homes[] = $this->home($unit, $today);
-                }
-            }
-        }
+        $all = $this->figures->homes($organisations, $today);
         $order = ['vacant' => 0, 'ending' => 1, 'let' => 2];
-        usort($homes, static fn (array $a, array $b) => [$order[$a['state']], $a['unit']->getName()] <=> [$order[$b['state']], $b['unit']->getName()]);
+        usort($all, static fn (array $a, array $b) => [$order[$a['state']], $a['name']] <=> [$order[$b['state']], $b['name']]);
+        $homes = array_map(fn (Unit $unit) => $this->home($unit, $today), $this->units->findWithLeases(array_column(\array_slice($all, 0, self::ROWS), 'unit')));
 
-        $lettable = \count($homes);
-        $let = \count(array_filter($homes, static fn (array $h) => 'vacant' !== $h['state']));
+        $lettable = \count($all);
+        $let = \count(array_filter($all, static fn (array $h) => 'vacant' !== $h['state']));
         $share = $lettable > 0 ? $let / $lettable * 100 : 0.0;
 
         return [
@@ -71,7 +69,7 @@ final class OccupancyWidgetType extends AbstractEstateWidgetType
             return ['unit' => $unit, 'state' => 'vacant', 'lease' => null, 'since' => $last?->modify('+1 day'), 'until' => null];
         }
         $end = $lease->getEndOn();
-        $ending = LeaseStatus::NOTICE === $lease->getStatus() || (null !== $end && $end <= $today->modify(self::ENDING_WITHIN));
+        $ending = PortfolioFigures::isEnding(LeaseStatus::NOTICE === $lease->getStatus(), $end, $today);
 
         return ['unit' => $unit, 'state' => $ending ? 'ending' : 'let', 'lease' => $lease, 'since' => null, 'until' => $end];
     }

@@ -1,10 +1,10 @@
 {# Base\Estate\Admin\Widget\Dashboard\LateRentsWidgetType: what is late, by whom, and the way to record its payment; then the month's rents and where each stands. #}
 {% extends '@Estate/admin/widget/dashboard/_card.html.twig' %}
-{% block subtitle %}{{ 'dashboard.late.sub'|trans({count: late|length}, 'estate') }}{% endblock %}
+{% block subtitle %}{{ 'dashboard.late.sub'|trans({count: lateCount}, 'estate') }}{% endblock %}
 {% block actions %}<a class="dash-card-action" href="{{ path('admin_crud_rent_calls_index') }}" title="{{ 'dashboard.open'|trans({}, 'estate') }}"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>{% endblock %}
 {% block body %}
 <div class="es-hero"><span class="es-hero-value{{ total > 0 ? ' es-bad' }}">{{ total|euros(true) }}</span><span class="es-hero-unit">{{ 'dashboard.late.owed'|trans({}, 'estate') }}</span></div>
-{% if late is empty %}
+{% if lateCount == 0 %}
     <p class="es-muted es-note"><i class="fa-solid fa-check es-good"></i> {{ 'dashboard.late.none'|trans({}, 'estate') }}</p>
 {% else %}
 <ul class="dash-rows">

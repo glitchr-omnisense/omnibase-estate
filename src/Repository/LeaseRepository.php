@@ -34,6 +34,37 @@ class LeaseRepository extends ServiceEntityRepository
         return $query->getQuery()->getResult();
     }
 
+    /** @return list<Lease> the active leases, their home and parties with them */
+    public function findActive(): array
+    {
+        return $this->createQueryBuilder('l')->join('l.unit', 'u')->leftJoin('l.parties', 'p')->addSelect('u', 'p')
+            ->where('l.status = :active')->setParameter('active', LeaseStatus::ACTIVE)
+            ->orderBy('l.id', 'ASC')->addOrderBy('p.id', 'ASC')
+            ->getQuery()->getResult();
+    }
+
+    /**
+     * The active leases of these organisations without a valid insurance certificate on a day
+     * (none, or run out before it), their parties with them.
+     *
+     * @param list<Organisation> $organisations
+     *
+     * @return list<Lease>
+     */
+    public function findUninsured(array $organisations, \DateTimeImmutable $on): array
+    {
+        if ([] === $organisations) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('l')->join('l.unit', 'u')->leftJoin('l.parties', 'p')->addSelect('u', 'p')
+            ->where('l.status = :active')->setParameter('active', LeaseStatus::ACTIVE)
+            ->andWhere('u.organisation IN (:organisations)')->setParameter('organisations', $organisations)
+            ->andWhere('l.insuranceUntil IS NULL OR l.insuranceUntil < :on')->setParameter('on', $on, 'date_immutable')
+            ->orderBy('l.id', 'ASC')->addOrderBy('p.id', 'ASC')
+            ->getQuery()->getResult();
+    }
+
     /** @return list<Lease> the leases someone is a party of, the running ones first */
     public function findForUser(User $user): array
     {

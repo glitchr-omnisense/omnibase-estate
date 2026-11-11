@@ -5,7 +5,6 @@ namespace Base\Estate\Service;
 use Base\Entity\User;
 use Base\Estate\Entity\Lease;
 use Base\Estate\Enum\ActivityKind;
-use Base\Estate\Enum\LeaseStatus;
 use Base\Estate\Enum\RevisionRule;
 use Base\Estate\Exception\IndexUnavailableException;
 use Base\Estate\Index\OfficialIndex;
@@ -217,7 +216,7 @@ class RentRevisions
     {
         $today = new \DateTimeImmutable('today');
         $due = [];
-        foreach ($this->leases->findBy(['status' => LeaseStatus::ACTIVE]) as $lease) {
+        foreach ($this->leases->findActive() as $lease) {
             if (null === $lease->getIndexValue() || RevisionRule::NONE === $lease->getRevisionRule()) {
                 continue;
             }

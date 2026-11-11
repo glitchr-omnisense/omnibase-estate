@@ -15,11 +15,12 @@ use Base\Estate\Enum\UnitKind;
 use Base\Estate\Enum\WorkOrderStatus;
 use Doctrine\Common\Collections\ArrayCollection;
 use Base\Estate\Repository\ApplicationRepository;
+use Base\Estate\Repository\LeaseRepository;
 use Base\Estate\Repository\MessageRepository;
 use Base\Estate\Repository\RentCallRepository;
 use Base\Estate\Repository\UnitRepository;
 use Base\Estate\Repository\WorkOrderRepository;
-use Base\Estate\Service\Figures;
+use Base\Estate\Service\PortfolioFigures;
 use Base\Estate\Service\RentRevisions;
 use Base\Estate\Twig\EstateExtension;
 use Doctrine\ORM\EntityManagerInterface;
@@ -65,6 +66,7 @@ class DashboardWidgetsTest extends TestCase
         $this->twig->addFunction(new TwigFunction('path', fn (string $route, array $parameters = []) => '/'.$route.'?'.http_build_query($parameters)));
         $this->twig->addFunction(new TwigFunction('csrf_token', fn (string $id) => 'token-'.$id));
         $this->organisation = new Organisation('Meyers & Associée', 'meyers');
+        (new \ReflectionProperty($this->organisation, 'id'))->setValue($this->organisation, 1);
     }
 
     private function entityManager(array $leases = []): EntityManagerInterface
@@ -86,8 +88,14 @@ class DashboardWidgetsTest extends TestCase
         return $this->twig->render($type->getTemplate(), $type->getTemplateVars($item) + ['widget' => $item]);
     }
 
-    /** Five homes and a parking space: one vacant since July, one never let, one with notice given, two let. */
-    private function units(): UnitRepository
+    /**
+     * Five homes and a parking space: one vacant since July, one never let, one with notice
+     * given, two let. Where each stands, as PortfolioFigures reads it (the parking space is
+     * no home: it does not read it), and the homes the card lists, as the repository loads them.
+     *
+     * @return array{PortfolioFigures, UnitRepository}
+     */
+    private function homes(): array
     {
         $home = function (string $name, ?Lease $current, array $leases = [], string $kind = 'apartment'): Unit {
             $unit = $this->createStub(Unit::class);
@@ -107,35 +115,54 @@ class DashboardWidgetsTest extends TestCase
 
             return $lease;
         };
-        $units = $this->createStub(UnitRepository::class);
-        $units->method('findByOrganisation')->willReturn([
+        $units = [
             $home('T2 Esplanade', $lease('Paul Klein')),
             $home('Appartement Orangerie', null, [$lease('Anne Roth', LeaseStatus::ENDED, '2026-06-30')]),
             $home('Studio Krutenau', $lease('Léa Muller', LeaseStatus::NOTICE)),
             $home('Maison de la Robertsau', $lease('Thomas et Julie Weber')),
             $home('Studio Neudorf', null),
-            $home('Parking Neudorf', null, [], 'parking'),
-        ]);
+        ];
+        $states = ['let', 'vacant', 'ending', 'let', 'vacant'];
+        $figures = $this->createStub(PortfolioFigures::class);
+        $figures->method('homes')->willReturn(array_map(static fn (Unit $u, string $state) => ['unit' => $u->getId(), 'name' => $u->getName(), 'state' => $state, 'monthly' => 'vacant' === $state ? 0 : 100000], $units, $states));
+        $repository = $this->createStub(UnitRepository::class);
+        $repository->method('findWithLeases')->willReturnCallback(static function (array $ids) use ($units) {
+            $byId = [];
+            foreach ($units as $unit) {
+                $byId[$unit->getId()] = $unit;
+            }
 
-        return $units;
+            return array_map(static fn (int $id) => $byId[$id], $ids);
+        });
+
+        return [$figures, $repository];
     }
 
-    private function figures(): Figures
+    private function figures(): PortfolioFigures
     {
-        $vacant = $this->createStub(Unit::class);
-        $vacant->method('getName')->willReturn('Appartement Orangerie');
-        $figures = $this->createStub(Figures::class);
-        $figures->method('of')->willReturn(['let' => 3, 'lettable' => 5, 'vacant' => [$vacant, $vacant]]);
-        $figures->method('months')->willReturnCallback(function (Organisation $o, int $count) {
+        $figures = $this->createStub(PortfolioFigures::class);
+        $figures->method('months')->willReturnCallback(function (array $organisations, int $count) {
             $months = [];
             for ($i = $count - 1; $i >= 0; --$i) {
-                $months[] = ['month' => (new \DateTimeImmutable('first day of this month'))->modify("-$i months"), 'called' => 345000, 'received' => 0 === $i ? 101000 : 345000];
+                $months[] = ['month' => (new \DateTimeImmutable('first day of this month'))->modify("-$i months"), 'called' => 345000, 'received' => 0 === $i ? 101000 : 345000, 'count' => 3];
             }
 
             return $months;
         });
 
         return $figures;
+    }
+
+    /** @param array{count: int, total: int} $late @param array<string, array{called: int, received: int, count: int}> $months */
+    private function calls(array $late, array $overdue = [], array $months = [], array $monthCalls = []): RentCallRepository
+    {
+        $calls = $this->createStub(RentCallRepository::class);
+        $calls->method('overdueTotals')->willReturn($late);
+        $calls->method('findOverdueFirst')->willReturn($overdue);
+        $calls->method('monthTotals')->willReturnCallback(static fn (array $o, \DateTimeImmutable $from) => array_intersect_key($months, [$from->format('Y-m') => true]));
+        $calls->method('findInMonthNotOverdue')->willReturn($monthCalls);
+
+        return $calls;
     }
 
     private function lateCall(): RentCall
@@ -158,7 +185,8 @@ class DashboardWidgetsTest extends TestCase
 
     public function testOccupancyACompactDonut(): void
     {
-        $html = $this->render(new Dashboard\OccupancyWidgetType($this->entityManager(), $this->units()));
+        [$figures, $units] = $this->homes();
+        $html = $this->render(new Dashboard\OccupancyWidgetType($this->entityManager(), $figures, $units));
 
         self::assertStringContainsString('dash-card--compact', $html, 'two to a row on a phone');
         self::assertStringContainsString('<h2 class="dash-card-title">Occupation</h2>', $html, 'the title above the card, from the admin domain');
@@ -182,13 +210,16 @@ class DashboardWidgetsTest extends TestCase
 
     public function testSummaryOneBandOfTheFiguresReadFirst(): void
     {
-        $figures = $this->createStub(Figures::class);
-        $figures->method('of')->willReturn(['let' => 4, 'lettable' => 6, 'monthly' => 345000, 'lateTotal' => 0, 'late' => [], 'openWorkOrders' => [1, 2, 3], 'worksSpent' => 235000]);
+        $figures = $this->createStub(PortfolioFigures::class);
+        $figures->method('homes')->willReturn(array_map(static fn (int $i) => ['unit' => $i, 'name' => 'Logement '.$i, 'state' => $i <= 4 ? 'let' : 'vacant', 'monthly' => $i <= 3 ? 100000 : ($i <= 4 ? 45000 : 0)], range(1, 6)));
         $figures->method('months')->willReturn([
-            ['month' => new \DateTimeImmutable('first day of last month'), 'called' => 345000, 'received' => 345000],
-            ['month' => new \DateTimeImmutable('first day of this month'), 'called' => 345000, 'received' => 101000],
+            ['month' => new \DateTimeImmutable('first day of last month'), 'called' => 345000, 'received' => 345000, 'count' => 3],
+            ['month' => new \DateTimeImmutable('first day of this month'), 'called' => 345000, 'received' => 101000, 'count' => 3],
         ]);
-        $html = $this->render(new Dashboard\SummaryWidgetType($this->entityManager(), $figures));
+        $works = $this->createStub(WorkOrderRepository::class);
+        $works->method('openTotals')->willReturn(['count' => 3, 'quoted' => 0]);
+        $works->method('spentBy')->willReturn(235000);
+        $html = $this->render(new Dashboard\SummaryWidgetType($this->entityManager(), $figures, $this->calls(['count' => 0, 'total' => 0]), $works));
 
         self::assertSame(5, preg_match_all('/class="es-kpi( is-bad)?"/', $html), 'occupancy, the month, late, the rent roll, the works');
         self::assertStringContainsString('<h2 class="dash-card-title">En bref</h2>', $html);
@@ -197,6 +228,7 @@ class DashboardWidgetsTest extends TestCase
         self::assertMatchesRegularExpression('/reçus sur 3\s450\s€ appelés \(29 %\)/u', $html, 'the current month, its rents called');
         self::assertStringContainsString('width: 29%', $html);
         self::assertStringContainsString('tout est à jour', $html);
+        self::assertMatchesRegularExpression('/3\s450\s€/u', $html, 'the rent roll of the let homes');
         self::assertMatchesRegularExpression('/2\s350\s€ dépensés en \d{4}/u', $html);
     }
 
@@ -216,18 +248,14 @@ class DashboardWidgetsTest extends TestCase
 
     public function testLateRentsWithTheirTenantAndAmount(): void
     {
-        $calls = $this->createStub(RentCallRepository::class);
-        $calls->method('findOverdue')->willReturn([$this->lateCall()]);
-        $html = $this->render(new Dashboard\LateRentsWidgetType($this->entityManager(), $calls));
+        $html = $this->render(new Dashboard\LateRentsWidgetType($this->entityManager(), $this->calls(['count' => 1, 'total' => 101000], [$this->lateCall()])));
 
         self::assertStringContainsString('dash-card--compact', $html);
         self::assertStringContainsString('Léa Muller', $html);
         self::assertMatchesRegularExpression('/1\s010\s€/u', $html);
         self::assertStringContainsString('1 loyer', $html);
 
-        $none = $this->createStub(RentCallRepository::class);
-        $none->method('findOverdue')->willReturn([]);
-        $quiet = $this->render(new Dashboard\LateRentsWidgetType($this->entityManager(), $none));
+        $quiet = $this->render(new Dashboard\LateRentsWidgetType($this->entityManager(), $this->calls(['count' => 0, 'total' => 0])));
         self::assertStringContainsString('Tous les loyers échus sont réglés.', $quiet);
         self::assertStringContainsString('tout est à jour', $quiet, 'not « aucun loyer » beside « 0 € dus »');
         self::assertStringContainsString('Aucun loyer appelé en', $quiet);
@@ -253,11 +281,11 @@ class DashboardWidgetsTest extends TestCase
 
             return $call;
         };
-        $calls = $this->createStub(RentCallRepository::class);
-        $calls->method('findOverdue')->willReturn([]);
-        $calls->method('findForOrganisation')->willReturn([
-            $call('Paul Klein', 80000, 80000, '2026-11-01', '2026-10-30'),
+        // The repository's order: what is still due first (RentCallRepository::findInMonthNotOverdue()).
+        $month = (new \DateTimeImmutable('first day of this month'))->format('Y-m');
+        $calls = $this->calls(['count' => 0, 'total' => 0], [], [$month => ['called' => 181000, 'received' => 80000, 'count' => 2]], [
             $call('Léa Muller', 101000, 0, '2026-11-05'),
+            $call('Paul Klein', 80000, 80000, '2026-11-01', '2026-10-30'),
         ]);
         $html = $this->render(new Dashboard\LateRentsWidgetType($this->entityManager(), $calls));
 
@@ -281,8 +309,9 @@ class DashboardWidgetsTest extends TestCase
         $order->method('getStatus')->willReturn(WorkOrderStatus::SCHEDULED);
         $order->method('getContractor')->willReturn(null);
         $works = $this->createStub(WorkOrderRepository::class);
-        $works->method('findOpen')->willReturn([$order]);
-        $works->method('spent')->willReturn(235000);
+        $works->method('findOpenFirst')->willReturn([$order]);
+        $works->method('openTotals')->willReturn(['count' => 1, 'quoted' => 0]);
+        $works->method('spentBy')->willReturn(235000);
         $html = $this->render(new Dashboard\WorksWidgetType($this->entityManager(), $works));
 
         self::assertStringContainsString('Prise du séjour qui chauffe', $html);
@@ -293,14 +322,16 @@ class DashboardWidgetsTest extends TestCase
     public function testWhatWaitsAsRowsWithTheirAction(): void
     {
         $applications = $this->createStub(ApplicationRepository::class);
-        $applications->method('countNew')->willReturn(2);
+        $applications->method('countNewByOrganisation')->willReturn([1 => 2]);
         $messages = $this->createStub(MessageRepository::class);
-        $messages->method('unreadByManagement')->willReturn(1);
+        $messages->method('unreadByOrganisation')->willReturn([1 => 1]);
         $calls = $this->createStub(RentCallRepository::class);
-        $calls->method('findOverdue')->willReturn([$this->lateCall()]);
+        $calls->method('overdueByOrganisation')->willReturn([1 => ['count' => 1, 'first' => 20]]);
+        $leases = $this->createStub(LeaseRepository::class);
+        $leases->method('findUninsured')->willReturn([]);
         $revisions = $this->createStub(RentRevisions::class);
         $revisions->method('due')->willReturn([]);
-        $html = $this->render(new Dashboard\TodoWidgetType($this->entityManager(), $revisions, $messages, $applications, $calls));
+        $html = $this->render(new Dashboard\TodoWidgetType($this->entityManager(), $revisions, $messages, $applications, $calls, $leases));
 
         self::assertStringContainsString('Appeler les loyers de', $html, 'the month\'s rents, always first');
         self::assertStringContainsString('2 candidatures à étudier', $html);

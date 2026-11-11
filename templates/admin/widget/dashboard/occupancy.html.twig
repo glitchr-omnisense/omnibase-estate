@@ -33,6 +33,6 @@
     </a></li>
     {% endfor %}
 </ul>
-{% if homes|length > 5 %}<a class="es-more" href="{{ path('admin_crud_units_index') }}">{{ 'dashboard.occupancy.more'|trans({count: homes|length - 5}, 'estate') }}</a>{% endif %}
+{% if lettable > 5 %}<a class="es-more" href="{{ path('admin_crud_units_index') }}">{{ 'dashboard.occupancy.more'|trans({count: lettable - 5}, 'estate') }}</a>{% endif %}
 {% endif %}
 {% endblock %}

@@ -5,7 +5,10 @@ namespace Base\Estate\Admin\Widget\Dashboard;
 use Base\Estate\Repository\WorkOrderRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
-/** Works: the interventions in progress, their status and quote, and what the year's works cost. A compact card. */
+/**
+ * Works: the interventions in progress, their status and quote, and what the year's works cost. A
+ * compact card: the first four orders listed, the counts and sums of them all read in the database.
+ */
 final class WorksWidgetType extends AbstractEstateWidgetType
 {
     protected const COMPACT = true;
@@ -23,13 +26,14 @@ final class WorksWidgetType extends AbstractEstateWidgetType
     protected function data(array $organisations, array $params): array
     {
         $today = new \DateTimeImmutable('today');
-        $open = [];
-        $spent = 0;
-        foreach ($organisations as $organisation) {
-            $open = [...$open, ...$this->workOrders->findOpen($organisation)];
-            $spent += $this->workOrders->spent($organisation, $today->setDate((int) $today->format('Y'), 1, 1), $today->setTime(23, 59, 59));
-        }
+        $open = $this->workOrders->openTotals($organisations);
 
-        return ['open' => $open, 'spent' => $spent, 'year' => $today->format('Y'), 'quoted' => array_sum(array_map(static fn ($w) => $w->getQuoteAmount() ?? 0, $open))];
+        return [
+            'open' => $this->workOrders->findOpenFirst($organisations, 4),
+            'openCount' => $open['count'],
+            'spent' => $this->workOrders->spentBy($organisations, $today->setDate((int) $today->format('Y'), 1, 1), $today->setTime(23, 59, 59)),
+            'year' => $today->format('Y'),
+            'quoted' => $open['quoted'],
+        ];
     }
 }

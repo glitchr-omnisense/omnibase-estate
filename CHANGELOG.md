@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Changed
+- The dashboard's cards scale with the number of organisations: each figure is one query for every organisation
+  together - grouped or summed in the database, scalars rather than entities -, and only the rows a card lists are
+  loaded (four late rents and four of the month's, five homes, four work orders), with their lease, home and parties.
+  About 23 queries per organisation before (2,386 for 100 companies of meyers' DashboardScaleTest), the same 100 for 10
+  and for 100 now; what the cards show is unchanged. `Service\PortfolioFigures` (`homes()`, `months()`), repository
+  totals (`RentCallRepository::overdueTotals()`, `findOverdueFirst()`, `overdueByOrganisation()`, `monthTotals()`,
+  `findInMonthNotOverdue()`; `UnitRepository::homes()`, `findWithLeases()`; `WorkOrderRepository::openTotals()`,
+  `findOpenFirst()`, `spentBy()`; `ApplicationRepository::countNewByOrganisation()`;
+  `MessageRepository::unreadByOrganisation()`; `LeaseRepository::findActive()`, `findUninsured()`), and
+  `PaymentRepository` (`totalsByMethod()`). `RentRevisions::due()` loads the active leases with their home and parties.
+  The late, works and occupancy templates read the counts (`lateCount`, `openCount`, `lettable`) instead of the length
+  of a full list. No schema change.
+
 ### Added
 - The guarantor's deed (acte de cautionnement) signed through omnisign (Plan 0, chantier I): `Signature\SuretySignatures`
   generates one deed per guarantor (`@Estate/pdf/surety.html.twig`: the parties, the lease, the rent and its revision terms
