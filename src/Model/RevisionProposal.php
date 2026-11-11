@@ -22,6 +22,13 @@ final readonly class RevisionProposal
     public const MANUAL = 'manual';
     /** The lease has no reference index: nothing to propose. */
     public const NO_REFERENCE = 'no_reference';
+    /** The lease has no revision clause. */
+    public const NONE = 'none';
+
+    /** A commercial lease's triennial revision (Code de commerce, art. L145-38): the team types the quarter, estate gives the ceiling. */
+    public const NOTE_TRIENNIAL = 'triennial';
+    /** A change of several years across the ILC's capped quarters (loi n° 2022-1158, art. 14): computed by the team. */
+    public const NOTE_CAP_SPAN = 'cap_span';
 
     public function __construct(
         public Lease $lease,
@@ -40,6 +47,8 @@ final readonly class RevisionProposal
         public int $waived = 0,
         /** The cap applied (0.035), when the law capped this change and it reached it. */
         public ?float $capped = null,
+        /** Why it is left to the team, beyond the status (NOTE_*). */
+        public ?string $note = null,
     ) {
     }
 

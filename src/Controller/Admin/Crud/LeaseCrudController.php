@@ -6,10 +6,14 @@ use Base\Admin\Config\Action;
 use Base\Admin\Config\Actions;
 use Base\Estate\Drive\LeaseFolders;
 use Base\Estate\Entity\Lease;
+use Base\Estate\Enum\LeaseKind;
 use Base\Estate\Enum\LeaseStatus;
 use Base\Estate\Enum\PaymentMethod;
+use Base\Estate\Enum\RevisionRule;
+use Base\Estate\Model\LeaseRules;
 use Base\Estate\Signature\LeaseSignatures;
 use Base\Field\AssociationField;
+use Base\Field\BooleanField;
 use Base\Field\DateField;
 use Base\Field\IntegerField;
 use Base\Field\TextareaField;
@@ -70,6 +74,7 @@ class LeaseCrudController extends AbstractEstateCrudController
         yield AssociationField::new('unit', 'Bien')->setFormType(\Symfony\Bridge\Doctrine\Form\Type\EntityType::class)->setFormTypeOptions(['class' => \Base\Estate\Entity\Unit::class])->setColumns(5);
         yield TextField::new('tenantNames', 'Locataires')->onlyOnIndex();
         yield $this->enum('status', 'État', LeaseStatus::class, fn (LeaseStatus $s) => self::STATUSES[$s->value])->setColumns(4);
+        yield $this->enum('kind', 'Type de bail', LeaseKind::class, fn (LeaseKind $k) => $k->label())->setColumns(4)->hideOnIndex();
         yield DateField::new('startOn', 'Début')->setColumns(3);
         yield DateField::new('endOn', 'Fin')->setRequired(false)->setColumns(3)->hideOnIndex();
         yield DateField::new('noticeOn', 'Congé reçu le')->setRequired(false)->setColumns(3)->hideOnIndex();
@@ -79,10 +84,19 @@ class LeaseCrudController extends AbstractEstateCrudController
         yield $this->euros('deposit', 'Dépôt de garantie')->setColumns(3)->hideOnIndex();
         yield IntegerField::new('dueDay', 'Jour d\'échéance')->setColumns(3)->hideOnIndex();
         yield $this->enum('paymentMethod', 'Paiement', PaymentMethod::class, fn (PaymentMethod $m) => self::METHODS[$m->value])->setColumns(3)->hideOnIndex();
-        yield TextField::new('indexQuarter', 'IRL de référence (trimestre)')->setRequired(false)->setColumns(3)->hideOnIndex()->setHelp('« T2 2025 » : celui du bail, ou de la dernière révision.');
-        yield TextField::new('indexValue', 'IRL de référence (valeur)')->setRequired(false)->setColumns(3)->hideOnIndex()->setHelp('La valeur publiée par l\'INSEE pour ce trimestre.');
+        yield TextField::new('indexName', 'Indice')->setColumns(3)->hideOnIndex()
+            ->setFormType(\Symfony\Component\Form\Extension\Core\Type\ChoiceType::class)
+            ->setFormTypeOptions(['choices' => ['IRL (habitation)' => 'IRL', 'ILC (loyers commerciaux)' => 'ILC', 'ILAT (activités tertiaires)' => 'ILAT']])
+            ->setHelp('IRL pour un logement ; ILC ou ILAT, au choix du bail, pour un bail commercial ou professionnel.');
+        yield $this->enum('revisionRule', 'Révision du loyer', RevisionRule::class, fn (RevisionRule $r) => $r->label())->setColumns(5)->hideOnIndex();
+        yield BooleanField::new('smallBusiness', 'Locataire PME')->setColumns(4)->hideOnIndex()->setHelp('Petite ou moyenne entreprise (annexe I du règlement (UE) n° 651/2014) : la variation de l\'ILC était plafonnée à 3,5 % du T2 2022 au T1 2024 (loi n° 2022-1158, art. 14).');
+        yield TextField::new('indexQuarter', 'Indice de référence (trimestre)')->setRequired(false)->setColumns(3)->hideOnIndex()->setHelp('« T2 2025 » : celui du bail, ou de la dernière révision.');
+        yield TextField::new('indexValue', 'Indice de référence (valeur)')->setRequired(false)->setColumns(3)->hideOnIndex()->setHelp('La valeur publiée par l\'INSEE pour ce trimestre.');
         yield DateField::new('revisedOn', 'Dernière révision')->setRequired(false)->setColumns(3)->hideOnIndex();
         yield TextareaField::new('notes', 'Notes')->setRequired(false)->setColumns(12)->hideOnIndex();
+        // What the law asks to check on this lease (Model\LeaseRules), only when there is something.
+        yield TextField::new('groupId', 'À vérifier')->onlyOnDetail()
+            ->formatValue(fn ($v, ?Lease $lease) => null === $lease ? '' : (implode(' ', LeaseRules::warnings($lease)) ?: 'Rien à signaler'));
         if (null !== $this->signatures) {
             // Where its electronic signature stands: sent, signed, refused, expired.
             yield TextField::new('id', 'Signature électronique')->onlyOnDetail()

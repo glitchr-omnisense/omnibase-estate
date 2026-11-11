@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Added
+- Commercial and professional leases (Plan 0, chantier I): `Lease::$kind` (`Enum\LeaseKind`: residential, the default,
+  commercial, professional), the index it follows (`indexName`: IRL, ILC or ILAT), its revision rule
+  (`Enum\RevisionRule`: yearly, indexation, triennial, none) and whether its tenant is a small business. `RentRevisions::propose()`
+  reads the lease's index from INSEE; an indexation clause is proposed yearly with no year lost, a triennial revision
+  (Code de commerce, art. L145-38) gives its date and the ceiling on the quarter the team chooses. `Model\IndexCaps` caps
+  the ILC of a small business at 3.5 % for T2 2022 to T1 2024 (loi n° 2022-1158, art. 14) and leaves a change across that
+  period to the team. `Model\LeaseRules::warnings()` on the lease's page: a commercial lease's deposit above a quarter's rent
+  (art. L145-40). The generated lease, the revision page and its e-mails follow the lease's kind and index.
+  `docs/legal.md` lists every rule with its source. Needs a migration (four columns on `estate_lease`, defaults keeping every
+  lease as it was). tests/Service/CommercialRevisionsTest on INSEE's ILC and ILAT recorded on 2026-11-11.
+
 ### Fixed
 - The back office's screens write through omnibase/admin's hooks on the persistence the site chose: Lease, LeaseParty,
   Mandate, MandateExpense, Mandator, Ownership, OwnershipCall, OwnershipShare and SaleMandate override `persistRecord()`,

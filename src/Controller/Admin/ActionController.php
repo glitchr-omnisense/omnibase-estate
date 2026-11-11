@@ -233,9 +233,9 @@ class ActionController extends AbstractController
                 throw $this->createAccessDeniedException();
             }
             if (null === $lease->getIndexValue()) {
-                $error = 'Renseignez d\'abord l\'indice de référence du bail (trimestre et valeur de l\'IRL à la signature ou à la dernière révision).';
+                $error = 'Renseignez d\'abord l\'indice de référence du bail (trimestre et valeur de l\'indice à la signature ou à la dernière révision).';
             } elseif (!preg_match('/^T[1-4] \d{4}$/', strtoupper(trim($values['quarter']))) || (float) str_replace(',', '.', $values['index']) <= 0 || (null !== $fromIndex && (float) str_replace(',', '.', $fromIndex) <= 0)) {
-                $error = 'Indiquez le trimestre (« T2 2025 ») et la valeur de l\'IRL publiée par l\'INSEE.';
+                $error = sprintf('Indiquez le trimestre (« T2 2025 ») et la valeur de l\'%s publiée par l\'INSEE.', $lease->getIndexName());
             } else {
                 $quarter = strtoupper(trim($values['quarter']));
                 $rent = $revisions->rentAt($lease, $values['index'], $quarter, $fromIndex);

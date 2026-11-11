@@ -2,17 +2,23 @@
 
 namespace Base\Estate\Entity;
 
+use Base\Estate\Enum\LeaseKind;
 use Base\Estate\Enum\LeaseStatus;
 use Base\Estate\Enum\PartyRole;
 use Base\Estate\Enum\PaymentMethod;
+use Base\Estate\Enum\RevisionRule;
 use Base\Estate\Repository\LeaseRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 /**
  * A lease of a unit: who lives there (LeaseParty), from when, for how much,
  * on which day the rent is due. Its rent calls are made each month from it.
+ * A home's lease (the default) or a commercial or professional one (kind):
+ * its index (IRL, ILC, ILAT) and its revision rule follow (RevisionRule).
  */
 #[ORM\Entity(repositoryClass: LeaseRepository::class)]
 #[ORM\Table(name: 'estate_lease')]
@@ -78,6 +84,25 @@ class Lease
     /** When the rent was last revised. */
     #[ORM\Column(type: 'date_immutable', nullable: true)]
     private ?\DateTimeImmutable $revisedOn = null;
+
+    /** A home's lease, or a commercial or professional one. */
+    #[ORM\Column(length: 16, enumType: LeaseKind::class, options: ['default' => 'residential'])]
+    private LeaseKind $kind = LeaseKind::RESIDENTIAL;
+
+    /** The index the rent follows, as INSEE names it: IRL for a home, ILC or ILAT, chosen on the lease, otherwise. */
+    #[ORM\Column(length: 4, options: ['default' => 'IRL'])]
+    private string $indexName = 'IRL';
+
+    #[ORM\Column(length: 16, enumType: RevisionRule::class, options: ['default' => 'yearly'])]
+    private RevisionRule $revisionRule = RevisionRule::YEARLY;
+
+    /**
+     * The tenant is a small or medium-sized business (the definition of annex I to regulation
+     * (EU) n° 651/2014): the ILC's yearly change was capped for it (loi n° 2022-1158, art. 14,
+     * Model\IndexCaps). Declared by the team; estate does not check it.
+     */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $smallBusiness = false;
 
     /**
      * A flatshare's common folder in the site's cloud (omnibase/drive: Colocations/<home>,
@@ -146,6 +171,28 @@ class Lease
     public function setIndexValue(string|float|null $indexValue): self { $this->indexValue = null === $indexValue || '' === $indexValue ? null : number_format((float) str_replace(',', '.', (string) $indexValue), 2, '.', ''); return $this; }
     public function getRevisedOn(): ?\DateTimeImmutable { return $this->revisedOn; }
     public function setRevisedOn(?\DateTimeImmutable $revisedOn): self { $this->revisedOn = $revisedOn; return $this; }
+    public function getKind(): LeaseKind { return $this->kind; }
+    public function setKind(LeaseKind $kind): self { $this->kind = $kind; return $this; }
+    public function isResidential(): bool { return LeaseKind::RESIDENTIAL === $this->kind; }
+    public function getIndexName(): string { return $this->indexName; }
+    public function setIndexName(?string $indexName): self { $this->indexName = strtoupper(trim((string) $indexName)) ?: 'IRL'; return $this; }
+    public function getRevisionRule(): RevisionRule { return $this->revisionRule; }
+    public function setRevisionRule(RevisionRule $revisionRule): self { $this->revisionRule = $revisionRule; return $this; }
+    public function isSmallBusiness(): bool { return $this->smallBusiness; }
+    public function setSmallBusiness(?bool $smallBusiness): self { $this->smallBusiness = (bool) $smallBusiness; return $this; }
+
+    /** The index and the revision rule its kind allows: a home on the IRL, a commercial or professional lease on the ILC or the ILAT. */
+    #[Assert\Callback]
+    public function validateTerms(ExecutionContextInterface $context): void
+    {
+        if (!\in_array($this->indexName, $this->kind->indices(), true)) {
+            $context->buildViolation(sprintf('Un %s suit %s.', mb_strtolower($this->kind->label()), implode(' ou ', $this->kind->indices())))->atPath('indexName')->addViolation();
+        }
+        if (!\in_array($this->revisionRule, $this->kind->rules(), true)) {
+            $context->buildViolation(sprintf('« %s » ne vaut pas pour un %s.', $this->revisionRule->label(), mb_strtolower($this->kind->label())))->atPath('revisionRule')->addViolation();
+        }
+    }
+
     public function getInsuranceUntil(): ?\DateTimeImmutable { return $this->insuranceUntil; }
     public function setInsuranceUntil(?\DateTimeImmutable $insuranceUntil): self { $this->insuranceUntil = $insuranceUntil; return $this; }
     public function getNotes(): ?string { return $this->notes; }

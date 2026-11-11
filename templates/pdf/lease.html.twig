@@ -1,7 +1,7 @@
 {% extends '@Estate/pdf/_document.html.twig' %}
 {# The lease's particular conditions, generated from its record when the team has not uploaded its own lease (a Document « Bail » of the lease): what is signed through omnisign (Signature\LeaseSignatures), with the signature page. #}
 {% set title = 'Bail ' ~ lease.reference ~ ' — ' ~ lease.unit.name %}
-{% block recipient %}<strong>Bail d'habitation</strong><br>{{ lease.reference }}{% endblock %}
+{% block recipient %}<strong>{{ lease.kind.label }}</strong><br>{{ lease.reference }}{% endblock %}
 {% block document %}
 <h1>Contrat de location</h1>
 <div class="ref">Bail {{ lease.reference }} · {{ lease.unit.name }} · conditions particulières</div>
@@ -14,20 +14,20 @@
 <p><strong>{{ occupants|length > 1 ? 'Les locataires' : 'Le locataire' }}</strong> : {{ occupants|join(', ') }}{% if occupants|length > 1 %}, tenus solidairement{% endif %}.</p>
 {% if guarantors|length %}<p><strong>{{ guarantors|length > 1 ? 'Les garants' : 'Le garant' }}</strong> : {{ guarantors|join(', ') }} — l'engagement de caution fait l'objet d'un acte distinct.</p>{% endif %}
 
-<h3>II. Le logement</h3>
-<p>{{ lease.unit.name }}{% if lease.unit.address %}, {{ lease.unit.address }}{% if lease.unit.door %}, {{ lease.unit.door }}{% endif %}, {{ lease.unit.postcode }} {{ lease.unit.city }}{% endif %}{% if lease.unit.rooms %} — {{ lease.unit.rooms }} pièce(s) principale(s){% endif %}{% if lease.unit.livingArea %}, {{ lease.unit.livingArea|number_format(2, ',', ' ') }} m² habitables{% endif %}. Usage d'habitation principale.</p>
+<h3>II. {{ lease.residential ? 'Le logement' : 'Les locaux' }}</h3>
+<p>{{ lease.unit.name }}{% if lease.unit.address %}, {{ lease.unit.address }}{% if lease.unit.door %}, {{ lease.unit.door }}{% endif %}, {{ lease.unit.postcode }} {{ lease.unit.city }}{% endif %}{% if lease.unit.rooms %} — {{ lease.unit.rooms }} pièce(s) principale(s){% endif %}{% if lease.unit.livingArea %}, {{ lease.unit.livingArea|number_format(2, ',', ' ') }} m² habitables{% endif %}. {{ {residential: 'Usage d\'habitation principale.', commercial: 'Usage commercial.', professional: 'Usage professionnel.'}[lease.kind.value] }}</p>
 
 <h3>III. Prise d'effet et durée</h3>
-<p>Le bail prend effet le <strong>{{ lease.startOn|format_date('long') }}</strong>{% if lease.endOn %} jusqu'au {{ lease.endOn|format_date('long') }}{% else %}, pour la durée prévue par la loi du 6 juillet 1989{% endif %}.</p>
+<p>Le bail prend effet le <strong>{{ lease.startOn|format_date('long') }}</strong>{% if lease.endOn %} jusqu'au {{ lease.endOn|format_date('long') }}{% elseif lease.residential %}, pour la durée prévue par la loi du 6 juillet 1989{% else %}, pour la durée convenue aux conditions générales{% endif %}.</p>
 
 <h3>IV. Conditions financières</h3>
 <table class="amounts">
-    <tr><td>Loyer mensuel hors charges</td><td class="num">{{ lease.rent|euros }}</td></tr>
+    <tr><td>Loyer mensuel hors charges{% if not lease.residential %}, hors taxes{% endif %}</td><td class="num">{{ lease.rent|euros }}</td></tr>
     <tr><td>Provision mensuelle sur charges</td><td class="num">{{ lease.charges|euros }}</td></tr>
     <tr class="total"><td>Total mensuel</td><td class="num">{{ lease.monthly|euros }}</td></tr>
     <tr><td>Dépôt de garantie</td><td class="num">{{ lease.deposit|euros }}</td></tr>
 </table>
-<p>Payable le {{ lease.dueDay }} de chaque mois. {% if lease.indexQuarter %}Le loyer est révisé chaque année à la date anniversaire du bail selon l'indice de référence des loyers (IRL) publié par l'INSEE ; indice de référence : IRL du {{ lease.indexQuarter }}{% if lease.indexValue %} ({{ lease.indexValue|number_format(2, ',', ' ') }}){% endif %}.{% endif %}</p>
+<p>Payable le {{ lease.dueDay }} de chaque mois. {% if lease.indexQuarter %}{{ include('@Estate/pdf/_revision_terms.html.twig') }}{% endif %}</p>
 
 {% if lease.notes %}<h3>V. Autres conditions</h3><p>{{ lease.notes|nl2br }}</p>{% endif %}
 

@@ -1,0 +1,12 @@
+{# The rent's revision terms as the lease states them: printed on the generated lease and, word for word the same, on the guarantor's deed (loi du 6 juillet 1989, art. 22-1: « le montant du loyer et les conditions de sa révision tels qu'ils figurent au contrat de location »). #}
+{%- set names = {IRL: 'indice de référence des loyers (IRL)', ILC: 'indice des loyers commerciaux (ILC)', ILAT: 'indice des loyers des activités tertiaires (ILAT)'} -%}
+{%- set reference = lease.indexName ~ ' du ' ~ lease.indexQuarter ~ (lease.indexValue ? ' (' ~ lease.indexValue|number_format(2, ',', ' ') ~ ')' : '') -%}
+{%- if lease.revisionRule.value == 'yearly' -%}
+Le loyer est révisé chaque année à la date anniversaire du bail selon l'{{ names[lease.indexName] }} publié par l'INSEE ; indice de référence : {{ reference }}.
+{%- elseif lease.revisionRule.value == 'indexation' -%}
+Le loyer est indexé chaque année à la date anniversaire du bail selon l'{{ names[lease.indexName] ?? lease.indexName }} publié par l'INSEE, le même trimestre l'année suivante ; indice de référence : {{ reference }}.
+{%- elseif lease.revisionRule.value == 'triennial' -%}
+Le loyer peut être révisé dans les conditions des articles L145-37 et L145-38 du code de commerce (révision triennale), sa variation mesurée sur l'{{ names[lease.indexName] ?? lease.indexName }} publié par l'INSEE ; indice de référence : {{ reference }}.
+{%- else -%}
+Le loyer n'est pas révisable.
+{%- endif -%}

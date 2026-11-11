@@ -12,6 +12,8 @@
 </div>
 {% endblock %}
 
+{% set ix = lease.indexName %}
+{% set triennial = lease.revisionRule.value == 'triennial' %}
 {% block content %}
 <style>
     .estate-admin-form { display: grid; gap: 1rem; max-width: 42rem; }
@@ -29,17 +31,21 @@
     <div class="card"><dl>
         <dt>Loyer actuel (hors charges)</dt><dd>{{ lease.rent|euros }}</dd>
         <dt>Charges</dt><dd>{{ lease.charges|euros }}</dd>
-        <dt>Indice de référence</dt><dd>{% if lease.indexValue %}IRL {{ lease.indexQuarter }} : {{ lease.indexValue|number_format(2, ',', ' ') }}{% else %}<span style="color: #d0312d">non renseigné</span> — <a href="{{ path('admin_crud_leases_edit', {entityId: lease.id}) }}">compléter le bail</a>{% endif %}</dd>
+        <dt>Indice de référence</dt><dd>{% if lease.indexValue %}{{ ix }} {{ lease.indexQuarter }} : {{ lease.indexValue|number_format(2, ',', ' ') }}{% else %}<span style="color: #d0312d">non renseigné</span> — <a href="{{ path('admin_crud_leases_edit', {entityId: lease.id}) }}">compléter le bail</a>{% endif %}</dd>
         <dt>Dernière révision</dt><dd>{{ lease.revisedOn ? lease.revisedOn|format_date('long') : 'aucune' }}</dd>
+        {% if not lease.residential %}<dt>Bail</dt><dd>{{ lease.kind.label }} · {{ lease.revisionRule.label }}{% if lease.smallBusiness %} · locataire PME{% endif %}</dd>{% endif %}
     </dl></div>
+    {% if proposal.status == 'none' %}<div class="card"><p style="margin: 0">Ce bail ne prévoit pas de révision du loyer.</p></div>{% endif %}
+    {% if proposal.note == 'triennial' %}<div class="card estate-index" data-status="triennial"><p style="margin: 0">Révision triennale (code de commerce, art. L145-38) : demandée par l'une des parties au moins trois ans après l'entrée dans les lieux ou la dernière fixation du loyer{{ next <= date('today') ? ', possible depuis le ' ~ next|format_date('long') : ', possible à partir du ' ~ next|format_date('long') }}. Elle prend effet à la date de la demande. Sauf preuve d'une modification matérielle des facteurs locaux de commercialité, la hausse ou la baisse ne peut dépasser la variation de l'{{ ix }} depuis la dernière fixation : indiquez le trimestre retenu et sa valeur, estate calcule ce plafond.</p></div>{% endif %}
+    {% if proposal.note == 'cap_span' %}<div class="card estate-index" data-status="cap_span"><p style="margin: 0">La variation de l'ILC court sur plusieurs années à travers la période plafonnée pour les PME (T2 2022 à T1 2024, loi n° 2022-1158 du 16 août 2022, art. 14) : le plafonnement est définitivement acquis et le nouveau loyer n'est pas calculé ici. Saisissez le résultat après vérification.</p></div>{% endif %}
     {% if proposal is defined and proposal.quarter %}
     <div class="card estate-index" data-status="{{ proposal.status }}">
         {% if proposal.status == 'ready' %}
-        <p style="margin: 0"><strong>IRL {{ proposal.value.quarter }} : {{ proposal.value.value|number_format(2, ',', ' ') }}</strong>{% if proposal.value.provisional %} (provisoire){% endif %} — lu à l'INSEE{% if proposal.value.publishedOn %}, publié au Journal officiel le {{ proposal.value.publishedOn|format_date('long', timezone: false) }}{% endif %}. Nouveau loyer proposé : <strong>{{ proposal.rent|euros }}</strong>{% if proposal.capped %} (hausse plafonnée à {{ (proposal.capped * 100)|number_format(1, ',', ' ') }} %){% endif %}. Vérifiez, puis appliquez : rien n'est appliqué sans vous.</p>
+        <p style="margin: 0"><strong>{{ ix }} {{ proposal.value.quarter }} : {{ proposal.value.value|number_format(2, ',', ' ') }}</strong>{% if proposal.value.provisional %} (provisoire){% endif %} — lu à l'INSEE{% if proposal.value.publishedOn %}, publié au Journal officiel le {{ proposal.value.publishedOn|format_date('long', timezone: false) }}{% endif %}. Nouveau loyer proposé : <strong>{{ proposal.rent|euros }}</strong>{% if proposal.capped %} (hausse plafonnée à {{ (proposal.capped * 100)|number_format(1, ',', ' ') }} %){% endif %}. Vérifiez, puis appliquez : rien n'est appliqué sans vous.</p>
         {% elseif proposal.status == 'waiting' %}
-        <p style="margin: 0">L'IRL du <strong>{{ proposal.quarter }}</strong> n'est pas encore publié par l'INSEE : la révision attend sa publication.</p>
+        <p style="margin: 0">L'{{ ix }} du <strong>{{ proposal.quarter }}</strong> n'est pas encore publié par l'INSEE : la révision attend sa publication.</p>
         {% elseif proposal.status == 'unavailable' %}
-        <p style="margin: 0">L'INSEE ne répond pas pour l'instant : saisissez la valeur de l'IRL du {{ proposal.quarter }} à la main.</p>
+        <p style="margin: 0">L'INSEE ne répond pas pour l'instant : saisissez la valeur de l'{{ ix }} du {{ proposal.quarter }} à la main.</p>
         {% else %}
         <p style="margin: 0">Trimestre à appliquer : <strong>{{ proposal.quarter }}</strong>.</p>
         {% endif %}
@@ -51,19 +57,20 @@
     <form method="post" class="card">
         <input type="hidden" name="_token" value="{{ csrf_token('estate_revise_' ~ lease.id) }}">
         <div class="row3">
-            <label>Trimestre de l'IRL<input class="form-control" name="quarter" required placeholder="T2 2025" value="{{ values.quarter }}"></label>
-            <label>Valeur de l'IRL<input class="form-control" name="index" required inputmode="decimal" placeholder="146,68" value="{{ values.index }}"></label>
+            <label>Trimestre de l'{{ ix }}<input class="form-control" name="quarter" required placeholder="T2 2025" value="{{ values.quarter }}"></label>
+            <label>Valeur de l'{{ ix }}<input class="form-control" name="index" required inputmode="decimal" placeholder="146,68" value="{{ values.index }}"></label>
             <label>À partir du<input class="form-control" type="date" name="on" value="{{ values.on }}"></label>
         </div>
-        {% if values.from_index is defined and values.from_index %}<label>IRL de base (années non réclamées)<input class="form-control" name="from_index" inputmode="decimal" value="{{ values.from_index }}"></label>{% endif %}
-        <p class="help">Le même trimestre que celui du bail, l'année suivante : sa valeur est publiée par l'INSEE (<a href="https://www.insee.fr/fr/statistiques/serie/001515333" target="_blank" rel="noopener">série de l'IRL</a>).</p>
+        {% if values.from_index is defined and values.from_index %}<label>{{ ix }} de base (années non réclamées)<input class="form-control" name="from_index" inputmode="decimal" value="{{ values.from_index }}"></label>{% endif %}
+        <p class="help">{% if triennial %}Le trimestre que vous retenez pour la variation depuis la dernière fixation{% else %}Le même trimestre que celui du bail, l'année suivante{% endif %} : sa valeur est publiée par l'INSEE (<a href="https://www.insee.fr/fr/statistiques/serie/{{ {IRL: '001515333', ILC: '001532540', ILAT: '001617112'}[ix] ?? '001515333' }}" target="_blank" rel="noopener">série de l'{{ ix }}</a>).</p>
         {% if rent %}
-        <p class="result">Nouveau loyer hors charges : <strong>{{ rent|euros }}</strong> ({{ rent >= lease.rent ? '+' : '' }}{{ (rent - lease.rent)|euros }}), soit {{ (rent + lease.charges)|euros }} par mois charges comprises.</p>
+        <p class="result">{{ triennial ? 'Loyer plafond hors charges (art. L145-38)' : 'Nouveau loyer hors charges' }} : <strong>{{ rent|euros }}</strong> ({{ rent >= lease.rent ? '+' : '' }}{{ (rent - lease.rent)|euros }}), soit {{ (rent + lease.charges)|euros }} par mois charges comprises.</p>
         {% endif %}
         <div style="display: flex; gap: .6rem">
             <button class="btn {{ rent ? '' : 'btn-success' }}" type="submit" name="do" value="preview">Calculer</button>
             {% if rent %}<button class="btn btn-success" type="submit" name="do" value="apply">Appliquer et prévenir les locataires</button>{% endif %}
         </div>
+        {% if triennial and rent %}<p class="help">Appliqué, le plafond devient le loyer du bail ; un loyer convenu plus bas se saisit ensuite sur le bail.</p>{% endif %}
     </form>
 </div>
 {% endblock %}

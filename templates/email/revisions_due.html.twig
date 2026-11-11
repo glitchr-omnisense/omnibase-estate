@@ -8,10 +8,12 @@
 <ul>
 {% for p in proposals %}
     <li><a href="{{ url('estate_admin_revise', {id: p.lease.id}) }}">{{ p.lease.unit.name }} — bail {{ p.lease.reference }}</a>, au {{ p.on|format_date('long') }} :
-    {% if p.status == 'ready' %}IRL {{ p.value.quarter }} {{ p.value.value|number_format(2, ',', ' ') }}, loyer hors charges {{ p.lease.rent|euros }} → <strong>{{ p.rent|euros }}</strong>{% if p.capped %} (hausse plafonnée){% endif %}.
-    {% elseif p.status == 'waiting' %}l'IRL du {{ p.quarter }} n'est pas encore publié, la révision attend.
+    {% if p.status == 'ready' %}{{ p.index }} {{ p.value.quarter }} {{ p.value.value|number_format(2, ',', ' ') }}, loyer hors charges {{ p.lease.rent|euros }} → <strong>{{ p.rent|euros }}</strong>{% if p.capped %} (hausse plafonnée){% endif %}.
+    {% elseif p.status == 'waiting' %}l'{{ p.index }} du {{ p.quarter }} n'est pas encore publié, la révision attend.
     {% elseif p.status == 'no_reference' %}le bail n'a pas d'indice de référence.
-    {% else %}IRL du {{ p.quarter }} à saisir.{% endif %}</li>
+    {% elseif p.note == 'triennial' %}révision triennale possible (art. L145-38 du code de commerce), le trimestre de l'{{ p.index }} à choisir.
+    {% elseif p.note == 'cap_span' %}variation de l'ILC sur la période plafonnée pour les PME, à calculer.
+    {% else %}{{ p.index }} du {{ p.quarter }} à saisir.{% endif %}</li>
 {% endfor %}
 </ul>
 {% set credits = proposals|filter(p => p.value and p.value.credit)|map(p => p.value.credit ~ (p.value.licence ? ' — ' ~ p.value.licence : '')) %}

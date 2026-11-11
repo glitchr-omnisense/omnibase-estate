@@ -6,6 +6,7 @@ use Base\Entity\User;
 use Base\Estate\Entity\Lease;
 use Base\Estate\Enum\ActivityKind;
 use Base\Estate\Enum\LeaseStatus;
+use Base\Estate\Enum\RevisionRule;
 use Base\Estate\Exception\IndexUnavailableException;
 use Base\Estate\Index\OfficialIndex;
 use Base\Estate\Model\IndexCaps;
@@ -24,6 +25,14 @@ use Doctrine\ORM\EntityManagerInterface;
  * value from INSEE (Index\OfficialIndex); without it, or when INSEE does not answer, the value
  * is typed by hand as before. Which quarter, the anniversary, the caps (Model\IndexCaps) and the
  * rounding are decided here; a revision is applied only by a person (apply()).
+ *
+ * A commercial or professional lease (Lease::getKind()) follows the index it names (ILC or ILAT)
+ * and its own rule (Enum\RevisionRule): its indexation clause, yearly on the anniversary, measured
+ * from the reference quarter with no year lost (the contract's rule; art. 17-1 is the home's); or
+ * the triennial revision of a commercial lease (Code de commerce, art. L145-38, version of 20 June
+ * 2014): asked three years at least after the tenant's entry or the last price, effective from the
+ * day it is asked, the change capped by the index's variation since the last price. Which quarter
+ * that variation ends at the article does not say: the team types it, estate gives the ceiling.
  */
 class RentRevisions
 {
@@ -46,6 +55,10 @@ class RentRevisions
     public function nextOn(Lease $lease, ?\DateTimeImmutable $today = null): \DateTimeImmutable
     {
         $today ??= new \DateTimeImmutable('today');
+        if (RevisionRule::TRIENNIAL === $lease->getRevisionRule()) {
+            // Art. L145-38: three years at least after the entry, or after the day the last price applied.
+            return ($lease->getRevisedOn() ?? $lease->getStartOn())->modify('+3 years');
+        }
         $on = $lease->getRevisedOn() ? $lease->getRevisedOn()->modify('+1 year') : $lease->getStartOn()->modify('+1 year');
         while ($on < $today->modify('-11 months')) {
             $on = $on->modify('+1 year');
@@ -79,6 +92,10 @@ class RentRevisions
         $since = $lease->getRevisedOn() ?? $lease->getStartOn();
         $years = max(1, (int) $on->format('Y') - (int) $since->format('Y'));
         $year = (int) $m[2] + $years;
+        if (RevisionRule::YEARLY !== $lease->getRevisionRule()) {
+            // A clause's indexation: the whole change since the reference, no year lost (art. 17-1 is a home's).
+            return ['quarter' => sprintf('T%d %d', $m[1], $year), 'from' => sprintf('T%d %d', $m[1], $m[2]), 'waived' => 0];
+        }
 
         return ['quarter' => sprintf('T%d %d', $m[1], $year), 'from' => 1 === $years ? sprintf('T%d %d', $m[1], $m[2]) : sprintf('T%d %d', $m[1], $year - 1), 'waived' => $years - 1];
     }
@@ -90,19 +107,31 @@ class RentRevisions
     public function propose(Lease $lease, ?\DateTimeImmutable $today = null): RevisionProposal
     {
         $on = $this->nextOn($lease, $today);
+        $index = $lease->getIndexName();
+        if (RevisionRule::NONE === $lease->getRevisionRule()) {
+            return new RevisionProposal($lease, RevisionProposal::NONE, $on, $index);
+        }
         $quarters = $this->quarters($lease, $on);
         if (null === $quarters || null === $lease->getIndexValue()) {
-            return new RevisionProposal($lease, RevisionProposal::NO_REFERENCE, $on);
+            return new RevisionProposal($lease, RevisionProposal::NO_REFERENCE, $on, $index);
+        }
+        if (RevisionRule::TRIENNIAL === $lease->getRevisionRule()) {
+            // The quarter the variation ends at is the team's to choose (art. L145-38 does not name it).
+            return new RevisionProposal($lease, RevisionProposal::MANUAL, $on, $index, $quarters['from'], $lease->getIndexValue(), note: RevisionProposal::NOTE_TRIENNIAL);
         }
         $fromValue = 0 === $quarters['waived'] ? $lease->getIndexValue() : null;
-        $base = [$lease, RevisionProposal::MANUAL, $on, 'IRL', $quarters['from'], $fromValue, $quarters['quarter']];
+        $base = [$lease, RevisionProposal::MANUAL, $on, $index, $quarters['from'], $fromValue, $quarters['quarter']];
+        if (IndexCaps::spansCap($index, $quarters['from'], $quarters['quarter'], $lease->isSmallBusiness())) {
+            // Several years across the ILC's capped quarters: the « définitivement acquis » part is not computed here.
+            return new RevisionProposal(...$base, note: RevisionProposal::NOTE_CAP_SPAN);
+        }
         if (null === $this->index) {
             return new RevisionProposal(...$base, waived: $quarters['waived']);
         }
         try {
-            $value = $this->index->value('IRL', $quarters['quarter']);
+            $value = $this->index->value($index, $quarters['quarter']);
             if (null === $fromValue) {
-                $fromValue = $this->index->value('IRL', $quarters['from'])->value;
+                $fromValue = $this->index->value($index, $quarters['from'])->value;
             }
         } catch (IndexUnavailableException) {
             $base[1] = RevisionProposal::UNAVAILABLE;
@@ -140,7 +169,9 @@ class RentRevisions
             throw new \InvalidArgumentException('Both indices are needed.');
         }
         $ratio = $new / $old;
-        $cap = null === $newQuarter ? null : IndexCaps::limit('IRL', $newQuarter, $lease->getUnit()->getPostcode());
+        // A cap is on a yearly change: a commercial lease's change over several years is not capped by it (IndexCaps::spansCap()).
+        $yearly = 'IRL' === $lease->getIndexName() || IndexCaps::isOneYear($lease->getIndexQuarter(), (string) $newQuarter);
+        $cap = null === $newQuarter || !$yearly ? null : IndexCaps::limit($lease->getIndexName(), $newQuarter, $lease->getUnit()->getPostcode(), $lease->isSmallBusiness());
         $capped = null;
         if (null !== $cap && $ratio > 1 + $cap) {
             $ratio = 1 + $cap;
@@ -162,7 +193,7 @@ class RentRevisions
         $formerIndex = $fromIndex ?? $lease->getIndexValue();
         $rent = $this->rentAt($lease, $newIndex, $newQuarter, $fromIndex);
         $lease->setRent($rent)->setIndexQuarter($newQuarter)->setIndexValue($newIndex)->setRevisedOn($on);
-        $this->activities->log($lease->getOrganisation(), ActivityKind::OTHER, sprintf('Loyer révisé (IRL %s) : %s → %s', $newQuarter, number_format($former / 100, 2, ',', ' ').' €', number_format($rent / 100, 2, ',', ' ').' €'), $lease->getUnit(), $rent - $former);
+        $this->activities->log($lease->getOrganisation(), ActivityKind::OTHER, sprintf('Loyer révisé (%s %s) : %s → %s', $lease->getIndexName(), $newQuarter, number_format($former / 100, 2, ',', ' ').' €', number_format($rent / 100, 2, ',', ' ').' €'), $lease->getUnit(), $rent - $former);
         $this->entityManager->flush();
 
         $this->mailer->send(
@@ -187,7 +218,7 @@ class RentRevisions
         $today = new \DateTimeImmutable('today');
         $due = [];
         foreach ($this->leases->findBy(['status' => LeaseStatus::ACTIVE]) as $lease) {
-            if (null === $lease->getIndexValue()) {
+            if (null === $lease->getIndexValue() || RevisionRule::NONE === $lease->getRevisionRule()) {
                 continue;
             }
             $on = $this->nextOn($lease, $today);

@@ -18,7 +18,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * Nothing is applied: with --mail the management gets the list, each line opening the revision
  * screen where a person confirms it. Cron, weekly.
  */
-#[AsCommand(name: 'estate:rent:revisions', description: 'Propose the rent revisions due (IRL read from INSEE when omnistate is installed); never applies one')]
+#[AsCommand(name: 'estate:rent:revisions', description: 'Propose the rent revisions due (the index of each lease - IRL, ILC or ILAT - read from INSEE when omnistate is installed); never applies one')]
 final class RentRevisionsCommand extends Command
 {
     private const STATUSES = [
@@ -27,6 +27,7 @@ final class RentRevisionsCommand extends Command
         RevisionProposal::UNAVAILABLE => 'INSEE unavailable: type the value',
         RevisionProposal::MANUAL => 'type the value',
         RevisionProposal::NO_REFERENCE => 'no reference index',
+        RevisionProposal::NONE => 'no revision clause',
     ];
 
     public function __construct(
@@ -56,10 +57,14 @@ final class RentRevisionsCommand extends Command
             $p->lease->getUnit()->getName(),
             $p->on->format('Y-m-d'),
             $p->quarter ?? '-',
-            $p->value?->value ?? '-',
+            $p->index.' '.($p->value?->value ?? '-'),
             number_format($p->lease->getRent() / 100, 2, '.', ''),
             null === $p->rent ? '-' : number_format($p->rent / 100, 2, '.', ''),
-            self::STATUSES[$p->status].($p->capped ? ' (capped)' : ''),
+            self::STATUSES[$p->status].($p->capped ? ' (capped)' : '').match ($p->note) {
+                RevisionProposal::NOTE_TRIENNIAL => ' (triennial: choose the quarter)',
+                RevisionProposal::NOTE_CAP_SPAN => ' (ILC cap over several years: by hand)',
+                default => '',
+            },
         ], $proposals));
         $credits = array_unique(array_filter(array_map(static fn (RevisionProposal $p) => $p->value?->credit ? $p->value->credit.($p->value->licence ? ' - '.$p->value->licence : '') : null, $proposals)));
         foreach ($credits as $credit) {

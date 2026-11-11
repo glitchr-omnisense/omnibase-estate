@@ -166,9 +166,36 @@ The caps (`Model\IndexCaps`): the « bouclier loyer » (loi n° 2022-1158, art. 
 n° 2023-568) - a revision on an IRL of T3 2022 to T1 2024 moves by 3.5 % at most, 2.5 % in the
 overseas departments (postcodes 971 to 976); INSEE's IRL of those quarters already moves by 3.5 %.
 To confirm with a lawyer: Corsica's own cap (3.5 % is applied there), and the year lost when a
-revision was not claimed (the change measured from the year before, no catch-up). The ILC and ILAT
-of commercial and professional leases are read the same way (`OfficialIndex::INDICES`) but estate
-does not model those leases yet: `propose()` uses the IRL.
+revision was not claimed (the change measured from the year before, no catch-up). Each rule estate codes, its source and
+what remains to confirm: [Legal rules](legal.md).
+
+### Commercial and professional leases
+
+A lease is a home's (`LeaseKind::RESIDENTIAL`, the default), a commercial lease or a professional
+one (`Lease::setKind()`, « Type de bail » on its screen). It follows the index it names
+(`indexName`): the IRL for a home, the ILC or the ILAT, chosen on the lease, otherwise; and a
+revision rule (`Enum\RevisionRule`, « Révision du loyer »):
+
+| Rule | For | What `propose()` does |
+|---|---|---|
+| `yearly` | a home | the IRL's yearly revision above (art. 17-1: a year not claimed is lost) |
+| `indexation` | a commercial or professional lease | its indexation clause: yearly on the anniversary, the same quarter a year later, measured from the reference with no year lost - the contract's rule, ready when INSEE has published |
+| `triennial` | a commercial lease | Code de commerce, art. L145-38: the date it may be asked (three years after the entry or the last price), the reference; the quarter is the team's to choose - the article does not name it -, and the page then gives the ceiling the index's variation sets (`MANUAL`, note `triennial`) |
+| `none` | any | nothing proposed (status `none`) |
+
+The lease's screen refuses an index or a rule its kind does not allow (`Lease::validateTerms()`).
+The ILC of a small or medium-sized business (`smallBusiness`, « Locataire PME », declared by the
+team) was capped at 3.5 % a year for the quarters T2 2022 to T1 2024 (loi n° 2022-1158, art. 14):
+`IndexCaps::limit('ILC', $quarter, $postcode, true)`, applied to a yearly change; a change of
+several years across that period is left to the team (note `cap_span`), the law's « définitivement
+acquis » being computed by no rule here. Not modelled: a revision asked under art. L145-39 when an
+indexation clause moved the rent by more than a quarter, the valeur locative of art. L145-33, the
+clause « tunnel » art. L145-38-1 now allows, a professional lease's own terms (its contract
+decides).
+
+The lease's page lists what to check (`Model\LeaseRules::warnings()`): a commercial lease made
+since 26 May 2026 whose deposit is above a quarter's rent (art. L145-40, al. 2) - a warning, since
+only the team knows whether the premises are of the kind art. L145-32-1 names.
 
 ## The books
 

@@ -41,7 +41,10 @@ from what they are to the organisation, never from a role stored on the account.
 - [Organisations, homes and leases](concepts.md): every entity, its fields and methods, the
   enums.
 - [Rents](usage-rents.md): calling, reminding, payments, receipts, online payment, the IRL
-  revision (read from INSEE with omnistate), the books.
+  revision (read from INSEE with omnistate), commercial and professional leases on the ILC or the
+  ILAT, the books.
+- [Legal rules](legal.md): every rule of French law estate codes, its source and its version,
+  and what remains to confirm with a lawyer.
 - [Signatures](usage-signature.md): the lease and its inventory signed electronically through
   omnisign, followed by the provider's webhook, the signed PDF and its evidence kept.
 - [Shared ownership](usage-ownership.md): indivisions, co-owners' shares over time, shared
