@@ -98,8 +98,8 @@ organisation's name).
 
 `Base\Estate\Service\CompanyRecords::refresh(Organisation $organisation): bool` (with
 omnisense/omnistate): a valid SIREN read from Sirene / RNE - the legal name, the legal form, the
-creation date, the head office's street (capitals put back in their case: "36 A rue de la
-Ganzau"), postcode and city ("Saint-Louis") - and the VAT number from VIES (none when VIES does
+creation date, the head office's street (capitals put back in their case: "12 B rue des
+Tilleuls"), postcode and city ("Saint-Louis") - and the VAT number from VIES (none when VIES does
 not know it, as for an SCI letting homes, which is not liable); `registryCheckedAt` set. `false`
 without a valid SIREN or for a company the register does not know; a register that does not
 answer throws omnistate's `UnavailableException` and nothing changes.
@@ -141,4 +141,4 @@ number: sums and counts in the database (`RentCallRepository::overdueTotals()`, 
 (`PortfolioFigures::homes()`, through `UnitRepository::homes()`), the months through
 `PortfolioFigures::months()`; only the rows a card lists are read as entities (four late rents,
 four of the month's, five homes, four work orders). A dashboard of 10 or 100 companies runs the
-same queries (meyers' DashboardScaleTest).
+same queries (a site's DashboardScaleTest).

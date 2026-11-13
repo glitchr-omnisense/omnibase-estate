@@ -199,7 +199,7 @@ final class TransactionsTest extends TransactionTestCase
         $transactions = $this->transactions();
         $mandate = fn (int $id, int $price, UnitKind $kind, ?string $city, int $rooms, string $until = '2026-12-31') => $this->records[SaleMandate::class][] = self::withId(
             (new SaleMandate($this->agency, new \DateTimeImmutable('2026-09-01')))->setNumber('VT-2026-00'.$id)->setPrice($price)->setKind($kind)->setCity($city)->setRooms($rooms)->setEndsOn(new \DateTimeImmutable($until)), $id);
-        $negotiate = $mandate(20, 33500000, UnitKind::APARTMENT, 'Schiltigheim', 4);
+        $negotiate = $mandate(20, 33500000, UnitKind::APARTMENT, 'Exempleville', 4);
         $mandate(21, 34000000, UnitKind::APARTMENT, 'Strasbourg', 3);       // more than 5 % above
         $mandate(22, 25000000, UnitKind::HOUSE, 'Strasbourg', 5);           // a house
         $mandate(23, 25000000, UnitKind::APARTMENT, 'Colmar', 3);           // elsewhere

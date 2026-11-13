@@ -46,7 +46,7 @@ final class OnlinePaymentsTest extends TestCase
     private function call(int $paid = 0): RentCall
     {
         $unit = $this->createStub(Unit::class);
-        $unit->method('getName')->willReturn('Appartement Krutenau');
+        $unit->method('getName')->willReturn('Appartement A');
         $lease = $this->createStub(Lease::class);
         $lease->method('getUnit')->willReturn($unit);
         $call = $this->createStub(RentCall::class);

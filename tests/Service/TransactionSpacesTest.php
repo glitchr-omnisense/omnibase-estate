@@ -68,7 +68,7 @@ final class TransactionSpacesTest extends TestCase
     {
         $user = self::user(41);
         $seller = (new Mandator('Hélène Roth'))->setUser($user);
-        $spaces = $this->spaces(['assets', 'ownership'], [Mandator::class => [$seller], SaleMandate::class => [(new SaleMandate(new Organisation('Agence Kléber')))->addSeller($seller)], Buyer::class => [(new Buyer('Lucas Martin'))->setUser($user)]]);
+        $spaces = $this->spaces(['assets', 'ownership'], [Mandator::class => [$seller], SaleMandate::class => [(new SaleMandate(new Organisation('Agence Hérisson')))->addSeller($seller)], Buyer::class => [(new Buyer('Lucas Martin'))->setUser($user)]]);
 
         self::assertSame([], $spaces->saleMandates($user));
         self::assertSame([], $spaces->buyers($user));
@@ -81,7 +81,7 @@ final class TransactionSpacesTest extends TestCase
         $sellerUser = self::user(41);
         $buyerUser = self::user(42);
         $stranger = self::user(43);
-        $agency = self::withId(new Organisation('Agence Kléber'), 1);
+        $agency = self::withId(new Organisation('Agence Hérisson'), 1);
         $helene = self::withId((new Mandator('Hélène Roth'))->setUser($sellerUser), 5);
         $paul = self::withId((new Mandator('Paul Klein'))->setUser($stranger), 6);
         $hers = self::withId((new SaleMandate($agency))->setNumber('VT-2026-0001')->addSeller($helene), 9);

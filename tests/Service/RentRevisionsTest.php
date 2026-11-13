@@ -49,7 +49,7 @@ final class RentRevisionsTest extends TestCase
     /** A lease of 850 € signed on 2025-09-01 on the IRL of T2 2025 (146.68). */
     private static function lease(string $start = '2025-09-01', string $quarter = 'T2 2025', string $value = '146.68', ?string $revisedOn = null, ?string $postcode = '67000'): Lease
     {
-        $unit = (new Unit(new Organisation('SCI Test', 'sci-test'), 'Krutenau', 'krutenau'))->setPostcode($postcode);
+        $unit = (new Unit(new Organisation('SCI Test', 'sci-test'), 'A', 'a'))->setPostcode($postcode);
         $lease = (new Lease($unit, 'B-1', new \DateTimeImmutable($start)))->setRent(85000)->setIndexQuarter($quarter)->setIndexValue($value);
 
         return null === $revisedOn ? $lease : $lease->setRevisedOn(new \DateTimeImmutable($revisedOn));

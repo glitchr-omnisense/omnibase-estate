@@ -21,7 +21,7 @@ class WorkOrderEvent
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?User $author = null;
 
-    /** Who wrote it, as shown: "Gestion", "Plomberie Kieffer", "Léa Muller". */
+    /** Who wrote it, as shown: "Gestion", "Plomberie Durand", "Léa Muller". */
     #[ORM\Column(length: 160)]
     private string $authorName = '';
 

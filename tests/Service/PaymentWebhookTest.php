@@ -133,7 +133,7 @@ final class PaymentWebhookTest extends TestCase
 
     public function testNothingRegisteredOnAnAddressNoProviderReaches(): void
     {
-        foreach (['https://meyers.local/estate/payments/webhook', 'http://localhost/estate/payments/webhook', 'https://localhost:8463/estate/payments/webhook', 'https://192.168.1.20/estate/payments/webhook'] as $url) {
+        foreach (['https://exemple.local/estate/payments/webhook', 'http://localhost/estate/payments/webhook', 'https://localhost:8463/estate/payments/webhook', 'https://192.168.1.20/estate/payments/webhook'] as $url) {
             $webhook = $this->webhook($this->registry(), $url);
             self::assertSame(PaymentWebhook::UNREACHABLE, $webhook->ensure(), $url);
             self::assertNotNull($webhook->unreachable());

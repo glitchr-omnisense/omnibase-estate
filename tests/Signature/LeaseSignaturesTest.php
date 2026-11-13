@@ -56,7 +56,7 @@ final class LeaseSignaturesTest extends TestCase
 
     private static function lease(): Lease
     {
-        $unit = (new Unit(new Organisation('SCI Test', 'sci-test'), 'Krutenau', 'krutenau'))->setPostcode('67000');
+        $unit = (new Unit(new Organisation('SCI Test', 'sci-test'), 'A', 'a'))->setPostcode('67000');
         $lease = (new Lease($unit, 'B-1', new \DateTimeImmutable('2026-12-01')))->setRent(85000);
         $lease->addParty(new LeaseParty('Paul', 'Garant', 'paul@example.org', PartyRole::GUARANTOR));
         $lease->addParty(new LeaseParty('Léa', 'Muller', 'lea@example.org'));
@@ -78,7 +78,7 @@ final class LeaseSignaturesTest extends TestCase
         $this->signatures()->send(self::lease(), self::user());
 
         $request = $this->sent;
-        self::assertSame('Bail B-1 — Krutenau', $request->title);
+        self::assertSame('Bail B-1 — A', $request->title);
         self::assertSame('lease:B-1', $request->key);
         self::assertTrue($request->ordered);
         self::assertFalse($request->embedded, 'each signer is e-mailed by the provider');

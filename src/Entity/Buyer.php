@@ -50,7 +50,7 @@ class Buyer
     #[ORM\Column(nullable: true)]
     private ?int $minRooms = null;
 
-    /** Where: towns, postcodes or districts, separated by commas ("Strasbourg, 67000, Kehl"). */
+    /** Where: towns, postcodes or districts, separated by commas ("Strasbourg, 67000, Centre"). */
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $area = null;
 

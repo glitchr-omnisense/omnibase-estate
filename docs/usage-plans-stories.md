@@ -122,7 +122,7 @@ done (published entries telling work orders) with their before/after pairs as a 
 other and a native range input between them (arrows, Page Up/Down, Home, End), one gentle sweep when
 it comes into view except under `prefers-reduced-motion`. Each entry may link to its home's page.
 The intro is the translation key `@estate.works.lead`: a site that edits its texts from the back
-office (meyers' « Textes du site ») rewrites it there.
+office (a site's « Textes du site ») rewrites it there.
 
 ## For the networks
 

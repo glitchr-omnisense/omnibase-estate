@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-11-13
+
+First stable release.
+
+### Changed
+- Stable requirements, so that `composer require omnibase/estate` installs at Packagist's default stability:
+  `omnisense/omnibase` ^5.1 (in place of `3.x || 4.0 || 5.0` dev branches), `omnibridge/symfony` ^1.1, `omnibase/admin` ^1.0, `doctrine/doctrine-bundle` ^2.10 || ^3.0 (its repositories extend DoctrineBundle's `ServiceEntityRepository`);
+  no `minimum-stability: dev`; the branch alias `dev-main` → `1.x-dev`.
+- CI: `.github/workflows/ci.yml` (glitchr-studio/ci's php-package workflow, pinned: the bundle installed alone,
+  composer validate, PHPUnit, a consumer install without require-dev with `src/` linted and the bundle class
+  autoloaded) and `release.yml` (that CI on a tag, then the release).
+- require-dev: PHPUnit and what the tests read (omnibase/ledger, omnibase/drive, omnibridge/doctrine, omnisense/omnisign,
+  omnistate/insee, omnitrade/stripe, dompdf, Twig with its intl extension), so that the suite runs outside a site.
+- Neutral example data in docs and tests.
+
 ### Changed
 - The guarantor's mention on omnisense/omnisign 1.2's statements: each field is a statement the guarantor types
   (`Field::forStatement()`, `StatementMode::TYPED`), in place of a bare text field with a label. The whole mention goes
@@ -12,7 +27,7 @@
 - The dashboard's cards scale with the number of organisations: each figure is one query for every organisation
   together - grouped or summed in the database, scalars rather than entities -, and only the rows a card lists are
   loaded (four late rents and four of the month's, five homes, four work orders), with their lease, home and parties.
-  About 23 queries per organisation before (2,386 for 100 companies of meyers' DashboardScaleTest), the same 100 for 10
+  About 23 queries per organisation before (2,386 for 100 companies of a site's DashboardScaleTest), the same 100 for 10
   and for 100 now; what the cards show is unchanged. `Service\PortfolioFigures` (`homes()`, `months()`), repository
   totals (`RentCallRepository::overdueTotals()`, `findOverdueFirst()`, `overdueByOrganisation()`, `monthTotals()`,
   `findInMonthNotOverdue()`; `UnitRepository::homes()`, `findWithLeases()`; `WorkOrderRepository::openTotals()`,

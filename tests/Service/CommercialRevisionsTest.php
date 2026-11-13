@@ -56,7 +56,7 @@ final class CommercialRevisionsTest extends TestCase
     /** A shop let 2 000 € a month (excluding VAT and charges). */
     private static function lease(string $start, string $quarter, string $value, string $index = 'ILC', RevisionRule $rule = RevisionRule::INDEXATION, LeaseKind $kind = LeaseKind::COMMERCIAL, int $rent = 200000): Lease
     {
-        $unit = (new Unit(new Organisation('SCI Test', 'sci-test'), 'Boutique Krutenau', 'boutique'))->setKind(UnitKind::COMMERCIAL)->setPostcode('67000');
+        $unit = (new Unit(new Organisation('SCI Test', 'sci-test'), 'Boutique A', 'boutique'))->setKind(UnitKind::COMMERCIAL)->setPostcode('67000');
 
         return (new Lease($unit, 'C-1', new \DateTimeImmutable($start)))->setKind($kind)->setIndexName($index)->setRevisionRule($rule)
             ->setRent($rent)->setIndexQuarter($quarter)->setIndexValue($value);

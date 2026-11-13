@@ -18,7 +18,7 @@ use Base\Ledger\Service\Lettering;
 /**
  * The sales' services over records kept in memory, on ManagementTestCase's
  * (an in-memory entity manager, the postings kept as drafts, Agence
- * Kléber's book). Hélène Roth sells her flat in Strasbourg (VT-2026-0001,
+ * Hérisson's book). Hélène Roth sells her flat in Strasbourg (VT-2026-0001,
  * 310 000 € asked, 5 % TTC paid by the seller, the notary holding the
  * deposit); Lucas Martin looks for a flat of 3 rooms at 320 000 €.
  */
@@ -33,9 +33,9 @@ abstract class TransactionTestCase extends ManagementTestCase
         parent::setUp();
         $this->records = [];
         $this->saleMandate = self::withId((new SaleMandate($this->agency, new \DateTimeImmutable('2026-09-01')))->setNumber('VT-2026-0001')->addSeller($this->owner)
-            ->setAddress('4 rue de l\'Orangerie')->setPostcode('67000')->setCity('Strasbourg')->setKind(UnitKind::APARTMENT)->setSurface(72)->setRooms(3)
+            ->setAddress('4 rue de l\'Exemple')->setPostcode('67000')->setCity('Strasbourg')->setKind(UnitKind::APARTMENT)->setSurface(72)->setRooms(3)
             ->setPrice(31000000)->setEndsOn(new \DateTimeImmutable('2026-12-31'))->setFeeRate(500), 9);
-        $this->buyer = self::withId((new Buyer('Lucas Martin'))->setEmail('lucas@example.org')->setBudget(32000000)->setKind(UnitKind::APARTMENT)->setMinRooms(3)->setArea('Strasbourg, Schiltigheim'), 7);
+        $this->buyer = self::withId((new Buyer('Lucas Martin'))->setEmail('lucas@example.org')->setBudget(32000000)->setKind(UnitKind::APARTMENT)->setMinRooms(3)->setArea('Strasbourg, Exempleville'), 7);
         $this->records[SaleMandate::class] = [$this->saleMandate];
         $this->records[Buyer::class] = [$this->buyer];
     }

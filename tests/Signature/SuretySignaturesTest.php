@@ -95,8 +95,8 @@ final class SuretySignaturesTest extends TestCase
     /** @return array{Lease, LeaseParty} */
     private static function lease(int $tenants = 1): array
     {
-        $organisation = (new Organisation('Meyers & Associée', 'meyers'))->setLegalName('MEYERS & ASSOCIEE');
-        $unit = (new Unit($organisation, 'Krutenau', 'krutenau'))->setPostcode('67000');
+        $organisation = (new Organisation('SCI Exemple', 'sci-exemple'))->setLegalName('SCI EXEMPLE');
+        $unit = (new Unit($organisation, 'A', 'a'))->setPostcode('67000');
         $lease = (new Lease($unit, 'B-1', new \DateTimeImmutable('2026-12-01')))->setRent(85000)->setIndexQuarter('T2 2026')->setIndexValue('148.37');
         $guarantor = (new LeaseParty('Paul', 'Garant', 'paul@example.org', PartyRole::GUARANTOR))->setSuretyLimit(2400000);
         (new \ReflectionProperty(LeaseParty::class, 'id'))->setValue($guarantor, 7);
@@ -114,7 +114,7 @@ final class SuretySignaturesTest extends TestCase
         [, $guarantor] = self::lease();
 
         self::assertSame([
-            'Je m\'engage en qualité de caution à payer à MEYERS & ASSOCIEE ce que lui doit le débiteur, Léa Muller, en cas de défaillance de celui-ci, dans la limite de la somme de vingt-quatre mille euros (24 000,00 €) en principal et accessoires.',
+            'Je m\'engage en qualité de caution à payer à SCI EXEMPLE ce que lui doit le débiteur, Léa Muller, en cas de défaillance de celui-ci, dans la limite de la somme de vingt-quatre mille euros (24 000,00 €) en principal et accessoires.',
             'Je reconnais ne pouvoir exiger du créancier qu\'il poursuive d\'abord le débiteur ou qu\'il divise ses poursuites entre les cautions.',
         ], array_map(static fn (string $s) => str_replace("\u{00A0}", ' ', $s), $this->sureties()->statement($guarantor)));
         // Not joint: the benefits kept, nothing to acknowledge.

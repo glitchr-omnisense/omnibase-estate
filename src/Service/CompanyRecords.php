@@ -64,7 +64,7 @@ final class CompanyRecords
         return true;
     }
 
-    /** "36 A RUE DE LA GANZAU" → "36 A rue de la Ganzau": registers write in capitals. */
+    /** "12 B RUE DES TILLEULS" → "12 B rue des Tilleuls": registers write in capitals. */
     private static function street(string $street): string
     {
         $words = explode(' ', self::words($street));

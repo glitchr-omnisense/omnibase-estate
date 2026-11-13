@@ -47,8 +47,8 @@ final class MandateStatementTest extends TestCase
 
     public function testAMonthsStatementBalances(): void
     {
-        $agency = new Organisation('Agence Kléber');
-        $unit = self::withId(new Unit($agency, 'Appartement Orangerie'), 12);
+        $agency = new Organisation('Agence Hérisson');
+        $unit = self::withId(new Unit($agency, 'Appartement D'), 12);
         $lease = new Lease($unit, 'MA-2026-012', new \DateTimeImmutable('2025-06-01'));
         $mandate = (new Mandate($agency, new Mandator('Hélène Roth'), new \DateTimeImmutable('2026-01-01')))->addUnit($unit)->setReserve(20000);
         $calls = [
@@ -91,7 +91,7 @@ final class MandateStatementTest extends TestCase
 
     public function testAMandatesPeriodsAndItsSentStatements(): void
     {
-        $mandate = (new Mandate(new Organisation('Agence Kléber'), new Mandator('Hélène Roth'), new \DateTimeImmutable('2026-01-01')))->setEndsOn(new \DateTimeImmutable('2026-12-31'));
+        $mandate = (new Mandate(new Organisation('Agence Hérisson'), new Mandator('Hélène Roth'), new \DateTimeImmutable('2026-01-01')))->setEndsOn(new \DateTimeImmutable('2026-12-31'));
         $today = new \DateTimeImmutable('2026-11-02');
 
         self::assertSame('2026-10', StatementFrequency::MONTHLY->lastClosed($today));

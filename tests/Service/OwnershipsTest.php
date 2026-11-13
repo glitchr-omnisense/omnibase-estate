@@ -90,15 +90,15 @@ final class OwnershipsTest extends TestCase
             new EstateMailer($this->createStub(MailerInterface::class)), $this->createStub(Receipts::class), $this->createStub(Environment::class), new ActivityLog($entityManager), $books);
     }
 
-    /** Meyers & Associée 1/2, Claire Hoffmann 1/4, Antoine Schaller 1/4; the roof of the house, 6 000 €. */
+    /** SCI Exemple 1/2, Claire Hoffmann 1/4, Antoine Schaller 1/4; the roof of the house, 6 000 €. */
     private static function invoice(): OwnershipInvoice
     {
-        $organisation = (new Organisation('Meyers & Associée'))->setBookId(1);
-        $ownership = self::withId(new Ownership($organisation, 'Indivision Robertsau'), 3);
-        $unit = self::withId(new Unit($organisation, 'Maison de la Robertsau'), 12);
+        $organisation = (new Organisation('SCI Exemple'))->setBookId(1);
+        $ownership = self::withId(new Ownership($organisation, 'Indivision C'), 3);
+        $unit = self::withId(new Unit($organisation, 'Maison C'), 12);
         $ownership->addUnit($unit);
         $start = new \DateTimeImmutable('2026-01-01');
-        self::withId((new OwnershipShare($ownership, 'Meyers & Associée', 1, 2, $start))->setCompany(true), 1);
+        self::withId((new OwnershipShare($ownership, 'SCI Exemple', 1, 2, $start))->setCompany(true), 1);
         self::withId((new OwnershipShare($ownership, 'Claire Hoffmann', 1, 4, $start))->setEmail('claire@example.org'), 2);
         self::withId((new OwnershipShare($ownership, 'Antoine Schaller', 1, 4, $start))->setEmail('antoine@example.org'), 3);
 
@@ -119,7 +119,7 @@ final class OwnershipsTest extends TestCase
 
     public function testASixThousandEuroInvoiceIsSplitByTheSharesAndPostedWithItsVatAndDimensions(): void
     {
-        $book = (new Book('Meyers & Associée'))->setVatRegime(VatRegime::NORMAL_MONTHLY);
+        $book = (new Book('SCI Exemple'))->setVatRegime(VatRegime::NORMAL_MONTHLY);
         $invoice = self::invoice();
         $calls = $this->service($book)->post($invoice, new \DateTimeImmutable('2026-11-05'), false);
 
@@ -149,7 +149,7 @@ final class OwnershipsTest extends TestCase
     public function testABookOutsideVatSharesTheAmountAllTaxesIncluded(): void
     {
         $invoice = self::invoice();
-        $calls = $this->service(new Book('Meyers & Associée'))->post($invoice, null, false);
+        $calls = $this->service(new Book('SCI Exemple'))->post($invoice, null, false);
 
         self::assertSame([150000, 150000], array_map(fn (OwnershipCall $c) => $c->getAmount(), $calls));
         self::assertSame(['615' => [600000, 0], '401SUPPLIERTOITURESFRITSCH' => [0, 600000]], self::lines($this->drafts[0]), 'no VAT line: the 6 000 € is the expense');
@@ -157,7 +157,7 @@ final class OwnershipsTest extends TestCase
 
     public function testASplitSetByHand(): void
     {
-        $book = new Book('Meyers & Associée');
+        $book = new Book('SCI Exemple');
         $invoice = self::invoice()->setSplitMode(SplitMode::AMOUNTS)->setSplit(['company' => 400000, 'email:claire@example.org' => 150000, 'email:antoine@example.org' => 40000]);
         $service = $this->service($book);
 

@@ -65,7 +65,7 @@ class DashboardWidgetsTest extends TestCase
         $this->twig->addRuntimeLoader(new \Twig\RuntimeLoader\FactoryRuntimeLoader([EstateExtension::class => fn () => $extension]));
         $this->twig->addFunction(new TwigFunction('path', fn (string $route, array $parameters = []) => '/'.$route.'?'.http_build_query($parameters)));
         $this->twig->addFunction(new TwigFunction('csrf_token', fn (string $id) => 'token-'.$id));
-        $this->organisation = new Organisation('Meyers & Associée', 'meyers');
+        $this->organisation = new Organisation('SCI Exemple', 'sci-exemple');
         (new \ReflectionProperty($this->organisation, 'id'))->setValue($this->organisation, 1);
     }
 
@@ -116,11 +116,11 @@ class DashboardWidgetsTest extends TestCase
             return $lease;
         };
         $units = [
-            $home('T2 Esplanade', $lease('Paul Klein')),
-            $home('Appartement Orangerie', null, [$lease('Anne Roth', LeaseStatus::ENDED, '2026-06-30')]),
-            $home('Studio Krutenau', $lease('Léa Muller', LeaseStatus::NOTICE)),
-            $home('Maison de la Robertsau', $lease('Thomas et Julie Weber')),
-            $home('Studio Neudorf', null),
+            $home('T2 E', $lease('Paul Klein')),
+            $home('Appartement D', null, [$lease('Anne Roth', LeaseStatus::ENDED, '2026-06-30')]),
+            $home('Studio A', $lease('Léa Muller', LeaseStatus::NOTICE)),
+            $home('Maison C', $lease('Thomas et Julie Weber')),
+            $home('Studio B', null),
         ];
         $states = ['let', 'vacant', 'ending', 'let', 'vacant'];
         $figures = $this->createStub(PortfolioFigures::class);
@@ -168,7 +168,7 @@ class DashboardWidgetsTest extends TestCase
     private function lateCall(): RentCall
     {
         $unit = $this->createStub(Unit::class);
-        $unit->method('getName')->willReturn('Appartement Krutenau');
+        $unit->method('getName')->willReturn('Appartement A');
         $lease = $this->createStub(Lease::class);
         $lease->method('getTenantNames')->willReturn('Léa Muller');
         $lease->method('getUnit')->willReturn($unit);
@@ -199,7 +199,7 @@ class DashboardWidgetsTest extends TestCase
 
         // Each home and where it stands, the vacant first, then the lease ending, then the let.
         preg_match_all('/<span class="dash-row-label">([^<]+)<small>(.*?)<\/small>/s', $html, $rows);
-        self::assertSame(['Appartement Orangerie', 'Studio Neudorf', 'Studio Krutenau', 'Maison de la Robertsau', 'T2 Esplanade'], array_map('trim', $rows[1]));
+        self::assertSame(['Appartement D', 'Studio B', 'Studio A', 'Maison C', 'T2 E'], array_map('trim', $rows[1]));
         self::assertStringContainsString('vacant depuis le 1 juil. 2026', $rows[2][0]);
         self::assertStringContainsString('jamais loué', $rows[2][1]);
         self::assertStringContainsString('Léa Muller · préavis donné', $rows[2][2]);
@@ -265,7 +265,7 @@ class DashboardWidgetsTest extends TestCase
     {
         $call = function (string $tenants, int $total, int $paid, string $dueOn, ?string $paidAt = null): RentCall {
             $unit = $this->createStub(Unit::class);
-            $unit->method('getName')->willReturn('Studio Krutenau');
+            $unit->method('getName')->willReturn('Studio A');
             $lease = $this->createStub(Lease::class);
             $lease->method('getTenantNames')->willReturn($tenants);
             $lease->method('getUnit')->willReturn($unit);
@@ -302,7 +302,7 @@ class DashboardWidgetsTest extends TestCase
     public function testWorksInProgressAndTheYearsCost(): void
     {
         $unit = $this->createStub(Unit::class);
-        $unit->method('getName')->willReturn('Maison de la Robertsau');
+        $unit->method('getName')->willReturn('Maison C');
         $order = $this->createStub(WorkOrder::class);
         $order->method('getTitle')->willReturn('Prise du séjour qui chauffe');
         $order->method('getUnit')->willReturn($unit);

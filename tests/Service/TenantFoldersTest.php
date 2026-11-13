@@ -143,10 +143,10 @@ final class TenantFoldersTest extends TestCase
         self::assertNull($spaces(['assets', 'management'])->spaceOf(self::user(44)), 'nobody to estate');
     }
 
-    /** @return array{0: Lease, 1: LeaseParty, 2: LeaseParty} Léa Muller's signed lease in Krutenau, with Tom Krebs and her father as guarantor */
+    /** @return array{0: Lease, 1: LeaseParty, 2: LeaseParty} Léa Muller's signed lease in A, with Tom Krebs and her father as guarantor */
     private function lease(User $lea): array
     {
-        $unit = new Unit(new Organisation('Meyers & Associée'), 'Krutenau T2');
+        $unit = new Unit(new Organisation('SCI Exemple'), 'A T2');
         $lease = new Lease($unit, 'MA-2026-007', new \DateTimeImmutable('2026-09-01'));
         $lease->addParty($leaParty = (new LeaseParty('Léa', 'Muller', 'lea@example.org'))->setUser($lea));
         $lease->addParty($tomParty = new LeaseParty('Tom', 'Krebs', 'tom@example.org', PartyRole::COTENANT));

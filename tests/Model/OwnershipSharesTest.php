@@ -17,7 +17,7 @@ final class OwnershipSharesTest extends TestCase
 {
     private static function ownership(): Ownership
     {
-        return new Ownership(new Organisation('Meyers & Associée'), 'Indivision Robertsau');
+        return new Ownership(new Organisation('SCI Exemple'), 'Indivision C');
     }
 
     public function testSharesAddUpToOneExactly(): void
@@ -29,7 +29,7 @@ final class OwnershipSharesTest extends TestCase
 
         $ownership = self::ownership();
         $start = new \DateTimeImmutable('2026-01-01');
-        (new OwnershipShare($ownership, 'Meyers & Associée', 1, 2, $start))->setCompany(true);
+        (new OwnershipShare($ownership, 'SCI Exemple', 1, 2, $start))->setCompany(true);
         (new OwnershipShare($ownership, 'Claire Hoffmann', 1, 4, $start))->setEmail('claire@example.org');
         self::assertFalse($ownership->isBalanced());
         self::assertSame('3/4', $ownership->problems()[0]['sum']);
@@ -44,7 +44,7 @@ final class OwnershipSharesTest extends TestCase
         $ownership = self::ownership();
         $start = new \DateTimeImmutable('2026-01-01');
         $sale = new \DateTimeImmutable('2026-07-01');
-        (new OwnershipShare($ownership, 'Meyers & Associée', 1, 2, $start))->setCompany(true);
+        (new OwnershipShare($ownership, 'SCI Exemple', 1, 2, $start))->setCompany(true);
         (new OwnershipShare($ownership, 'Claire Hoffmann', 1, 2, $start))->setEmail('claire@example.org')->setEndsOn($sale);
         (new OwnershipShare($ownership, 'Claire Hoffmann', 1, 4, $sale))->setEmail('claire@example.org');
         $problems = $ownership->problems();

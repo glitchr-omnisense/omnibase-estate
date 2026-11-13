@@ -8,7 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * Names the ledger's "ownership" axis: the shared ownership's name
- * (Indivision Robertsau) for the id its postings carry (OwnershipBooks).
+ * (Indivision C) for the id its postings carry (OwnershipBooks).
  * Only loaded when omnibase/ledger is installed.
  */
 class OwnershipDimensionLabeler implements DimensionLabelerInterface

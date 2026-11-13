@@ -106,7 +106,7 @@ estate:
 | `management` | property management for third parties: mandates, owners' statements, fees with VAT |
 | `transaction` | sales: sale mandates, buyers, offers, fees |
 
-Meyers & Associée sets `[assets, ownership]`; an agency `[management, transaction]`. The
+SCI Exemple sets `[assets, ownership]`; an agency `[management, transaction]`. The
 default, `[assets]`, keeps a site as it was. `Base\Estate\Service\Activities` answers `has()`,
 `any()` and `all()` (in the enum's order); in Twig, `estate_activity('ownership')` and
 `estate_activities()`.

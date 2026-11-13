@@ -123,7 +123,7 @@ final class PlanAccessTest extends TestCase
         $home = $this->withId(new Unit($company, 'Appartement', 'appartement'));
         [$manager, $associate, $outsider, $owner, $otherOwner] = [$this->user(), $this->user(), $this->user(), $this->user(), $this->user()];
         $members = [(new Member($company, 'Gestion'))->setUser($manager)];
-        $associates = [(new Associate($company, 'Marco', 'Meyer'))->setUser($associate), (new Associate($elsewhere, 'Ève', 'Klein'))->setUser($outsider)];
+        $associates = [(new Associate($company, 'Alex', 'Martin'))->setUser($associate), (new Associate($elsewhere, 'Ève', 'Klein'))->setUser($outsider)];
         $hers = $this->withId((new Mandator('Hélène Roth'))->setUser($owner));
         $his = $this->withId((new Mandator('Paul Klein'))->setUser($otherOwner));
         $mandates = [$this->withId((new Mandate($company, $hers))->addUnit($home)), $this->withId(new Mandate($company, $his))];

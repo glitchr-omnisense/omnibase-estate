@@ -45,11 +45,11 @@ final class ManagementStatementPdfTest extends TestCase
         $extension = (new \ReflectionClass(EstateExtension::class))->newInstanceWithoutConstructor();
         $twig->addRuntimeLoader(new \Twig\RuntimeLoader\FactoryRuntimeLoader([EstateExtension::class => fn () => $extension]));
 
-        $agency = (new Organisation('Agence Kléber'))->setCity('Strasbourg')->setEmail('gestion@kleber.example');
-        $unit = (new Unit($agency, 'Appartement Orangerie'))->setAddress('12 rue de l\'Orangerie')->setPostcode('67000')->setCity('Strasbourg');
+        $agency = (new Organisation('Agence Hérisson'))->setCity('Strasbourg')->setEmail('gestion@herisson.example');
+        $unit = (new Unit($agency, 'Appartement D'))->setAddress('12 rue de l\'Exemple')->setPostcode('67000')->setCity('Strasbourg');
         (new \ReflectionProperty($unit, 'id'))->setValue($unit, 12);
         $lease = new Lease($unit, 'MA-2026-012', new \DateTimeImmutable('2025-06-01'));
-        $owner = (new Mandator('Hélène Roth'))->setAddress('3 quai des Bateliers')->setPostcode('67000')->setCity('Strasbourg')->setIban('FR7610278060000002027280196');
+        $owner = (new Mandator('Hélène Roth'))->setAddress('3 rue de la Paix')->setPostcode('67000')->setCity('Strasbourg')->setIban('FR7630006000019876543210270');
         $mandate = (new Mandate($agency, $owner, new \DateTimeImmutable('2026-01-01')))->setNumber('MG-2026-0001')->addUnit($unit)->setReserve(20000);
         $october = (new RentCall($lease, new \DateTimeImmutable('2026-10-01')))->setRent(85000)->setCharges(5000);
         $october->addPayment(new Payment($october, 90000, PaymentMethod::TRANSFER, new \DateTimeImmutable('2026-10-04')));
@@ -57,7 +57,7 @@ final class ManagementStatementPdfTest extends TestCase
         $september->addPayment(new Payment($september, 50000, PaymentMethod::TRANSFER, new \DateTimeImmutable('2026-09-06')));
         [$from, $to] = Period::parse('2026-10');
         $statement = MandateStatement::of($mandate, $from, $to, [$september, $october],
-            [new MandateFee($mandate, new \DateTimeImmutable('2026-10-04'), 'Loyer 10/2026 — Appartement Orangerie', 90000, 700, 6300, 1260, 'V20')],
+            [new MandateFee($mandate, new \DateTimeImmutable('2026-10-04'), 'Loyer 10/2026 — Appartement D', 90000, 700, 6300, 1260, 'V20')],
             [(new MandateExpense($mandate, 'Chauffe-eau', 42000, new \DateTimeImmutable('2026-10-15')))->setSupplierName('Plomberie Ott')->markPosted()],
             [(new MandatePayout($mandate, new \DateTimeImmutable('2026-09-30'), 50000, 0, 50000, new \DateTimeImmutable('2026-10-01')))->setReference('RV-2026-0001')]);
 
@@ -67,7 +67,7 @@ final class ManagementStatementPdfTest extends TestCase
         self::assertStringContainsString('Compte rendu de gérance', $text);
         self::assertStringContainsString('Octobre 2026', $text);
         self::assertStringContainsString('Hélène Roth', $text);
-        self::assertStringContainsString('Appartement Orangerie', $text);
+        self::assertStringContainsString('Appartement D', $text);
         self::assertMatchesRegularExpression('/Loyers et charges encaissés \(appelés 900,00\s€\) 900,00\s€/u', $text);
         self::assertMatchesRegularExpression('/63,00\s€ HT, TVA 12,60\s€\) - 75,60\s€/u', $text);
         self::assertStringContainsString('Chauffe-eau — Plomberie Ott', $text);
@@ -82,7 +82,7 @@ final class ManagementStatementPdfTest extends TestCase
         self::assertStringContainsString('[Voir mon espace propriétaire: https://example.org/estate_owner]', $text);
         self::assertStringContainsString('Bonjour Hélène Roth', $text);
         self::assertMatchesRegularExpression('/Solde au 31 octobre 2026 404,40\s€/u', $text);
-        self::assertMatchesRegularExpression('/Disponible pour reversement : 204,40\s€ , viré sur votre compte se terminant par 0196/u', $text);
+        self::assertMatchesRegularExpression('/Disponible pour reversement : 204,40\s€ , viré sur votre compte se terminant par 0270/u', $text);
         self::assertMatchesRegularExpression('/Restent dus par les locataires : 400,00\s€/u', $text);
     }
 }

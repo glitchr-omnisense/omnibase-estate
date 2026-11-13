@@ -9,16 +9,30 @@
     "autoload-dev": {"psr-4": {"Tests\\Base\\Estate\\": "./tests"}},
     "require": {
         "php": "^8.2",
+        "doctrine/doctrine-bundle": "^2.10|^3.0",
         "doctrine/orm": "^2.15|^3.0",
-        "omnibridge/symfony": "1.x-dev",
-        "omnisense/omnibase": "3.x-dev || 4.0.*-dev || 5.0.*-dev",
-        "omnibase/admin": "dev-main",
+        "omnibridge/symfony": "^1.1",
+        "omnisense/omnibase": "^5.1",
+        "omnibase/admin": "^1.0",
         "symfony/config": "^7.0|^8.0",
         "symfony/dependency-injection": "^7.0|^8.0",
         "symfony/form": "^7.0|^8.0",
         "symfony/http-kernel": "^7.0|^8.0",
         "symfony/mailer": "^7.0|^8.0",
         "symfony/security-bundle": "^7.0|^8.0"
+    },
+    "require-dev": {
+        "dompdf/dompdf": "^3.0",
+        "omnibase/drive": "^1.0",
+        "omnibase/ledger": "^1.0",
+        "omnibridge/doctrine": "^1.0",
+        "omnisense/omnisign": "^1.2",
+        "omnistate/insee": "^1.0",
+        "omnitrade/stripe": "^1.0",
+        "phpunit/phpunit": "^11.0|^12.0",
+        "symfony/http-client": "^7.0|^8.0",
+        "twig/intl-extra": "^3.0",
+        "twig/twig": "^3.0"
     },
     "suggest": {
         "omnibase/ledger": "Rent calls, payments and work invoices posted to the company's books; an agency's management and sale fees",
@@ -30,6 +44,10 @@
         "omnistate/insee": "The IRL of a rent revision read from INSEE (with omnisense/omnistate's statistics), its source credited; without it the value is typed by hand"
     },
     "config": {"sort-packages": true, "allow-plugins": {"omnibridge/composer": true, "php-http/discovery": true}},
-    "minimum-stability": "dev",
+    "extra": {
+        "branch-alias": {
+            "dev-main": "1.x-dev"
+        }
+    },
     "prefer-stable": true
 }

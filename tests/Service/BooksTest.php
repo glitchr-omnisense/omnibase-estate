@@ -71,9 +71,9 @@ final class BooksTest extends TestCase
 
     public function testARentCallAndAWorkInvoiceArePostedWithTheirUnit(): void
     {
-        $book = new Book('Meyers & Associée');
-        $organisation = (new Organisation('Meyers & Associée'))->setBookId(1);
-        $unit = self::withId(new Unit($organisation, 'Appartement Krutenau'), 12);
+        $book = new Book('SCI Exemple');
+        $organisation = (new Organisation('SCI Exemple'))->setBookId(1);
+        $unit = self::withId(new Unit($organisation, 'Appartement A'), 12);
         $call = (new RentCall(new Lease($unit, 'MA-2026-001', new \DateTimeImmutable('2026-01-01')), new \DateTimeImmutable('2026-10-01')))->setRent(85000)->setCharges(6000);
         $order = (new WorkOrder($unit, 'Fuite'))->setContractor(self::withId(new Contractor($organisation, 'Plomberie Ott'), 4))->setInvoiceAmount(30000);
 
@@ -90,10 +90,10 @@ final class BooksTest extends TestCase
 
     public function testARentCalledWithVatPostsItsBaseAndItsVat(): void
     {
-        $book = (new Book('Meyers & Associée'))->setVatRegime(VatRegime::NORMAL_MONTHLY);
+        $book = (new Book('SCI Exemple'))->setVatRegime(VatRegime::NORMAL_MONTHLY);
         $tax = new Tax($book, 'TVA20', 'TVA collectée 20 %', 2000, TaxKind::COLLECTED, new Account($book, '44571', 'TVA collectée'));
-        $organisation = (new Organisation('Meyers & Associée'))->setBookId(1);
-        $unit = self::withId(new Unit($organisation, 'Boutique Krutenau'), 14);
+        $organisation = (new Organisation('SCI Exemple'))->setBookId(1);
+        $unit = self::withId(new Unit($organisation, 'Boutique A'), 14);
         $lease = (new Lease($unit, 'MA-2026-C01', new \DateTimeImmutable('2026-01-01')))->setKind(LeaseKind::COMMERCIAL)->setIndexName('ILC')->setTaxCode('tva20')->setRent(200000)->setCharges(15000);
         $books = $this->books($book, $tax);
 
@@ -113,9 +113,9 @@ final class BooksTest extends TestCase
 
     public function testNoVatWithoutALiableBookOrAKnownCode(): void
     {
-        $book = new Book('Meyers & Associée');
+        $book = new Book('SCI Exemple');
         $tax = new Tax($book, 'TVA20', 'TVA collectée 20 %', 2000, TaxKind::COLLECTED, new Account($book, '44571', 'TVA collectée'));
-        $organisation = (new Organisation('Meyers & Associée'))->setBookId(1);
+        $organisation = (new Organisation('SCI Exemple'))->setBookId(1);
         $lease = (new Lease(self::withId(new Unit($organisation, 'Boutique'), 15), 'C-2'))->setTaxCode('TVA20');
 
         // The company not liable (VIES does not know it): its book's regime says so.

@@ -111,7 +111,7 @@ Two runs at once (several web containers starting) take turns over the site's lo
 The secret is sealed with the environment's vault key pair: `php bin/console secrets:generate-keys
 --env=prod` once per environment (the private key never committed; a server can be given it as
 `SYMFONY_DECRYPTION_SECRET`). It exits 0 in every case, so a deploy never stops on it. A new site gets the webhook with no
-command typed: its deploy runs `estate:payment:webhook` after the cache is warmed (meyers: its web
+command typed: its deploy runs `estate:payment:webhook` after the cache is warmed (for one, its web
 entrypoint), its public address comes from its hosts, and the Stripe secret key is all it sets.
 
 The tenant's "Payer" is a POST with the token `rent_pay_<id>`; refused for a paid call or when

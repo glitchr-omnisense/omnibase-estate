@@ -47,7 +47,7 @@ final class OnlinePaymentsCatchUpTest extends TestCase
     public function testTheSessionStartedIsKeptOnTheCall(): void
     {
         $unit = $this->createStub(Unit::class);
-        $unit->method('getName')->willReturn('Appartement Krutenau');
+        $unit->method('getName')->willReturn('Appartement A');
         $lease = $this->createStub(Lease::class);
         $lease->method('getUnit')->willReturn($unit);
         $call = $this->createMock(RentCall::class);

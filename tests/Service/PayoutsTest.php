@@ -44,7 +44,7 @@ final class PayoutsTest extends ManagementTestCase
         self::assertSame([['balance' => 72440, 'reserve' => 20000, 'amount' => 52440]], array_map(fn ($d) => array_diff_key($d, ['mandate' => 0]), $management->payoutsDue($on)));
 
         $payout = $management->issuePayout($this->mandate, $on, null, new \DateTimeImmutable('2026-11-02'));
-        self::assertSame(['RV-2026-0001', 52440, 72440, 20000, 'FR7610278060000002027280196', PayoutStatus::ISSUED], [$payout->getReference(), $payout->getAmount(), $payout->getBalance(), $payout->getReserve(), $payout->getIban(), $payout->getStatus()]);
+        self::assertSame(['RV-2026-0001', 52440, 72440, 20000, 'FR7630006000019876543210270', PayoutStatus::ISSUED], [$payout->getReference(), $payout->getAmount(), $payout->getBalance(), $payout->getReserve(), $payout->getIban(), $payout->getStatus()]);
         $draft = $this->draft('estate:management:payout:'.$payout->getId());
         self::assertSame(['4671M5' => [52440, 0], '4678' => [0, 52440]], self::lines($draft));
         self::assertSame('RV-2026-0001', $draft->piece, 'the reference the transfer carries back: the reconciliation finds the payout by it');
@@ -82,14 +82,14 @@ final class PayoutsTest extends ManagementTestCase
         $read = fn (string $path) => $xpath->evaluate('string('.$path.')');
         self::assertSame('1', $read('//p:GrpHdr/p:NbOfTxs'));
         self::assertSame('524.40', $read('//p:GrpHdr/p:CtrlSum'));
-        self::assertSame('Agence Kleber', $read('//p:PmtInf/p:Dbtr/p:Nm'), 'the agency, in the SEPA character set');
+        self::assertSame('Agence Herisson', $read('//p:PmtInf/p:Dbtr/p:Nm'), 'the agency, in the SEPA character set');
         self::assertSame('FR7614508000300000000000184', $read('//p:DbtrAcct/p:Id/p:IBAN'), 'from the escrow account');
         self::assertSame('2026-11-03', $read('//p:ReqdExctnDt'));
         self::assertSame('RV-2026-0001', $read('//p:CdtTrfTxInf/p:PmtId/p:EndToEndId'));
         self::assertSame('524.40', $read('//p:CdtTrfTxInf/p:Amt/p:InstdAmt'));
         self::assertSame('EUR', $read('//p:CdtTrfTxInf/p:Amt/p:InstdAmt/@Ccy'));
         self::assertSame('Helene Roth', $read('//p:Cdtr/p:Nm'));
-        self::assertSame('FR7610278060000002027280196', $read('//p:CdtrAcct/p:Id/p:IBAN'));
+        self::assertSame('FR7630006000019876543210270', $read('//p:CdtrAcct/p:Id/p:IBAN'));
         self::assertStringContainsString('RV-2026-0001', $read('//p:RmtInf/p:Ustrd'));
         self::assertSame(PayoutStatus::EXPORTED, $payout->getStatus());
 

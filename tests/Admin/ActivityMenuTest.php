@@ -20,7 +20,7 @@ use Base\Estate\Service\Activities;
 use PHPUnit\Framework\TestCase;
 
 /**
- * A dashboard's items through ActivityMenu::filter(), as meyers yields
+ * A dashboard's items through ActivityMenu::filter(), as a site yields
  * them: the cards and the screens of an activity the site does not run are
  * left out, a section left empty too, and what stays keeps its label, its
  * place and its key (the layout the team arranged is stored by key).
@@ -140,7 +140,7 @@ final class ActivityMenuTest extends TestCase
             MenuItem::linkToRoute('admin_settings', [], 'Réglages', 'fa-solid fa-sliders'),
         ];
 
-        self::assertSame(['Réglages'], self::labels((new ActivityMenu(new Activities(['assets', 'ownership'])))->filter($items)), 'Meyers & Associée: no management, its section and card go');
+        self::assertSame(['Réglages'], self::labels((new ActivityMenu(new Activities(['assets', 'ownership'])))->filter($items)), 'SCI Exemple: no management, its section and card go');
         self::assertSame([
             ['Gérance', ['Propriétaires', 'Mandats', 'Dépenses', 'Reversements', 'Comptes rendus', 'Fichier SEPA']],
             'estate_widget.management',
@@ -164,7 +164,7 @@ final class ActivityMenuTest extends TestCase
             MenuItem::linkToRoute('admin_settings', [], 'Réglages', 'fa-solid fa-sliders'),
         ];
 
-        self::assertSame(['Réglages'], self::labels((new ActivityMenu(new Activities(['assets', 'ownership'])))->filter($items)), 'Meyers & Associée: no sales, their section and card go');
+        self::assertSame(['Réglages'], self::labels((new ActivityMenu(new Activities(['assets', 'ownership'])))->filter($items)), 'SCI Exemple: no sales, their section and card go');
         self::assertSame([
             ['Transactions', ['Propriétaires', 'Mandats de vente', 'Acquéreurs', 'Visites', 'Offres', 'Ventes en cours']],
             'estate_widget.transaction',

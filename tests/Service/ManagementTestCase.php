@@ -47,7 +47,7 @@ use Twig\Environment;
 /**
  * The management's services over records kept in memory: what is persisted
  * gets an id and is found again by its repository (findBy / findOneBy on its
- * getters), the postings are kept as drafts. An agency, Agence Kléber, manages
+ * getters), the postings are kept as drafts. An agency, Agence Hérisson, manages
  * Hélène Roth's flat (unit 12) under mandate MG-2026-0001 since January:
  * 7 % before tax, VAT 20 %.
  */
@@ -72,10 +72,10 @@ abstract class ManagementTestCase extends TestCase
         if (!class_exists(Posting::class)) {
             self::markTestSkipped('omnibase/ledger is needed.');
         }
-        $this->book = new Book('Agence Kléber');
-        $this->agency = (new Organisation('Agence Kléber'))->setBookId(1)->setEmail('gestion@kleber.example')->setIban('FR7630006000011234567890189');
-        $this->owner = self::withId((new Mandator('Hélène Roth'))->setEmail('helene@example.org')->setIban('FR76 1027 8060 0000 0202 7280 196'), 5);
-        $this->unit = self::withId(new Unit($this->agency, 'Appartement Orangerie'), 12);
+        $this->book = new Book('Agence Hérisson');
+        $this->agency = (new Organisation('Agence Hérisson'))->setBookId(1)->setEmail('gestion@herisson.example')->setIban('FR7630006000011234567890189');
+        $this->owner = self::withId((new Mandator('Hélène Roth'))->setEmail('helene@example.org')->setIban('FR76 3000 6000 0198 7654 3210 270'), 5);
+        $this->unit = self::withId(new Unit($this->agency, 'Appartement D'), 12);
         $this->lease = new Lease($this->unit, 'MA-2026-012', new \DateTimeImmutable('2025-06-01'));
         $this->mandate = self::withId((new Mandate($this->agency, $this->owner, new \DateTimeImmutable('2026-01-01')))->setNumber('MG-2026-0001')->setFeeRate(700)->addUnit($this->unit), 3);
         $this->records[Mandate::class] = [$this->mandate];
@@ -143,7 +143,7 @@ abstract class ManagementTestCase extends TestCase
     /** The agency's escrow account at the bank: 5121, its IBAN the payouts' debtor. */
     protected function escrow(): BankAccount
     {
-        return (new BankAccount(new BankConnection($this->book, 'files'), 'kleber-sequestre', 'Compte séquestre', new Account($this->book, '5121', 'Banque séquestre'), new Journal($this->book, 'BQ2', 'Séquestre'), 'FR7614508000300000000000184'))->setEscrow(true);
+        return (new BankAccount(new BankConnection($this->book, 'files'), 'herisson-sequestre', 'Compte séquestre', new Account($this->book, '5121', 'Banque séquestre'), new Journal($this->book, 'BQ2', 'Séquestre'), 'FR7614508000300000000000184'))->setEscrow(true);
     }
 
     protected function entityManager(): EntityManagerInterface

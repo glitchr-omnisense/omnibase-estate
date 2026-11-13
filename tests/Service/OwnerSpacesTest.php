@@ -71,7 +71,7 @@ final class OwnerSpacesTest extends TestCase
     {
         $user = self::withId((new \ReflectionClass(User::class))->newInstanceWithoutConstructor(), 41);
         $other = self::withId((new \ReflectionClass(User::class))->newInstanceWithoutConstructor(), 42);
-        $agency = self::withId(new Organisation('Agence Kléber'), 1);
+        $agency = self::withId(new Organisation('Agence Hérisson'), 1);
         $helene = self::withId((new Mandator('Hélène Roth'))->setUser($user), 5);
         $paul = self::withId((new Mandator('Paul Klein'))->setUser($other), 6);
         $hers = self::withId(new Mandate($agency, $helene), 3);

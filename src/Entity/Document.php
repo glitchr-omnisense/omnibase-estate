@@ -72,7 +72,7 @@ class Document
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?User $uploadedBy = null;
 
-    /** Who added it, as shown: "Gestion", "Léa Muller", "Plomberie Kieffer". */
+    /** Who added it, as shown: "Gestion", "Léa Muller", "Plomberie Durand". */
     #[ORM\Column(length: 160, nullable: true)]
     private ?string $uploadedByName = null;
 

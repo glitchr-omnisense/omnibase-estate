@@ -27,12 +27,12 @@ final class OwnershipStatementTest extends TestCase
 {
     public function testTheBalancesFollowTheSharesInForce(): void
     {
-        $organisation = new Organisation('Meyers & Associée');
-        $unit = new Unit($organisation, 'Maison de la Robertsau');
-        $ownership = (new Ownership($organisation, 'Indivision Robertsau'))->addUnit($unit);
+        $organisation = new Organisation('SCI Exemple');
+        $unit = new Unit($organisation, 'Maison C');
+        $ownership = (new Ownership($organisation, 'Indivision C'))->addUnit($unit);
         $start = new \DateTimeImmutable('2026-01-01');
         $sale = new \DateTimeImmutable('2026-07-01');
-        (new OwnershipShare($ownership, 'Meyers & Associée', 1, 2, $start))->setCompany(true);
+        (new OwnershipShare($ownership, 'SCI Exemple', 1, 2, $start))->setCompany(true);
         $before = (new OwnershipShare($ownership, 'Claire Hoffmann', 1, 2, $start))->setEmail('claire@example.org')->setEndsOn($sale);
         $after = (new OwnershipShare($ownership, 'Claire Hoffmann', 1, 4, $sale))->setEmail('claire@example.org');
         (new OwnershipShare($ownership, 'Antoine Schaller', 1, 4, $sale))->setEmail('antoine@example.org');

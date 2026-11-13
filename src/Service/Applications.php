@@ -105,7 +105,7 @@ class Applications
         return \count($expired);
     }
 
-    /** "MA-2026-003": the company's initials (Meyers & Associée), the year, the year's next number. */
+    /** "MA-2026-003": the company's initials (e.g. Martin & Associés), the year, the year's next number. */
     private function reference(string $company, \DateTimeImmutable $startOn): string
     {
         $words = array_filter(preg_split('/[^\pL]+/u', $company), fn ($w) => mb_strlen($w) > 1 && !\in_array(mb_strtoupper($w), ['SCI', 'SARL', 'SAS', 'SA', 'ET', 'DE', 'DU', 'LA', 'LE', 'LES'], true));

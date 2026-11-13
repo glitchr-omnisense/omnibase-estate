@@ -92,7 +92,7 @@ final class FlatshareFoldersTest extends TestCase
         $lea = self::user(41);
         $ines = self::user(43);
         $jean = self::user(49);
-        $unit = new Unit(new Organisation('Meyers & Associée'), 'Grand appartement Krutenau');
+        $unit = new Unit(new Organisation('SCI Exemple'), 'Grand appartement A');
         $lease = $this->lease($unit, 'MA-2026-010');
         $lease->addParty((new LeaseParty('Léa', 'Muller', 'lea@example.org'))->setUser($lea));
         $lease->addParty($tom = new LeaseParty('Tom', 'Krebs', 'tom@example.org', PartyRole::COTENANT));
@@ -101,13 +101,13 @@ final class FlatshareFoldersTest extends TestCase
         $folders = $this->leaseFolders();
 
         self::assertSame(['Locataires/Léa Muller', 'Locataires/Tom Krebs', 'Locataires/Inès Haddad'], $folders->sync($lease), 'each keeps their own folder');
-        $common = 'Colocations/Grand appartement Krutenau';
+        $common = 'Colocations/Grand appartement A';
         self::assertTrue($this->share->isDirectory($common));
         self::assertSame($common, $lease->getFolder(), 'kept on the lease');
         self::assertSame('staff', $this->share->audience($common), 'the team\'s');
         self::assertStringContainsString('le bail, l\'état des lieux, le règlement intérieur', (string) $this->share->row($common)->getDescription());
         $group = $this->groups[$lease->getGroupId()];
-        self::assertSame('Colocation Grand appartement Krutenau', $group->getName());
+        self::assertSame('Colocation Grand appartement A', $group->getName());
         self::assertSame([41, 43], self::ids($group), 'the occupants with an account, not the guarantor');
         self::assertTrue($this->share->row($common)->getGroups()->contains($group), 'shared with the group');
         self::assertFalse($this->share->row($common)->allowsDeposit(), 'read only');
@@ -154,8 +154,8 @@ final class FlatshareFoldersTest extends TestCase
 
     public function testASingleTenantGetsNeitherAndACoupleIsAFlatshareToo(): void
     {
-        $organisation = new Organisation('Meyers & Associée');
-        $single = $this->lease(new Unit($organisation, 'Appartement Neudorf'), 'MA-2024-002');
+        $organisation = new Organisation('SCI Exemple');
+        $single = $this->lease(new Unit($organisation, 'Appartement B'), 'MA-2024-002');
         $single->addParty((new LeaseParty('Karim', 'Benali', 'karim@example.org'))->setUser(self::user(61)));
         $single->addParty(new LeaseParty('Samia', 'Benali', 'samia@example.org', PartyRole::GUARANTOR));
         $flatshares = new FlatshareFolders($this->share, $this->entityManager);
@@ -167,26 +167,26 @@ final class FlatshareFoldersTest extends TestCase
         self::assertNull($single->getFolder());
 
         // A couple on one lease: two occupants, the same mechanism, the label « Colocation » too.
-        $couple = $this->lease(new Unit($organisation, 'Maison de la Robertsau'), 'MA-2021-001');
+        $couple = $this->lease(new Unit($organisation, 'Maison C'), 'MA-2021-001');
         $couple->addParty(new LeaseParty('Thomas', 'Weber', 'thomas@example.org'));
         $couple->addParty((new LeaseParty('Julie', 'Weber', 'julie@example.org', PartyRole::COTENANT))->setUser(self::user(62)));
-        self::assertSame('Colocations/Maison de la Robertsau', $flatshares->sync($couple));
-        self::assertSame('Colocation Maison de la Robertsau', $flatshares->groupOf($couple)->getName());
+        self::assertSame('Colocations/Maison C', $flatshares->sync($couple));
+        self::assertSame('Colocation Maison C', $flatshares->groupOf($couple)->getName());
         self::assertSame([62], self::ids($flatshares->groupOf($couple)));
 
         // An ended lease that never was one makes none.
-        $old = $this->lease(new Unit($organisation, 'Studio Krutenau'), 'MA-2019-001')->setStatus(LeaseStatus::ENDED);
+        $old = $this->lease(new Unit($organisation, 'Studio A'), 'MA-2019-001')->setStatus(LeaseStatus::ENDED);
         $old->addParty(new LeaseParty('Paul', 'Klein', 'paul@example.org'));
         $old->addParty(new LeaseParty('Anna', 'Klein', 'anna@example.org', PartyRole::COTENANT));
         self::assertNull($flatshares->sync($old));
-        self::assertFalse($this->share->isDirectory('Colocations/Studio Krutenau'));
+        self::assertFalse($this->share->isDirectory('Colocations/Studio A'));
     }
 
     public function testAGroupTheTeamMadeUnderThatNameIsTaken(): void
     {
-        $made = new ShareGroup('Colocation Grand appartement Krutenau');
+        $made = new ShareGroup('Colocation Grand appartement A');
         $this->entityManager->persist($made);
-        $lease = $this->lease(new Unit(new Organisation('Meyers & Associée'), 'Grand appartement Krutenau'), 'MA-2026-010');
+        $lease = $this->lease(new Unit(new Organisation('SCI Exemple'), 'Grand appartement A'), 'MA-2026-010');
         $lease->addParty((new LeaseParty('Léa', 'Muller', 'lea@example.org'))->setUser(self::user(41)));
         $lease->addParty((new LeaseParty('Inès', 'Haddad', 'ines@example.org', PartyRole::COTENANT))->setUser(self::user(43)));
 

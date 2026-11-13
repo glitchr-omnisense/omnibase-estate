@@ -7,7 +7,7 @@ use Base\Ledger\Dimension\DimensionLabelerInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Names the ledger's "unit" axis: the unit's name (Appartement Krutenau)
+ * Names the ledger's "unit" axis: the unit's name (Appartement A)
  * for the id estate posts its entries with (Service\Books). Only loaded
  * when omnibase/ledger is installed.
  */

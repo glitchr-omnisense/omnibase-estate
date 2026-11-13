@@ -37,13 +37,13 @@ final class StoriesTest extends TestCase
         $routes->add('estate_unit', new Route('/biens/{slug}'));
         $routes->add('estate_works', new Route('/travaux'));
 
-        return new Stories($this->createStub(EntityManagerInterface::class), new UrlGenerator($routes, new RequestContext('', 'GET', 'meyers.example', 'https')));
+        return new Stories($this->createStub(EntityManagerInterface::class), new UrlGenerator($routes, new RequestContext('', 'GET', 'example.org', 'https')));
     }
 
     private function home(): Unit
     {
-        $unit = (new Unit(new Organisation('Meyers & Associée', 'meyers'), 'Appartement Orangerie', 'appartement-orangerie'))
-            ->setDistrict('Orangerie')->setCity('Strasbourg')->setPublished(true);
+        $unit = (new Unit(new Organisation('SCI Exemple', 'sci-exemple'), 'Appartement D', 'appartement-d'))
+            ->setDistrict('D')->setCity('Strasbourg')->setPublished(true);
         $lease = new Lease($unit, 'L-1', new \DateTimeImmutable('-1 year'));
         $lease->addParty(new LeaseParty('Léa', 'Muller', 'lea@example.org'));
         $lease->addParty(new LeaseParty('Anne', 'Schmitt', 'anne@example.org', PartyRole::GUARANTOR));
@@ -121,10 +121,10 @@ final class StoriesTest extends TestCase
         (new \ReflectionProperty(StoryEntry::class, 'id'))->setValue($entry, 7);
 
         $link = $stories->url($entry, 'instagram');
-        self::assertSame('https://meyers.example/travaux?utm_source=instagram&utm_medium=social&utm_campaign=histoire-7#histoire-7', $link, 'the works page: a home\'s page shows no works');
+        self::assertSame('https://example.org/travaux?utm_source=instagram&utm_medium=social&utm_campaign=histoire-7#histoire-7', $link, 'the works page: a home\'s page shows no works');
         $caption = $stories->caption($entry, 'instagram');
-        self::assertStringStartsWith("Cuisine refaite — Orangerie, Strasbourg\n\n", $caption);
-        self::assertStringEndsWith('Meyers & Associée · '.$link, $caption);
+        self::assertStringStartsWith("Cuisine refaite — D, Strasbourg\n\n", $caption);
+        self::assertStringEndsWith('SCI Exemple · '.$link, $caption);
         $text = explode("\n\n", $caption)[1];
         self::assertLessThanOrEqual(281, mb_strlen($text));
         self::assertStringEndsWith('cuisine.', $text, 'cut at a sentence');
@@ -173,7 +173,7 @@ final class StoriesTest extends TestCase
 
         foreach (StoryImages::FORMATS as $format => [$width, $height]) {
             foreach (StoryImages::LAYOUTS as $layout) {
-                $size = $images->compose($before, $after, $layout, $format, 'Cuisine et salle de bains refaites, un titre bien trop long pour la bande', 'Orangerie, Strasbourg · Meyers & Associée')->getSize();
+                $size = $images->compose($before, $after, $layout, $format, 'Cuisine et salle de bains refaites, un titre bien trop long pour la bande', 'D, Strasbourg · SCI Exemple')->getSize();
                 self::assertSame([$width, $height], [$size->getWidth(), $size->getHeight()], $layout.' '.$format);
             }
         }

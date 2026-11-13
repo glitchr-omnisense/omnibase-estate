@@ -40,10 +40,10 @@ prevailing, a balcony and a cellar out of the living area, the gap with the decl
 lease runs - not a guarantor, not a former tenant, not a neighbour -, the team, the associates, the
 owners), `Service/StoriesTest` (nothing public until published and only the cleared photos, no
 tenant's name - taken out, refused -, works under way and their suggested state, the amount only
-when ticked, the networks' text and link, the images' sizes), the online payments, the webhook and the dashboard cards. In meyers' container:
+when ticked, the networks' text and link, the images' sizes), the online payments, the webhook and the dashboard cards. In a site's container:
 
 ```bash
-docker exec -w /srv/app/vendor/omnibase/estate meyers-web-1 php /srv/app/vendor/bin/phpunit --do-not-cache-result
+docker exec -w /srv/app/vendor/omnibase/estate <site>-web-1 php /srv/app/vendor/bin/phpunit --do-not-cache-result
 ```
 
 An application tests the rest through its own pages and commands. The entities need no database: the in-memory example in
