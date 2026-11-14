@@ -30,7 +30,7 @@ What it suggests, each loaded only when present (`config/services.php`):
 // config/bundles.php
 return [
     // ...
-    Base\BaseBundle::class => ['all' => true],
+    Omnibridge\Symfony\Omnibase\BaseBundle::class => ['all' => true],
     Base\Admin\AdminBundle::class => ['all' => true],
     Base\Estate\EstateBundle::class => ['all' => true],
 ];

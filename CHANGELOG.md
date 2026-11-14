@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-11-14
+
+### Changed
+- The current names of what moved to omnibridge/symfony, in place of the former ones the core keeps as aliases only
+  until 6.0: `Base\BaseBundle` → `Omnibridge\Symfony\Omnibase\BaseBundle`;
+  `Base\Bundle\AbstractBaseBundle` → `Omnibridge\Symfony\Omnibase\Bundle\AbstractBaseBundle`;
+  `Base\Bundle\AbstractBaseExtension` → `Omnibridge\Symfony\Omnibase\Bundle\AbstractBaseExtension`.
+  No behaviour change; the bundle no longer needs any alias of the core's `former-names*.php`.
+
 ## [1.0.0] — 2026-11-13
 
 First stable release.
