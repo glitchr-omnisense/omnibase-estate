@@ -4,6 +4,8 @@
 
 ## [1.0.1] — 2026-11-14
 
+- Tests: the payment webhook test accepts the events omnitrade/stripe 1.1 adds to the subscription.
+
 ### Changed
 - The current names of what moved to omnibridge/symfony, in place of the former ones the core keeps as aliases only
   until 6.0: `Base\BaseBundle` → `Omnibridge\Symfony\Omnibase\BaseBundle`;

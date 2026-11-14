@@ -113,7 +113,8 @@ final class PaymentWebhookTest extends TestCase
         self::assertSame(['api.webhook.estate_payment_webhook.stripe.secret'], $this->settings->sealed, 'sealed before written');
         self::assertSame('whsec_mock_1', $webhook->secret());
         self::assertSame(['id' => 'we_1', 'url' => self::URL], $webhook->registered());
-        self::assertSame(['checkout.session.completed', 'checkout.session.async_payment_succeeded', 'checkout.session.async_payment_failed', 'checkout.session.expired'], $this->endpoints['we_1']['enabled_events']);
+        // The checkout events are what this bundle reads; omnitrade/stripe 1.1 subscribes to the payment_intent ones as well.
+        self::assertSame([], array_diff(['checkout.session.completed', 'checkout.session.async_payment_succeeded', 'checkout.session.async_payment_failed', 'checkout.session.expired'], $this->endpoints['we_1']['enabled_events']));
 
         // The next deploy: there, nothing done.
         $this->calls = [];
