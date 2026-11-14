@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [1.0.2] — 2026-11-14
+
+### Changed
+- Accepts omnisense/omnibase 6.0 beside 5.1: `omnisense/omnibase` `^5.1 || ^6.0` and `omnibridge/symfony` `^1.1 || ^2.0`, `omnibridge/doctrine` `^1.0 || ^2.0` (require-dev). The same code runs on both lines.
+- `Service\Invitations` gives the core's `Base\Service\Invitations` a unit of work (`UnitOfWorks::of()` of its entity
+  manager), which 6.0 requires; 5.x made the same conversion itself.
+
 ## [1.0.1] — 2026-11-14
 
 - Tests: the payment webhook test accepts the events omnitrade/stripe 1.1 adds to the subscription.

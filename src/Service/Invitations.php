@@ -38,7 +38,7 @@ class Invitations extends BaseInvitations
         private readonly ?LeaseFolders $leaseFolders = null,
         private readonly ?LoggerInterface $logger = null,
     ) {
-        parent::__construct($entityManager, $userClass);
+        parent::__construct(UnitOfWorks::of($entityManager), $userClass);
     }
 
     /** @return array{0: Invitation, 1: string} the invitation and its token (sent, never stored) */
