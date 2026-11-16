@@ -22,7 +22,7 @@ role stored on the account.
 ## Requirements
 
 - PHP 8.2+, `doctrine/orm` 2.15 or 3
-- `omnisense/omnibase` 5.1 or later (5.x), `omnibridge/symfony` 1.1 or later, `omnibase/admin`
+- `omnisense/omnibase` 7.0 or later (7.x), `omnibridge/symfony` 3.0 or later, `omnibase/admin`
 - Symfony 7 or 8 (`config`, `dependency-injection`, `form`, `http-kernel`, `mailer`, `security-bundle`)
 - Suggested: `omnibase/ledger` (the books), `omnisense/omnitrade` with `omnitrade/stripe` (rents
   paid online), `dompdf/dompdf` (PDF notices, receipts and statements), `omnisense/omnistate`

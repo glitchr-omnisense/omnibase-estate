@@ -11,9 +11,9 @@
         "php": "^8.2",
         "doctrine/doctrine-bundle": "^2.10|^3.0",
         "doctrine/orm": "^2.15|^3.0",
-        "omnibridge/symfony": "^1.0",
-        "omnisense/omnibase": "^1.0",
-        "omnibase/admin": "^1.0",
+        "omnibridge/symfony": "^3.0",
+        "omnisense/omnibase": "^7.0",
+        "omnibase/admin": "^2.0",
         "symfony/config": "^7.0|^8.0",
         "symfony/dependency-injection": "^7.0|^8.0",
         "symfony/form": "^7.0|^8.0",
@@ -23,10 +23,10 @@
     },
     "require-dev": {
         "dompdf/dompdf": "^3.0",
-        "omnibase/drive": "^1.0",
-        "omnibase/ledger": "^1.0",
-        "omnibridge/doctrine": "^1.0",
-        "omnibridge/eloquent": "^1.0",
+        "omnibase/drive": "^2.0",
+        "omnibase/ledger": "^2.0",
+        "omnibridge/doctrine": "^3.0",
+        "omnibridge/eloquent": "^2.0",
         "omnisense/omnisign": "^1.2",
         "omnistate/insee": "^1.0",
         "omnitrade/stripe": "^1.0",
@@ -47,7 +47,7 @@
     "config": {"sort-packages": true, "allow-plugins": {"omnibridge/composer": true, "php-http/discovery": true}},
     "extra": {
         "branch-alias": {
-            "dev-main": "1.x-dev"
+            "dev-main": "2.x-dev"
         }
     },
     "prefer-stable": true
