@@ -4,7 +4,7 @@ namespace Base\Estate\Entity;
 
 use Base\Estate\Enum\PaymentMethod;
 use Base\Estate\Repository\PaymentRepository;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /** Money received for a rent call: a transfer seen at the bank, a card or SEPA payment online, a cheque. */
 #[ORM\Entity(repositoryClass: PaymentRepository::class)]

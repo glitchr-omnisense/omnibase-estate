@@ -3,7 +3,7 @@
 namespace Base\Estate\Entity;
 
 use Base\Entity\User;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /** A tradesperson the organisation calls on: their company, their trade, and their account once invited. */
 #[ORM\Entity]

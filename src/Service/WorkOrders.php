@@ -11,7 +11,8 @@ use Base\Estate\Entity\WorkOrderEvent;
 use Base\Estate\Enum\ActivityKind;
 use Base\Estate\Enum\Urgency;
 use Base\Estate\Enum\WorkOrderStatus;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 
 /**
  * A problem from its report to its invoice: reported (by the tenant or the
@@ -22,7 +23,8 @@ use Doctrine\ORM\EntityManagerInterface;
 class WorkOrders
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
+        private readonly Repositories $repositories,
         private readonly ActivityLog $activities,
         private readonly EstateMailer $mailer,
         private readonly ?Books $books = null,
@@ -35,9 +37,9 @@ class WorkOrders
         $order = (new WorkOrder($unit, $title, $description))
             ->setReportedBy($by)->setCategory($category)->setUrgency($urgency);
         $order->addEvent(new WorkOrderEvent($byName, 'Signalé : '.$description, $by));
-        $this->entityManager->persist($order);
+        $this->unitOfWork->persist($order);
         $this->activities->log($unit->getOrganisation(), ActivityKind::WORK_REPORTED, sprintf('Problème signalé : %s', $title), $unit);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         $this->mailer->send($this->managers($unit), sprintf('[Intervention #%d] %s — %s', $order->getId(), $title, $unit->getName()), 'work_reported', ['order' => $order]);
 
@@ -51,7 +53,7 @@ class WorkOrders
         $order->addEvent(new WorkOrderEvent($byName, sprintf('Confié à %s%s.%s', $contractor->getCompany(),
             $visitAt ? ', passage le '.$visitAt->format('d/m/Y à H\hi') : '', $note ? ' '.$note : ''), $by));
         $this->activities->log($order->getOrganisation(), ActivityKind::WORK_ASSIGNED, sprintf('%s confié à %s', $order->getTitle(), $contractor->getCompany()), $order->getUnit());
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         $this->mailer->send($contractor->getEmail(), sprintf('[Intervention #%d] %s — %s', $order->getId(), $order->getTitle(), $order->getUnit()->getName()), 'work_assigned', ['order' => $order]);
         $this->mailer->send($this->tenants($order), sprintf('Votre demande « %s » est confiée à %s', $order->getTitle(), $contractor->getCompany()), 'work_update', ['order' => $order]);
@@ -86,7 +88,7 @@ class WorkOrders
             return;
         }
         $order->addEvent(new WorkOrderEvent($byName, implode(' ', $said), $by));
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         $this->mailer->send($this->managers($order->getUnit()), sprintf('[Intervention #%d] %s', $order->getId(), $done ? 'terminée' : 'mise à jour'), 'work_update', ['order' => $order]);
         if ($done || $visitAt) {
@@ -97,7 +99,7 @@ class WorkOrders
     public function note(WorkOrder $order, ?User $by, string $byName, string $body): void
     {
         $order->addEvent(new WorkOrderEvent($byName, $body, $by));
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
     }
 
     /** Closed by the management: the invoice, if any, goes to the books - a managed home's to its owner's account. */
@@ -105,7 +107,7 @@ class WorkOrders
     {
         $order->setStatus(WorkOrderStatus::CLOSED)->setClosedAt(new \DateTimeImmutable());
         $order->addEvent(new WorkOrderEvent($byName, 'Clôturée.', $by));
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
         $this->books?->workInvoiced($order);
         $this->management?->workInvoiced($order);
     }
@@ -113,7 +115,7 @@ class WorkOrders
     /** @return list<string> */
     private function managers(Unit $unit): array
     {
-        $emails = array_map(fn (Member $m) => $m->getEmail(), $this->entityManager->getRepository(Member::class)->findBy(['organisation' => $unit->getOrganisation()]));
+        $emails = array_map(fn (Member $m) => $m->getEmail(), $this->repositories->of(Member::class)->findBy(['organisation' => $unit->getOrganisation()]));
         if ($unit->getOrganisation()->getEmail()) {
             $emails[] = $unit->getOrganisation()->getEmail();
         }

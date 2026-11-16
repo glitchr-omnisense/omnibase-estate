@@ -9,7 +9,8 @@ use Base\Estate\Entity\OwnershipShare;
 use Base\Estate\Enum\SplitMode;
 use Base\Estate\Model\Period;
 use Base\Estate\Service\Ownerships;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -29,7 +30,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class OwnershipController extends AbstractController
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
+        private readonly Repositories $repositories,
         private readonly Ownerships $ownerships,
     ) {
     }
@@ -54,7 +56,7 @@ class OwnershipController extends AbstractController
             }
             $dueOn = new \DateTimeImmutable($request->request->get('dueOn') ?: '+30 days');
             $invoice->setSplitMode($mode)->setSplit(SplitMode::SHARES === $mode ? [] : $split);
-            $this->entityManager->flush();
+            $this->unitOfWork->flush();
             if ('post' === $request->request->get('do')) {
                 try {
                     $calls = $this->ownerships->post($invoice, $dueOn, $request->request->getBoolean('send'));
@@ -117,8 +119,8 @@ class OwnershipController extends AbstractController
     public function statements(Request $request): Response
     {
         $this->assertActive();
-        $ownerships = $this->entityManager->getRepository(Ownership::class)->findBy([], ['name' => 'ASC']);
-        $ownership = $this->entityManager->find(Ownership::class, $request->query->getInt('ownership')) ?? $ownerships[0] ?? null;
+        $ownerships = $this->repositories->of(Ownership::class)->findBy([], ['name' => 'ASC']);
+        $ownership = $this->repositories->of(Ownership::class)->find($request->query->getInt('ownership')) ?? $ownerships[0] ?? null;
         $today = new \DateTimeImmutable('today');
         $periods = Period::recent($today);
         $period = (string) $request->query->get('period', $periods[3] ?? $today->format('Y'));

@@ -2,6 +2,7 @@
 
 namespace Tests\Base\Estate\Service;
 
+use Tests\Base\Estate\InMemoryPersistence;
 use Base\Estate\Entity\Lease;
 use Base\Estate\Entity\Mandate;
 use Base\Estate\Entity\Mandator;
@@ -38,8 +39,6 @@ use Base\Ledger\Repository\TaxRepository;
 use Base\Ledger\Service\Lettering;
 use Base\Ledger\Service\Parties;
 use Base\Ledger\Service\Posting;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\EntityRepository;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Mailer\MailerInterface;
 use Twig\Environment;
@@ -90,7 +89,7 @@ abstract class ManagementTestCase extends TestCase
 
     protected function management(array $activities = ['management'], bool $books = true, ?BankAccount $escrow = null): Management
     {
-        $entityManager = $this->entityManager();
+        $persistence = $this->persistence();
         $mandates = $this->createStub(MandateRepository::class);
         $mandates->method('findForUnit')->willReturnCallback(fn (Unit $unit, \DateTimeInterface $on) => array_values(array_filter($this->records[Mandate::class] ?? [], fn (Mandate $m) => $m->hasUnit($unit) && $m->covers($on)))[0] ?? null);
         $mandates->method('inForce')->willReturnCallback(fn (\DateTimeImmutable $from, \DateTimeImmutable $to) => array_values(array_filter($this->records[Mandate::class] ?? [], fn (Mandate $m) => $m->overlaps($from, $to))));
@@ -104,22 +103,24 @@ abstract class ManagementTestCase extends TestCase
             $this->sent[] = [$email->getTo()[0]->getAddress(), (string) $email->getSubject()];
         });
 
-        return new Management($entityManager, new Activities($activities), $mandates, $payouts, $calls,
-            new EstateMailer($mailer), $this->createStub(Receipts::class), $this->createStub(Environment::class), new ActivityLog($entityManager),
-            $books ? $this->books($entityManager, $escrow) : null);
+        return new Management($persistence, $persistence, new Activities($activities), $mandates, $payouts, $calls,
+            new EstateMailer($mailer), $this->createStub(Receipts::class), $this->createStub(Environment::class), new ActivityLog($persistence),
+            $books ? $this->books($persistence, $escrow) : null);
     }
 
     protected function booksService(Management $management): Books
     {
-        return new Books($this->entityManager(), $this->posting(), $this->parties(), $this->createStub(Lettering::class), $management);
+        $persistence = $this->persistence();
+
+        return new Books($persistence, $persistence, $this->posting(), $this->parties(), $this->createStub(Lettering::class), $management);
     }
 
-    protected function books(EntityManagerInterface $entityManager, ?BankAccount $escrow = null): ManagementBooks
+    protected function books(InMemoryPersistence $persistence, ?BankAccount $escrow = null): ManagementBooks
     {
         $bankAccounts = $this->createStub(BankAccountRepository::class);
         $bankAccounts->method('escrowFor')->willReturn($escrow);
 
-        return new ManagementBooks($entityManager, $this->posting(), $this->parties(), $this->createStub(Lettering::class), $this->taxes(), $this->accounts(), $bankAccounts);
+        return new ManagementBooks($persistence, $persistence, $this->posting(), $this->parties(), $this->createStub(Lettering::class), $this->taxes(), $this->accounts(), $bankAccounts);
     }
 
     /** The book's VAT codes: V20, collected, on 44571. */
@@ -146,41 +147,21 @@ abstract class ManagementTestCase extends TestCase
         return (new BankAccount(new BankConnection($this->book, 'files'), 'herisson-sequestre', 'Compte séquestre', new Account($this->book, '5121', 'Banque séquestre'), new Journal($this->book, 'BQ2', 'Séquestre'), 'FR7614508000300000000000184'))->setEscrow(true);
     }
 
-    protected function entityManager(): EntityManagerInterface
+    /**
+     * The records in memory, behind the core's contracts (UnitOfWork + Repositories): a persisted entity gets an id
+     * and joins $records, a removed one leaves them; find() of the book is the test's book.
+     */
+    protected function persistence(): InMemoryPersistence
     {
-        $entityManager = $this->createStub(EntityManagerInterface::class);
-        $entityManager->method('find')->willReturnCallback(fn (string $class, $id) => Book::class === $class ? $this->book : (array_values(array_filter($this->records[$class] ?? [], fn ($r) => $r->getId() === (int) $id))[0] ?? null));
-        $entityManager->method('persist')->willReturnCallback(function (object $entity) {
-            if (property_exists($entity, 'id') && null === $entity->getId()) {
-                self::withId($entity, ++$this->ids);
-            }
-            if (!\in_array($entity, $this->records[$entity::class] ?? [], true)) {
-                $this->records[$entity::class][] = $entity;
-            }
-        });
-        $entityManager->method('remove')->willReturnCallback(function (object $entity) {
-            $this->records[$entity::class] = array_values(array_filter($this->records[$entity::class] ?? [], fn ($r) => $r !== $entity));
-        });
-        $entityManager->method('getRepository')->willReturnCallback(function (string $class) {
-            $repository = $this->createStub(EntityRepository::class);
-            $matching = fn (array $criteria) => array_values(array_filter($this->records[$class] ?? [], function (object $record) use ($criteria) {
-                foreach ($criteria as $field => $value) {
-                    $getter = method_exists($record, 'get'.ucfirst($field)) ? 'get'.ucfirst($field) : 'is'.ucfirst($field);
-                    if (!method_exists($record, $getter) || $record->$getter() !== $value) {
-                        return false;
-                    }
+        return new InMemoryPersistence(
+            $this->records,
+            function (object $entity): void {
+                if (property_exists($entity, 'id') && null === $entity->getId()) {
+                    self::withId($entity, ++$this->ids);
                 }
-
-                return true;
-            }));
-            $repository->method('findBy')->willReturnCallback($matching);
-            $repository->method('findOneBy')->willReturnCallback(fn (array $criteria) => $matching($criteria)[0] ?? null);
-            $repository->method('findAll')->willReturnCallback(fn () => $this->records[$class] ?? []);
-
-            return $repository;
-        });
-
-        return $entityManager;
+            },
+            find: fn (string $class, mixed $id) => Book::class === $class ? $this->book : null,
+        );
     }
 
     protected function posting(): Posting

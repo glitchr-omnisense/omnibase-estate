@@ -7,7 +7,7 @@ use Base\Entity\User;
 use Base\Estate\Enum\DocumentKind;
 use Base\Estate\Enum\PhotoPhase;
 use Base\Estate\Repository\DocumentRepository;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * A file of the company's records, attached to what it is about: a home (its

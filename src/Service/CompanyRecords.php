@@ -3,7 +3,7 @@
 namespace Base\Estate\Service;
 
 use Base\Estate\Entity\Organisation;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
 use Omnistate\Exception\UnavailableException;
 use Omnistate\Identifier\Siren;
 use Omnistate\Omnistate;
@@ -19,7 +19,7 @@ final class CompanyRecords
 {
     public function __construct(
         private readonly Omnistate $omnistate,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
     ) {
     }
 
@@ -59,7 +59,7 @@ final class CompanyRecords
         $organisation->setVatNumber($vat->valid ? $vat->number : null);
 
         $organisation->setRegistryCheckedAt(new \DateTimeImmutable());
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         return true;
     }

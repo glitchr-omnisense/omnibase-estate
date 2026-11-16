@@ -42,7 +42,7 @@ abstract class TransactionTestCase extends ManagementTestCase
 
     protected function transactions(array $activities = ['transaction'], bool $books = true, ?BankAccount $escrow = null): Transactions
     {
-        $entityManager = $this->entityManager();
+        $persistence = $this->persistence();
         $mandates = $this->createStub(SaleMandateRepository::class);
         $mandates->method('lastNumber')->willReturnCallback(fn () => $this->lastNumber);
         $mandates->method('ending')->willReturnCallback(fn (\DateTimeImmutable $today, \DateTimeImmutable $until) => array_values(array_filter($this->records[SaleMandate::class] ?? [],
@@ -50,10 +50,10 @@ abstract class TransactionTestCase extends ManagementTestCase
         $sales = $this->createStub(SaleRepository::class);
         $sales->method('lastInvoiceNumber')->willReturn(null);
         $transactionBooks = $books
-            ? new TransactionBooks($entityManager, $this->posting(), $this->parties(), $this->createStub(Lettering::class), $this->books($entityManager, $escrow), $this->taxes(), $this->accounts())
+            ? new TransactionBooks($persistence, $persistence, $this->posting(), $this->parties(), $this->createStub(Lettering::class), $this->books($persistence, $escrow), $this->taxes(), $this->accounts())
             : null;
 
-        return new Transactions($entityManager, new Activities($activities), $mandates, $sales, new ActivityLog($entityManager), $transactionBooks);
+        return new Transactions($persistence, $persistence, new Activities($activities), $mandates, $sales, new ActivityLog($persistence), $transactionBooks);
     }
 
     /** An offer on the flat, saved. */

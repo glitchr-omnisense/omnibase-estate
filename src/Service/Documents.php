@@ -9,7 +9,7 @@ use Base\Estate\Entity\WorkOrder;
 use Base\Estate\Enum\ActivityKind;
 use Base\Estate\Enum\DocumentKind;
 use Base\Estate\Enum\PhotoPhase;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
 use Symfony\Component\HttpFoundation\File\File;
 
 /**
@@ -21,7 +21,7 @@ use Symfony\Component\HttpFoundation\File\File;
 class Documents
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
         private readonly ActivityLog $activities,
         private readonly EstateMailer $mailer,
     ) {
@@ -32,12 +32,12 @@ class Documents
     {
         $document = (new Document($lease->getOrganisation(), DocumentKind::INSURANCE, 'Attestation d\'assurance habitation — '.$until->format('d/m/Y')))
             ->setLease($lease)->setFile($file)->setValidUntil($until)->setUploadedBy($user, $name);
-        $this->entityManager->persist($document);
+        $this->unitOfWork->persist($document);
         if (null === $lease->getInsuranceUntil() || $until > $lease->getInsuranceUntil()) {
             $lease->setInsuranceUntil($until);
         }
         $this->activities->log($lease->getOrganisation(), ActivityKind::DOCUMENT, 'Attestation d\'assurance reçue de '.$name.' (jusqu\'au '.$until->format('d/m/Y').')', $lease->getUnit());
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
         $this->mailer->send($lease->getOrganisation()->getEmail(), 'Attestation d\'assurance — '.$lease->getUnit()->getName(), 'document_added', ['document' => $document, 'who' => $name]);
 
         return $document;
@@ -54,9 +54,9 @@ class Documents
         $document = (new Document($order->getOrganisation(), $kind, $title ?: $this->defaultTitle($kind, $order, $photo ? $phase : null, $photo ? $view : null)))
             ->setWorkOrder($order)->setFile($file)->setTenantVisible($tenantVisible)->setUploadedBy($user, $name)
             ->setPhase($photo ? $phase : null)->setView($photo ? $view : null);
-        $this->entityManager->persist($document);
+        $this->unitOfWork->persist($document);
         $this->activities->log($order->getOrganisation(), ActivityKind::DOCUMENT, $document->getTitle().' ajouté par '.$name, $order->getUnit());
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
         $this->mailer->send($order->getOrganisation()->getEmail(), $document->getTitle(), 'document_added', ['document' => $document, 'who' => $name]);
 
         return $document;

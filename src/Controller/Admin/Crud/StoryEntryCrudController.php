@@ -13,7 +13,7 @@ use Base\Field\BooleanField;
 use Base\Field\DateField;
 use Base\Field\TextareaField;
 use Base\Field\TextField;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Base\Field\Type\SelectType;
 
 /**
  * The homes' stories: each entry's date, title and text, its state (works under
@@ -42,7 +42,7 @@ class StoryEntryCrudController extends AbstractEstateCrudController
 
     public function configureFields(string $pageName): iterable
     {
-        yield AssociationField::new('unit', 'Bien')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Unit::class])->setColumns(4);
+        yield AssociationField::new('unit', 'Bien')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Unit::class])->setColumns(4);
         yield DateField::new('happenedOn', 'Date')->setColumns(3);
         yield TextField::new('title', 'Titre')->setColumns(5)->setHelp('Ce qui s\'est passé : « Cuisine refaite », « Façade ravalée », « Construit en 1898 ».');
         yield TextareaField::new('text', 'Texte')->setRequired(false)->setColumns(12)->hideOnIndex()

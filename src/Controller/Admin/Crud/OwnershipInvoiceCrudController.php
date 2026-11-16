@@ -15,8 +15,8 @@ use Base\Field\DateField;
 use Base\Field\DateTimeField;
 use Base\Field\FileField;
 use Base\Field\TextField;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Base\Database\Repository\Repositories;
+use Base\Field\Type\SelectType;
 use Symfony\Contracts\Service\Attribute\Required;
 
 /**
@@ -28,12 +28,12 @@ use Symfony\Contracts\Service\Attribute\Required;
  */
 class OwnershipInvoiceCrudController extends AbstractEstateCrudController
 {
-    private ?EntityManagerInterface $ownershipEntityManager = null;
+    private ?Repositories $ownershipRepositories = null;
 
     #[Required]
-    public function setOwnershipEntityManager(EntityManagerInterface $entityManager): void
+    public function setOwnershipRepositories(Repositories $repositories): void
     {
-        $this->ownershipEntityManager = $entityManager;
+        $this->ownershipRepositories = $repositories;
     }
 
     public static function getEntityFqcn(): string { return OwnershipInvoice::class; }
@@ -59,17 +59,17 @@ class OwnershipInvoiceCrudController extends AbstractEstateCrudController
 
     public function configureFields(string $pageName): iterable
     {
-        yield AssociationField::new('ownership', 'Indivision')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Ownership::class])->setColumns(4);
+        yield AssociationField::new('ownership', 'Indivision')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Ownership::class])->setColumns(4);
         yield TextField::new('label', 'Objet')->setColumns(5);
         yield DateField::new('date', 'Date')->setColumns(3);
-        yield AssociationField::new('contractor', 'Artisan')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Contractor::class, 'required' => false])->setRequired(false)->setColumns(4)->hideOnIndex();
+        yield AssociationField::new('contractor', 'Artisan')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Contractor::class, 'required' => false])->setRequired(false)->setColumns(4)->hideOnIndex();
         yield TextField::new('supplierName', 'Ou fournisseur')->setRequired(false)->setColumns(4)->hideOnIndex()->setHelp('Quand ce n\'est pas un des artisans : le Trésor public, un assureur.');
         yield TextField::new('supplier', 'Fournisseur')->onlyOnIndex();
         yield TextField::new('number', 'N° de facture')->setRequired(false)->setColumns(4)->hideOnIndex();
         yield $this->euros('amount', 'Montant TTC')->setColumns(3);
         yield TextField::new('taxCode', 'Code TVA')->setRequired(false)->setColumns(3)->hideOnIndex()->setHelp('A20, A10… : passé en TVA déductible quand le livre est assujetti, sinon le TTC est la charge.');
         yield TextField::new('expenseAccount', 'Compte de charge')->setColumns(3)->hideOnIndex()->setHelp('615 entretien et réparations, 616 assurance, 63512 taxe foncière…');
-        yield AssociationField::new('unit', 'Bien')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Unit::class, 'required' => false])->setRequired(false)->setColumns(3)->hideOnIndex();
+        yield AssociationField::new('unit', 'Bien')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Unit::class, 'required' => false])->setRequired(false)->setColumns(3)->hideOnIndex();
         yield FileField::new('file', 'Facture (fichier)')->setRequired(false)->setColumns(6)->hideOnIndex();
         yield $this->enum('splitMode', 'Répartition', SplitMode::class, fn (SplitMode $m) => $m->label())->setColumns(6)->hideOnIndex()->setHelp('Les montants ou pourcentages se saisissent sur « Répartir ».');
         yield DateTimeField::new('postedAt', 'Répartie le')->hideOnForm();
@@ -79,7 +79,7 @@ class OwnershipInvoiceCrudController extends AbstractEstateCrudController
     public function createEntity(string $entityFqcn): OwnershipInvoice
     {
         $invoice = new OwnershipInvoice();
-        if (null !== $ownership = $this->ownershipEntityManager?->getRepository(Ownership::class)->findOneBy([], ['id' => 'ASC'])) {
+        if (null !== $ownership = $this->ownershipRepositories?->of(Ownership::class)->findOneBy([], ['id' => 'ASC'])) {
             $invoice->setOwnership($ownership);
         }
 

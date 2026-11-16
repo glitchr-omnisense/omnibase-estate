@@ -4,7 +4,7 @@ namespace Base\Estate\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * A call for funds to one co-owner: what for, how much, by when, numbered

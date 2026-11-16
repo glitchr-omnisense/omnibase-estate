@@ -8,7 +8,7 @@ use Base\Estate\Enum\WorkOrderStatus;
 use Base\Estate\Repository\WorkOrderRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * Something to fix in a unit: reported by its tenant or the management,

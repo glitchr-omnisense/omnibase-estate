@@ -4,7 +4,7 @@ namespace Base\Estate\Entity;
 
 use Base\Entity\User\Invitation as BaseInvitation;
 use Base\Estate\Enum\InvitationKind;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * An e-mail that opens a space: whoever follows its link before it runs out

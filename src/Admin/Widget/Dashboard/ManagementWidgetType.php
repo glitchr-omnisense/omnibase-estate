@@ -7,7 +7,7 @@ use Base\Estate\Repository\MandatePayoutRepository;
 use Base\Estate\Repository\MandateRepository;
 use Base\Estate\Service\Activities;
 use Base\Estate\Service\Management;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 
 /**
  * Property management for third parties: what the owners are due at the
@@ -19,13 +19,13 @@ use Doctrine\ORM\EntityManagerInterface;
 final class ManagementWidgetType extends AbstractEstateWidgetType
 {
     public function __construct(
-        EntityManagerInterface $entityManager,
+        Repositories $repositories,
         private readonly Management $management,
         private readonly MandateRepository $mandates,
         private readonly MandatePayoutRepository $payouts,
         private readonly Activities $activities,
     ) {
-        parent::__construct($entityManager);
+        parent::__construct($repositories);
     }
 
     public static function getName(): string { return 'estate_management'; }

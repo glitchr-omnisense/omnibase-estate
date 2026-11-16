@@ -3,7 +3,7 @@
 namespace Base\Estate\Admin\Widget\Dashboard;
 
 use Base\Estate\Service\Transactions;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 
 /**
  * Sales for third parties: the quarter's fees (invoiced at the actes and
@@ -14,9 +14,9 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 final class TransactionWidgetType extends AbstractEstateWidgetType
 {
-    public function __construct(EntityManagerInterface $entityManager, private readonly Transactions $transactions)
+    public function __construct(Repositories $repositories, private readonly Transactions $transactions)
     {
-        parent::__construct($entityManager);
+        parent::__construct($repositories);
     }
 
     public static function getName(): string { return 'estate_transaction'; }

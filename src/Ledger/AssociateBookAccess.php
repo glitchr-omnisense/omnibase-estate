@@ -7,7 +7,7 @@ use Base\Estate\Entity\Organisation;
 use Base\Estate\Service\Spaces;
 use Base\Ledger\Entity\Book;
 use Base\Ledger\Security\BookAccessInterface;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 /**
@@ -18,7 +18,7 @@ final class AssociateBookAccess implements BookAccessInterface
 {
     public function __construct(
         private readonly Spaces $spaces,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly Repositories $repositories,
     ) {
     }
 
@@ -38,6 +38,6 @@ final class AssociateBookAccess implements BookAccessInterface
 
     private function organisation(Book $book): ?Organisation
     {
-        return $this->entityManager->getRepository(Organisation::class)->findOneBy(['bookId' => $book->getId()]);
+        return $this->repositories->of(Organisation::class)->findOneBy(['bookId' => $book->getId()]);
     }
 }

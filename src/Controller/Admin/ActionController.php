@@ -24,7 +24,8 @@ use Base\Estate\Service\Invitations;
 use Base\Estate\Service\Payments;
 use Base\Estate\Service\RentCalls;
 use Base\Estate\Service\WorkOrders;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 use Omnistate\Exception\UnavailableException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -43,7 +44,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/admin/estate')]
 class ActionController extends AbstractController
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager)
+    public function __construct(private readonly UnitOfWork $unitOfWork, private readonly Repositories $repositories)
     {
     }
 
@@ -51,7 +52,7 @@ class ActionController extends AbstractController
     public function invite(Request $request, string $kind, int $id, Invitations $invitations): RedirectResponse
     {
         $this->assertToken($request, 'estate_invite_'.$kind, $id);
-        $target = $this->entityManager->find(['member' => Member::class, 'associate' => Associate::class, 'tenant' => LeaseParty::class, 'contractor' => Contractor::class][$kind], $id)
+        $target = $this->repositories->of(['member' => Member::class, 'associate' => Associate::class, 'tenant' => LeaseParty::class, 'contractor' => Contractor::class][$kind])->find($id)
             ?? throw $this->createNotFoundException();
         /** @var User $user */
         $user = $this->getUser();
@@ -99,12 +100,12 @@ class ActionController extends AbstractController
     #[Route('/work-order/{id}/assign', name: 'estate_admin_assign', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
     public function assign(Request $request, WorkOrder $order, WorkOrders $orders): Response
     {
-        $contractors = $this->entityManager->getRepository(Contractor::class)->findBy(['organisation' => $order->getOrganisation()], ['trade' => 'ASC', 'company' => 'ASC']);
+        $contractors = $this->repositories->of(Contractor::class)->findBy(['organisation' => $order->getOrganisation()], ['trade' => 'ASC', 'company' => 'ASC']);
         if ($request->isMethod('POST')) {
             if (!$this->isCsrfTokenValid('estate_assign_'.$order->getId(), (string) $request->request->get('_token'))) {
                 throw $this->createAccessDeniedException();
             }
-            $contractor = $this->entityManager->find(Contractor::class, $request->request->getInt('contractor')) ?? throw $this->createNotFoundException();
+            $contractor = $this->repositories->of(Contractor::class)->find($request->request->getInt('contractor')) ?? throw $this->createNotFoundException();
             $visitAt = $request->request->get('visitAt') ? new \DateTimeImmutable($request->request->get('visitAt')) : null;
             /** @var User $user */
             $user = $this->getUser();
@@ -134,7 +135,7 @@ class ActionController extends AbstractController
     {
         $this->assertToken($request, 'estate_notice_send', $notice->getId());
         $emails = [];
-        foreach ($this->entityManager->getRepository(\Base\Estate\Entity\Unit::class)->findBy(['organisation' => $notice->getOrganisation()]) as $unit) {
+        foreach ($this->repositories->of(\Base\Estate\Entity\Unit::class)->findBy(['organisation' => $notice->getOrganisation()]) as $unit) {
             if ($notice->getBuilding() && $unit->getBuilding() !== $notice->getBuilding()) {
                 continue;
             }
@@ -147,7 +148,7 @@ class ActionController extends AbstractController
         }
         $notice->setSentAt(new \DateTimeImmutable());
         $activities->log($notice->getOrganisation(), ActivityKind::NOTICE, 'Avis aux locataires : '.$notice->getTitle());
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
         $this->addFlash('success', sprintf('« %s » envoyé à %d locataire(s).', $notice->getTitle(), \count(array_unique($emails))));
 
         return $this->back($request);
@@ -200,7 +201,7 @@ class ActionController extends AbstractController
         return $this->render('@Estate/admin/application.html.twig', [
             'application' => $application,
             'do' => $do,
-            'others' => array_values(array_filter($this->entityManager->getRepository(Application::class)->findBy(['unit' => $application->getUnit()]), fn (Application $a) => $a !== $application && $a->getStatus()->isOpen())),
+            'others' => array_values(array_filter($this->repositories->of(Application::class)->findBy(['unit' => $application->getUnit()]), fn (Application $a) => $a !== $application && $a->getStatus()->isOpen())),
         ]);
     }
 

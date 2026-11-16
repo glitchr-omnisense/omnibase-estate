@@ -3,7 +3,7 @@
 namespace Base\Estate\Admin\Widget\Dashboard;
 
 use Base\Estate\Repository\RentCallRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 
 /**
  * Late rents: what is owed and by whom, oldest first, each with the way to record its payment; then
@@ -18,9 +18,9 @@ final class LateRentsWidgetType extends AbstractEstateWidgetType
     /** The rows the card lists, of each list: the counts and sums are of them all. */
     private const ROWS = 4;
 
-    public function __construct(EntityManagerInterface $entityManager, private readonly RentCallRepository $calls)
+    public function __construct(Repositories $repositories, private readonly RentCallRepository $calls)
     {
-        parent::__construct($entityManager);
+        parent::__construct($repositories);
     }
 
     public static function getName(): string { return 'estate_late'; }

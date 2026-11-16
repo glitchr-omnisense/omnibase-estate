@@ -9,18 +9,15 @@ use Base\Estate\Entity\Organisation;
 use Base\Estate\Enum\InvitationKind;
 use Base\Estate\Service\EstateMailer;
 use Base\Estate\Service\Invitations;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\EntityRepository;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Entities;
+use Base\Database\Repository\Repositories;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
- * Accepting an invitation finds what it opens and attaches the account to it,
- * on whichever core the site runs: through the core's unit of work and its
- * repositories (omnisense/omnibase 5.x, which no longer keeps the entity
- * manager; 4.x since its step F2d), else through the entity manager an older
- * core keeps. The 5.x core's base class has no $entityManager: /invitation/{token}
- * answered 500 ("Call to a member function find() on null").
+ * Accepting an invitation finds what it opens (through the core's repositories) and attaches the
+ * account to it, written by the unit of work in one flush.
  */
 final class InvitationsTest extends TestCase
 {
@@ -31,17 +28,18 @@ final class InvitationsTest extends TestCase
         $invitation = new Invitation($organisation, InvitationKind::ASSOCIATE, 7, 'helene@example.org', 'Hélène Roth', Invitations::hash('token'), Invitations::expiry(14));
         $user = (new \ReflectionClass(User::class))->newInstanceWithoutConstructor();
 
-        $associates = $this->createMock(EntityRepository::class);
+        $associates = $this->createStub(Entities::class);
         $associates->method('find')->willReturnCallback(static fn (mixed $id) => 7 === $id ? $associate : null);
-        $entityManager = $this->createMock(EntityManagerInterface::class);
-        $entityManager->method('getRepository')->willReturnCallback(fn (string $class) => Associate::class === $class ? $associates : $this->createMock(EntityRepository::class));
-        $entityManager->method('find')->willReturnCallback(static fn (string $class, mixed $id) => Associate::class === $class && 7 === $id ? $associate : null);
-        $entityManager->expects(self::once())->method('flush');
+        $repositories = $this->createStub(Repositories::class);
+        $repositories->method('of')->willReturnCallback(fn (string $class) => Associate::class === $class ? $associates : $this->createStub(Entities::class));
+        $unitOfWork = $this->createMock(UnitOfWork::class);
+        $unitOfWork->expects(self::once())->method('flush');
 
         $invitations = new Invitations(
-            $entityManager,
+            $unitOfWork,
+            $repositories,
             (new \ReflectionClass(EstateMailer::class))->newInstanceWithoutConstructor(),
-            $this->createMock(UrlGeneratorInterface::class),
+            $this->createStub(UrlGeneratorInterface::class),
         );
 
         self::assertSame($associate, $invitations->target($invitation));

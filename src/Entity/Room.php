@@ -4,7 +4,7 @@ namespace Base\Estate\Entity;
 
 use Base\Estate\Enum\RoomKind;
 use Base\Estate\Model\Polygon;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * A room of a home, drawn on its plan: its name and kind, its level, its

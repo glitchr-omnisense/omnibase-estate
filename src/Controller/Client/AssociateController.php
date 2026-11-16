@@ -10,7 +10,7 @@ use Base\Estate\Repository\ActivityRepository;
 use Base\Estate\Repository\UnitRepository;
 use Base\Estate\Service\Figures;
 use Base\Estate\Service\Spaces;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
@@ -36,13 +36,13 @@ class AssociateController extends AbstractController
     }
 
     #[Route('', name: 'estate_associate')]
-    public function index(Request $request, Figures $figures, ActivityRepository $activities, UnitRepository $units, EntityManagerInterface $entityManager, ?CompanyAccounts $accounts = null): Response
+    public function index(Request $request, Figures $figures, ActivityRepository $activities, UnitRepository $units, Repositories $repositories, ?CompanyAccounts $accounts = null): Response
     {
         $associate = $this->associate($request);
         $organisation = $associate->getOrganisation();
-        $deadlines = $entityManager->getRepository(Deadline::class)->findBy(['organisation' => $organisation]);
+        $deadlines = $repositories->of(Deadline::class)->findBy(['organisation' => $organisation]);
         usort($deadlines, fn (Deadline $a, Deadline $b) => $a->next() <=> $b->next());
-        $associates = $entityManager->getRepository(Associate::class)->findBy(['organisation' => $organisation], ['shares' => 'DESC']);
+        $associates = $repositories->of(Associate::class)->findBy(['organisation' => $organisation], ['shares' => 'DESC']);
 
         return $this->render('@Estate/client/associate.html.twig', [
             'associate' => $associate,

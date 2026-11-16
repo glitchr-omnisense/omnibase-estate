@@ -27,7 +27,8 @@ use Base\Ledger\Repository\TaxRepository;
 use Base\Ledger\Service\Lettering;
 use Base\Ledger\Service\Parties;
 use Base\Ledger\Service\Posting;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 
 /**
  * Property management for third parties in the agency's books - the
@@ -62,7 +63,8 @@ class ManagementBooks
     public const FEES = '7061';
 
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
+        private readonly Repositories $repositories,
         private readonly Posting $posting,
         private readonly Parties $parties,
         private readonly Lettering $lettering,
@@ -76,7 +78,7 @@ class ManagementBooks
     {
         $id = $mandate->getOrganisation()->getBookId();
 
-        return $id ? $this->entityManager->find(Book::class, $id) : null;
+        return $id ? $this->repositories->of(Book::class)->find($id) : null;
     }
 
     /** Where the owners' money is: the escrow account's 512x, 512 when the book has none. */
@@ -254,7 +256,7 @@ class ManagementBooks
         if (!$book = $this->bookFor($mandate)) {
             return;
         }
-        $entry = $this->entityManager->getRepository(Entry::class)->findOneBy(['book' => $book, 'source' => $source]);
+        $entry = $this->repositories->of(Entry::class)->findOneBy(['book' => $book, 'source' => $source]);
         if (null !== $entry) {
             $this->posting->reverse($entry, $source.':cancelled');
         }
@@ -270,7 +272,7 @@ class ManagementBooks
     {
         $lines = [];
         foreach ($sources as $source) {
-            $entry = $this->entityManager->getRepository(Entry::class)->findOneBy(['book' => $book, 'source' => $source]);
+            $entry = $this->repositories->of(Entry::class)->findOneBy(['book' => $book, 'source' => $source]);
             foreach ($entry?->getLines() ?? [] as $line) {
                 if ($keep($line) && !$line->isLettered()) {
                     $lines[] = $line;
@@ -279,7 +281,7 @@ class ManagementBooks
         }
         if (\count($lines) >= 2 && 0 === array_sum(array_map(fn (EntryLine $l) => $l->getNet(), $lines))) {
             $this->lettering->letter($lines);
-            $this->entityManager->flush();
+            $this->unitOfWork->flush();
         }
     }
 
@@ -288,8 +290,8 @@ class ManagementBooks
         if (null === $this->accounts || null !== $this->accounts->findOneByNumber($book, $number)) {
             return;
         }
-        $this->entityManager->persist(new Account($book, $number, $label, $type));
-        $this->entityManager->flush();
+        $this->unitOfWork->persist(new Account($book, $number, $label, $type));
+        $this->unitOfWork->flush();
     }
 
     private static function slug(string $name): string

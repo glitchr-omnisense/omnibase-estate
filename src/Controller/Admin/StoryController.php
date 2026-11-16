@@ -9,7 +9,8 @@ use Base\Estate\Enum\PhotoPhase;
 use Base\Estate\Security\Voter\EstateVoter;
 use Base\Estate\Service\Stories;
 use Base\Estate\Service\StoryImages;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -35,7 +36,8 @@ class StoryController extends AbstractController
     public const NETWORKS = ['instagram' => 'Instagram', 'facebook' => 'Facebook', 'linkedin' => 'LinkedIn'];
 
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
+        private readonly Repositories $repositories,
         private readonly Stories $stories,
         private readonly StoryImages $images,
     ) {
@@ -57,7 +59,7 @@ class StoryController extends AbstractController
             'networks' => self::NETWORKS,
             'phases' => PhotoPhase::cases(),
             'suggested' => $this->stories->suggestedState($entry),
-            'workOrders' => $this->entityManager->getRepository(WorkOrder::class)->findBy(['unit' => $entry->getUnit()], ['createdAt' => 'DESC']),
+            'workOrders' => $this->repositories->of(WorkOrder::class)->findBy(['unit' => $entry->getUnit()], ['createdAt' => 'DESC']),
         ]);
     }
 
@@ -82,7 +84,7 @@ class StoryController extends AbstractController
                 ->setPosition((int) ($row['position'] ?? $photo->getPosition()))
                 ->setPublishable(!empty($row['publishable']));
         }
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
         $this->addFlash('success', 'Photos enregistrées.');
 
         return $this->redirectToRoute('estate_admin_story', ['id' => $entry->getId(), '_fragment' => 'photos']);
@@ -102,7 +104,7 @@ class StoryController extends AbstractController
             $entry->addPhoto((new StoryPhoto())->setImage($file)->setPhase(PhotoPhase::tryFrom((string) $request->request->get('phase')))
                 ->setView(mb_substr(trim((string) $request->request->get('view')), 0, 80) ?: null)->setPosition($position++));
         }
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         return $this->redirectToRoute('estate_admin_story', ['id' => $entry->getId(), '_fragment' => 'photos']);
     }
@@ -133,10 +135,10 @@ class StoryController extends AbstractController
     public function works(Request $request, StoryEntry $entry): RedirectResponse
     {
         $this->check($request, $entry);
-        $order = $this->entityManager->find(WorkOrder::class, $request->request->getInt('workOrder'));
+        $order = $this->repositories->of(WorkOrder::class)->find($request->request->getInt('workOrder'));
         if ($order && $request->request->getBoolean('unlink')) {
             $entry->removeWorkOrder($order);
-            $this->entityManager->flush();
+            $this->unitOfWork->flush();
         } elseif ($order) {
             $this->stories->link($entry, $order);
         }

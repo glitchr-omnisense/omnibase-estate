@@ -10,7 +10,7 @@ use Base\Ledger\Report\IncomeStatement;
 use Base\Ledger\Repository\BankAccountRepository;
 use Base\Ledger\Repository\BankLineRepository;
 use Base\Ledger\Repository\EntryLineRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 
 /**
  * The company's accounts as its associates read them (omnibase/ledger, through the
@@ -22,7 +22,7 @@ use Doctrine\ORM\EntityManagerInterface;
 final class CompanyAccounts
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly Repositories $repositories,
         private readonly IncomeStatement $income,
         private readonly BankAccountRepository $bankAccounts,
         private readonly BankLineRepository $bankLines,
@@ -37,7 +37,7 @@ final class CompanyAccounts
      */
     public function of(Organisation $organisation, array $associates, ?\DateTimeImmutable $today = null): ?array
     {
-        $book = $organisation->getBookId() ? $this->entityManager->find(Book::class, $organisation->getBookId()) : null;
+        $book = $organisation->getBookId() ? $this->repositories->of(Book::class)->find($organisation->getBookId()) : null;
         if (!$book instanceof Book) {
             return null;
         }

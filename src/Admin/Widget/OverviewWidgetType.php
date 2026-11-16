@@ -11,7 +11,7 @@ use Base\Estate\Repository\ApplicationRepository;
 use Base\Estate\Repository\MessageRepository;
 use Base\Estate\Service\Figures;
 use Base\Estate\Service\RentRevisions;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 
 /**
  * The company at a glance, first on the dashboard: what is let, the rents
@@ -23,7 +23,7 @@ use Doctrine\ORM\EntityManagerInterface;
 final class OverviewWidgetType implements DashboardWidgetTypeInterface
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly Repositories $repositories,
         private readonly Figures $figures,
         private readonly RentRevisions $revisions,
         private readonly MessageRepository $messages,
@@ -43,7 +43,7 @@ final class OverviewWidgetType implements DashboardWidgetTypeInterface
 
     public function getTemplateVars(MenuItem $widget): array
     {
-        $organisations = $this->entityManager->getRepository(Organisation::class)->findBy([], ['name' => 'ASC']);
+        $organisations = $this->repositories->of(Organisation::class)->findBy([], ['name' => 'ASC']);
 
         $revisions = $this->revisions->due();
         $today = new \DateTimeImmutable('today');
@@ -55,7 +55,7 @@ final class OverviewWidgetType implements DashboardWidgetTypeInterface
             'unread' => $this->messages->unreadByManagement($o),
             'applications' => $this->applications->countNew($o),
             'uninsured' => array_values(array_filter(
-                $this->entityManager->getRepository(Lease::class)->findBy(['status' => LeaseStatus::ACTIVE]),
+                $this->repositories->of(Lease::class)->findBy(['status' => LeaseStatus::ACTIVE]),
                 fn (Lease $l) => $l->getOrganisation()->getId() === $o->getId() && (null === $l->getInsuranceUntil() || $l->getInsuranceUntil() < $today),
             )),
         ], $organisations)];

@@ -6,26 +6,25 @@ use Base\Estate\Entity\Contractor;
 use Base\Estate\Entity\Organisation;
 use Base\Estate\Entity\WorkOrder;
 use Base\Estate\Enum\WorkOrderStatus;
-use Doctrine\ORM\QueryBuilder;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
+use Base\Database\Repository\Finder\Criterion;
+use Base\Database\Repository\Finder\Group;
+use Base\Database\Repository\Finder\Key;
+use Base\Database\Repository\Finder\Parser;
+use Base\Database\Repository\ServiceEntityRepository;
+use Base\Database\Repository\Finders;
 
 /** @extends ServiceEntityRepository<WorkOrder> */
 class WorkOrderRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(Finders $finders)
     {
-        parent::__construct($registry, WorkOrder::class);
+        parent::__construct($finders, WorkOrder::class);
     }
 
     /** @return list<WorkOrder> */
     public function findOpen(Organisation $organisation): array
     {
-        return $this->createQueryBuilder('w')->join('w.unit', 'u')
-            ->where('u.organisation = :organisation')->setParameter('organisation', $organisation)
-            ->andWhere('w.status NOT IN (:closed)')->setParameter('closed', [WorkOrderStatus::CLOSED, WorkOrderStatus::CANCELLED])
-            ->orderBy('w.urgency', 'DESC')->addOrderBy('w.createdAt', 'ASC')
-            ->getQuery()->getResult();
+        return $this->findBy($this->open([$organisation]), ['urgency' => 'DESC', 'createdAt' => 'ASC']);
     }
 
     /**
@@ -40,9 +39,9 @@ class WorkOrderRepository extends ServiceEntityRepository
         if ([] === $organisations) {
             return ['count' => 0, 'quoted' => 0];
         }
-        $row = $this->open($organisations)->select('COUNT(w.id) AS orders', 'COALESCE(SUM(w.quoteAmount), 0) AS quoted')->getQuery()->getSingleResult();
+        $open = $this->open($organisations);
 
-        return ['count' => (int) $row['orders'], 'quoted' => (int) $row['quoted']];
+        return ['count' => $this->count($open), 'quoted' => (int) $this->sumOfQuoteAmountBy($open)];
     }
 
     /**
@@ -59,10 +58,7 @@ class WorkOrderRepository extends ServiceEntityRepository
             return [];
         }
 
-        return $this->open($organisations)->join('u.organisation', 'o')->leftJoin('w.contractor', 'c')->addSelect('u', 'c')
-            ->orderBy('o.name', 'ASC')->addOrderBy('o.id', 'ASC')->addOrderBy('w.urgency', 'DESC')->addOrderBy('w.createdAt', 'ASC')->addOrderBy('w.id', 'ASC')
-            ->setMaxResults($limit)
-            ->getQuery()->getResult();
+        return $this->findBy($this->open($organisations), ['unit.organisation.name' => 'ASC', 'unit.organisation.id' => 'ASC', 'urgency' => 'DESC', 'createdAt' => 'ASC', 'id' => 'ASC'], $limit);
     }
 
     /**
@@ -76,20 +72,29 @@ class WorkOrderRepository extends ServiceEntityRepository
             return 0;
         }
 
-        return (int) $this->createQueryBuilder('w')->join('w.unit', 'u')
-            ->select('COALESCE(SUM(w.invoiceAmount), 0)')
-            ->where('u.organisation IN (:organisations)')->setParameter('organisations', $organisations)
-            ->andWhere('w.closedAt BETWEEN :from AND :to')
-            ->setParameter('from', $from)->setParameter('to', $to)
-            ->getQuery()->getSingleScalarResult();
+        return (int) $this->sumOfInvoiceAmountBy(['unit.organisation' => $organisations, $this->closedBetween($from, $to)]);
     }
 
-    /** @param list<Organisation> $organisations findOpen()'s conditions, for several organisations */
-    private function open(array $organisations): QueryBuilder
+    /**
+     * @param list<Organisation> $organisations findOpen()'s conditions, for several organisations
+     *
+     * @return array<int|string, mixed>
+     */
+    private function open(array $organisations): array
     {
-        return $this->createQueryBuilder('w')->join('w.unit', 'u')
-            ->where('u.organisation IN (:organisations)')->setParameter('organisations', $organisations)
-            ->andWhere('w.status NOT IN (:closed)')->setParameter('closed', [WorkOrderStatus::CLOSED, WorkOrderStatus::CANCELLED]);
+        return [
+            'unit.organisation' => $organisations,
+            Group::of(Parser::SEPARATOR_AND, Criterion::of('status', [WorkOrderStatus::CLOSED, WorkOrderStatus::CANCELLED], Parser::OPTION_NOT_EQUAL)),
+        ];
+    }
+
+    /** w.closedAt BETWEEN :from AND :to */
+    private function closedBetween(\DateTimeImmutable $from, \DateTimeImmutable $to): Group
+    {
+        return Group::of(Parser::SEPARATOR_AND,
+            Criterion::of('closedAt', $from, Parser::OPTION_GREATER_EQUAL),
+            Criterion::of('closedAt', $to, Parser::OPTION_LOWER_EQUAL),
+        );
     }
 
     /** @param list<Contractor> $contractors @return list<WorkOrder> */
@@ -99,20 +104,12 @@ class WorkOrderRepository extends ServiceEntityRepository
             return [];
         }
 
-        return $this->createQueryBuilder('w')
-            ->where('w.contractor IN (:contractors)')->setParameter('contractors', $contractors)
-            ->orderBy('w.status', 'ASC')->addOrderBy('w.visitAt', 'ASC')->addOrderBy('w.createdAt', 'DESC')
-            ->getQuery()->getResult();
+        return $this->findBy(['contractor' => Key::of(array_values($contractors))], ['status' => 'ASC', 'visitAt' => 'ASC', 'createdAt' => 'DESC']);
     }
 
     /** Spent on works over a period, in cents (closed orders' invoices). */
     public function spent(Organisation $organisation, \DateTimeImmutable $from, \DateTimeImmutable $to): int
     {
-        return (int) $this->createQueryBuilder('w')->join('w.unit', 'u')
-            ->select('COALESCE(SUM(w.invoiceAmount), 0)')
-            ->where('u.organisation = :organisation')->setParameter('organisation', $organisation)
-            ->andWhere('w.closedAt BETWEEN :from AND :to')
-            ->setParameter('from', $from)->setParameter('to', $to)
-            ->getQuery()->getSingleScalarResult();
+        return (int) $this->sumOfInvoiceAmountBy(['unit.organisation' => $organisation, $this->closedBetween($from, $to)]);
     }
 }

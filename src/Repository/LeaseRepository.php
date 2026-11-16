@@ -6,15 +6,18 @@ use Base\Entity\User;
 use Base\Estate\Entity\Lease;
 use Base\Estate\Entity\Organisation;
 use Base\Estate\Enum\LeaseStatus;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
+use Base\Database\Repository\Finder\Criterion;
+use Base\Database\Repository\Finder\Group;
+use Base\Database\Repository\Finder\Parser;
+use Base\Database\Repository\ServiceEntityRepository;
+use Base\Database\Repository\Finders;
 
 /** @extends ServiceEntityRepository<Lease> */
 class LeaseRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(Finders $finders)
     {
-        parent::__construct($registry, Lease::class);
+        parent::__construct($finders, Lease::class);
     }
 
     /** @return list<Lease> the leases running during a month, to be called */
@@ -22,25 +25,27 @@ class LeaseRepository extends ServiceEntityRepository
     {
         $first = $month->modify('first day of this month')->setTime(0, 0);
         $last = $month->modify('last day of this month')->setTime(0, 0);
-        $query = $this->createQueryBuilder('l')
-            ->join('l.unit', 'u')
-            ->where('l.status != :ended')->setParameter('ended', LeaseStatus::ENDED)
-            ->andWhere('l.startOn <= :last')->setParameter('last', $last, 'date_immutable')
-            ->andWhere('l.endOn IS NULL OR l.endOn >= :first')->setParameter('first', $first, 'date_immutable');
+        $criteria = [
+            Group::of(Parser::SEPARATOR_AND,
+                Criterion::of('status', LeaseStatus::ENDED, Parser::OPTION_NOT_EQUAL),
+                Criterion::of('startOn', $last, Parser::OPTION_LOWER_EQUAL),
+            ),
+            Group::of(Parser::SEPARATOR_OR,
+                Criterion::of('endOn', null, Parser::OPTION_NULL),
+                Criterion::of('endOn', $first, Parser::OPTION_GREATER_EQUAL),
+            ),
+        ];
         if ($organisation) {
-            $query->andWhere('u.organisation = :organisation')->setParameter('organisation', $organisation);
+            $criteria['unit.organisation'] = $organisation;
         }
 
-        return $query->getQuery()->getResult();
+        return $this->findBy($criteria);
     }
 
     /** @return list<Lease> the active leases, their home and parties with them */
     public function findActive(): array
     {
-        return $this->createQueryBuilder('l')->join('l.unit', 'u')->leftJoin('l.parties', 'p')->addSelect('u', 'p')
-            ->where('l.status = :active')->setParameter('active', LeaseStatus::ACTIVE)
-            ->orderBy('l.id', 'ASC')->addOrderBy('p.id', 'ASC')
-            ->getQuery()->getResult();
+        return $this->findBy(['status' => LeaseStatus::ACTIVE], ['id' => 'ASC']);
     }
 
     /**
@@ -57,21 +62,28 @@ class LeaseRepository extends ServiceEntityRepository
             return [];
         }
 
-        return $this->createQueryBuilder('l')->join('l.unit', 'u')->leftJoin('l.parties', 'p')->addSelect('u', 'p')
-            ->where('l.status = :active')->setParameter('active', LeaseStatus::ACTIVE)
-            ->andWhere('u.organisation IN (:organisations)')->setParameter('organisations', $organisations)
-            ->andWhere('l.insuranceUntil IS NULL OR l.insuranceUntil < :on')->setParameter('on', $on, 'date_immutable')
-            ->orderBy('l.id', 'ASC')->addOrderBy('p.id', 'ASC')
-            ->getQuery()->getResult();
+        return $this->findBy([
+            'status' => LeaseStatus::ACTIVE,
+            'unit.organisation' => $organisations,
+            Group::of(Parser::SEPARATOR_OR,
+                Criterion::of('insuranceUntil', null, Parser::OPTION_NULL),
+                Criterion::of('insuranceUntil', $on, Parser::OPTION_LOWER),
+            ),
+        ], ['id' => 'ASC']);
+    }
+
+    /** @return list<string> the references given under a prefix (Applications' next lease reference) */
+    public function referencesStartingWith(string $prefix): array
+    {
+        return array_map(
+            static fn (Lease $lease) => $lease->getReference(),
+            $this->findBy([Group::of(Parser::SEPARATOR_AND, Criterion::of('reference', $prefix, Parser::OPTION_STARTING_WITH))]),
+        );
     }
 
     /** @return list<Lease> the leases someone is a party of, the running ones first */
     public function findForUser(User $user): array
     {
-        return $this->createQueryBuilder('l')
-            ->join('l.parties', 'p')
-            ->where('p.user = :user')->setParameter('user', $user)
-            ->orderBy('l.status', 'ASC')->addOrderBy('l.startOn', 'DESC')
-            ->getQuery()->getResult();
+        return $this->findBy(['parties.user' => $user], ['status' => 'ASC', 'startOn' => 'DESC']);
     }
 }

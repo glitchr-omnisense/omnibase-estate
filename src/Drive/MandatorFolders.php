@@ -4,7 +4,7 @@ namespace Base\Estate\Drive;
 
 use Base\Drive\Share\FileShare;
 use Base\Estate\Entity\Mandator;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
@@ -25,7 +25,7 @@ class MandatorFolders
 
     public function __construct(
         private readonly FileShare $share,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
         #[Autowire('%drive.default_audience%')] private readonly string $staff = 'staff',
     ) {
     }
@@ -55,7 +55,7 @@ class MandatorFolders
         }
         if ($mandator->getFolder() !== $path) {
             $mandator->setFolder($path);
-            $this->entityManager->flush();
+            $this->unitOfWork->flush();
         }
 
         return $path;

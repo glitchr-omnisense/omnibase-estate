@@ -4,7 +4,7 @@ namespace Base\Estate\Controller;
 
 use Base\Estate\Entity\RentCall;
 use Base\Estate\Service\OnlinePayments;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 use Omnitrade\Exception\InvalidNotificationException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,7 +21,7 @@ class PaymentWebhookController extends AbstractController
 {
     public function __construct(
         private readonly OnlinePayments $online,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly Repositories $repositories,
     ) {
     }
 
@@ -37,7 +37,7 @@ class PaymentWebhookController extends AbstractController
             return new Response($e->getMessage(), Response::HTTP_BAD_REQUEST);
         }
 
-        $call = null !== $paid ? $this->entityManager->find(RentCall::class, $paid['call']) : null;
+        $call = null !== $paid ? $this->repositories->of(RentCall::class)->find($paid['call']) : null;
         if (null !== $call && !$call->isPaid()) {
             // The session's reference is the payment's: the tenant's return records nothing twice.
             $this->online->complete($call, $paid['reference']);

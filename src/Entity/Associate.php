@@ -5,7 +5,7 @@ namespace Base\Estate\Entity;
 use Base\Database\Attribute\Uploader;
 use Base\Entity\User;
 use Base\Estate\Enum\AssociateQuality;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * A partner of the company: their shares, their quality, and - once they

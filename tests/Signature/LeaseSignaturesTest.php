@@ -15,8 +15,9 @@ use Base\Estate\Service\EstateMailer;
 use Base\Estate\Service\Receipts;
 use Base\Estate\Signature\LeaseSignatures;
 use Base\Service\Signatures;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\EntityRepository;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Entities;
+use Base\Database\Repository\Repositories;
 use Omnisign\Model\Envelope as SignatureRequest;
 use Omnisign\Model\Level;
 use PHPUnit\Framework\TestCase;
@@ -45,13 +46,13 @@ final class LeaseSignaturesTest extends TestCase
 
             return new Envelope(Lease::class, '1', $request->title, 'docuseal');
         });
-        $repository = $this->createStub(EntityRepository::class);
-        $entityManager = $this->createStub(EntityManagerInterface::class);
-        $entityManager->method('getRepository')->willReturn($repository);
+        $repository = $this->createStub(Entities::class);
+        $repositories = $this->createStub(Repositories::class);
+        $repositories->method('of')->willReturn($repository);
         $twig = $this->createStub(Environment::class);
         $twig->method('render')->willReturnCallback(static fn (string $name, array $context) => '<html><body><h1>'.$name.'</h1>'.htmlspecialchars((string) ($context['sha256'] ?? '')).'</body></html>');
 
-        return new LeaseSignatures($core, new Receipts($this->createStub(RentCallRepository::class), $twig), $entityManager, $this->createStub(ActivityLog::class), $this->createStub(EstateMailer::class), $twig, null, 'docuseal', $template);
+        return new LeaseSignatures($core, new Receipts($this->createStub(RentCallRepository::class), $twig), $this->createStub(UnitOfWork::class), $repositories, $this->createStub(ActivityLog::class), $this->createStub(EstateMailer::class), $twig, null, 'docuseal', $template);
     }
 
     private static function lease(): Lease

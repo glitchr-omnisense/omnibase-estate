@@ -13,7 +13,8 @@ use Base\Estate\Enum\ActivityKind;
 use Base\Estate\Enum\DocumentKind;
 use Base\Estate\Enum\StoryState;
 use Base\Estate\Enum\WorkOrderStatus;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
@@ -30,7 +31,8 @@ class Stories
     public const REMOVED = '[nom retiré]';
 
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
+        private readonly Repositories $repositories,
         private readonly UrlGeneratorInterface $urls,
         private readonly ?ActivityLog $activities = null,
     ) {
@@ -46,7 +48,7 @@ class Stories
      */
     public function fromWorkOrder(WorkOrder $order): StoryEntry
     {
-        $entry = $this->entityManager->getRepository(StoryEntry::class)->findOneByWorkOrder($order);
+        $entry = $this->repositories->of(StoryEntry::class)->findOneByWorkOrder($order);
         if ($entry) {
             return $entry;
         }
@@ -59,9 +61,9 @@ class Stories
             ->setStartedOn(($order->getVisitAt() ?? $order->getCreatedAt())->setTime(0, 0))
             ->setAmount($order->getInvoiceAmount() ?? $order->getQuoteAmount())
             ->setText($this->scrub((string) ($order->getReport() ?: $order->getDescription()), $names));
-        $this->entityManager->persist($entry);
+        $this->unitOfWork->persist($entry);
         $this->addPhotos($entry, $order);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         return $entry;
     }
@@ -74,7 +76,7 @@ class Stories
         }
         $entry->addWorkOrder($order);
         $this->addPhotos($entry, $order);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
     }
 
     /** What the linked work orders suggest: done when every one is done or closed, in progress otherwise. */
@@ -95,7 +97,7 @@ class Stories
     private function addPhotos(StoryEntry $entry, WorkOrder $order): void
     {
         $known = array_filter(array_map(fn (StoryPhoto $p) => $p->getDocumentId(), $entry->getPhotos()->toArray()));
-        $documents = $this->entityManager->getRepository(Document::class)->findBy(['workOrder' => $order, 'kind' => DocumentKind::PHOTO], ['createdAt' => 'ASC', 'id' => 'ASC']);
+        $documents = $this->repositories->of(Document::class)->findBy(['workOrder' => $order, 'kind' => DocumentKind::PHOTO], ['createdAt' => 'ASC', 'id' => 'ASC']);
         $position = \count($entry->getPhotos());
         foreach ($documents as $document) {
             $file = Uploader::get($document, 'file');
@@ -146,13 +148,13 @@ class Stories
         }
         $entry->setPublished(true);
         $this->activities?->log($entry->getOrganisation(), ActivityKind::OTHER, sprintf('Histoire de %s : « %s » publiée', $entry->getUnit()->getName(), $entry->getTitle()), $entry->getUnit());
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
     }
 
     public function unpublish(StoryEntry $entry): void
     {
         $entry->setPublished(false);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
     }
 
     /**

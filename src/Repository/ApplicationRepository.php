@@ -6,15 +6,18 @@ use Base\Estate\Entity\Application;
 use Base\Estate\Entity\Organisation;
 use Base\Estate\Entity\Unit;
 use Base\Estate\Enum\ApplicationStatus;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
+use Base\Database\Repository\Finder\Criterion;
+use Base\Database\Repository\Finder\Group;
+use Base\Database\Repository\Finder\Parser;
+use Base\Database\Repository\ServiceEntityRepository;
+use Base\Database\Repository\Finders;
 
 /** @extends ServiceEntityRepository<Application> */
 class ApplicationRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(Finders $finders)
     {
-        parent::__construct($registry, Application::class);
+        parent::__construct($finders, Application::class);
     }
 
     /** @return list<Application> a home's applications still open, the oldest first */
@@ -26,14 +29,11 @@ class ApplicationRepository extends ServiceEntityRepository
     /** New applications not looked at yet, for the dashboard. */
     public function countNew(Organisation $organisation): int
     {
-        return (int) $this->createQueryBuilder('a')->select('COUNT(a.id)')->join('a.unit', 'u')
-            ->where('u.organisation = :organisation')->setParameter('organisation', $organisation)
-            ->andWhere('a.status = :new')->setParameter('new', ApplicationStatus::NEW)
-            ->getQuery()->getSingleScalarResult();
+        return $this->count(['unit.organisation' => $organisation, 'status' => ApplicationStatus::NEW]);
     }
 
     /**
-     * countNew() for several organisations in one query.
+     * countNew() for several organisations: one count each (the finder language has no GROUP BY).
      *
      * @param list<Organisation> $organisations
      *
@@ -44,21 +44,22 @@ class ApplicationRepository extends ServiceEntityRepository
         if ([] === $organisations) {
             return [];
         }
-        $rows = $this->createQueryBuilder('a')->join('a.unit', 'u')
-            ->select('IDENTITY(u.organisation) AS organisation', 'COUNT(a.id) AS applications')
-            ->where('u.organisation IN (:organisations)')->setParameter('organisations', $organisations)
-            ->andWhere('a.status = :new')->setParameter('new', ApplicationStatus::NEW)
-            ->groupBy('u.organisation')
-            ->getQuery()->getScalarResult();
+        $counts = [];
+        foreach ($organisations as $organisation) {
+            if (0 < $count = $this->countNew($organisation)) {
+                $counts[(int) $organisation->getId()] = $count;
+            }
+        }
 
-        return array_column(array_map(static fn (array $r) => [(int) $r['organisation'], (int) $r['applications']], $rows), 1, 0);
+        return $counts;
     }
 
     /** @return list<Application> decided more than $months ago: to delete */
     public function expired(int $months = 3): array
     {
-        return $this->createQueryBuilder('a')
-            ->where('a.decidedAt IS NOT NULL AND a.decidedAt < :limit')->setParameter('limit', new \DateTimeImmutable('-'.$months.' months'))
-            ->getQuery()->getResult();
+        return $this->findBy([Group::of(Parser::SEPARATOR_AND,
+            Criterion::of('decidedAt', null, Parser::OPTION_NOT_NULL),
+            Criterion::of('decidedAt', new \DateTimeImmutable('-'.$months.' months'), Parser::OPTION_LOWER),
+        )]);
     }
 }

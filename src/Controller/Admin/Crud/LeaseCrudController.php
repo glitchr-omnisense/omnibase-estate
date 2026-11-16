@@ -20,7 +20,7 @@ use Base\Field\DateField;
 use Base\Field\IntegerField;
 use Base\Field\TextareaField;
 use Base\Field\TextField;
-use Omnibridge\Persistence\UnitOfWork;
+use Base\Contract\UnitOfWork;
 use Symfony\Contracts\Service\Attribute\Required;
 
 /**
@@ -96,7 +96,7 @@ class LeaseCrudController extends AbstractEstateCrudController
     public function configureFields(string $pageName): iterable
     {
         yield TextField::new('reference', 'Référence')->setColumns(3);
-        yield AssociationField::new('unit', 'Bien')->setFormType(\Symfony\Bridge\Doctrine\Form\Type\EntityType::class)->setFormTypeOptions(['class' => \Base\Estate\Entity\Unit::class])->setColumns(5);
+        yield AssociationField::new('unit', 'Bien')->setFormType(\Base\Field\Type\SelectType::class)->setFormTypeOptions(['class' => \Base\Estate\Entity\Unit::class])->setColumns(5);
         yield TextField::new('tenantNames', 'Locataires')->onlyOnIndex();
         yield $this->enum('status', 'État', LeaseStatus::class, fn (LeaseStatus $s) => self::STATUSES[$s->value])->setColumns(4);
         yield $this->enum('kind', 'Type de bail', LeaseKind::class, fn (LeaseKind $k) => $k->label())->setColumns(4)->hideOnIndex();

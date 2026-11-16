@@ -8,7 +8,8 @@ use Base\Estate\Entity\Unit;
 use Base\Estate\Repository\RentCallRepository;
 use Base\Estate\Service\OnlinePayments;
 use Base\Estate\Service\Payments;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 use Omnitrade\Registry;
 use Omnitrade\Stripe\StripeGatewayFactory;
 use PHPUnit\Framework\TestCase;
@@ -28,7 +29,7 @@ final class OnlinePaymentsCatchUpTest extends TestCase
         }
     }
 
-    private function online(EntityManagerInterface $entityManager): OnlinePayments
+    private function online(UnitOfWork $unitOfWork, ?Repositories $repositories = null): OnlinePayments
     {
         $http = new MockHttpClient(function (string $method, string $url): MockResponse {
             if ('GET' === $method) {
@@ -41,7 +42,7 @@ final class OnlinePaymentsCatchUpTest extends TestCase
         $registry = new Registry([new StripeGatewayFactory($http)], ['stripe' => ['factory' => 'stripe', 'options' => ['api_key' => 'sk_test_x']]]);
 
         // Nothing is paid here: Payments, which has a method named "method" PHPUnit cannot double, is not called.
-        return new OnlinePayments((new \ReflectionClass(Payments::class))->newInstanceWithoutConstructor(), $registry, 'stripe', ['card', 'sepa_debit'], $entityManager);
+        return new OnlinePayments((new \ReflectionClass(Payments::class))->newInstanceWithoutConstructor(), $registry, 'stripe', ['card', 'sepa_debit'], $unitOfWork, $repositories ?? $this->createStub(Repositories::class));
     }
 
     public function testTheSessionStartedIsKeptOnTheCall(): void
@@ -57,10 +58,10 @@ final class OnlinePaymentsCatchUpTest extends TestCase
         $call->method('getLease')->willReturn($lease);
         $at = new \DateTimeImmutable('2026-10-31 10:01');
         $call->expects(self::once())->method('setOnline')->with('cs_test_1', $at);
-        $entityManager = $this->createMock(EntityManagerInterface::class);
-        $entityManager->expects(self::once())->method('flush');
+        $unitOfWork = $this->createMock(UnitOfWork::class);
+        $unitOfWork->expects(self::once())->method('flush');
 
-        $this->online($entityManager)->start($call, 'sepa_debit', 'https://app.example/back', 'https://app.example/cancel', null, $at);
+        $this->online($unitOfWork)->start($call, 'sepa_debit', 'https://app.example/back', 'https://app.example/cancel', null, $at);
     }
 
     public function testOpenSessionsAreReadAgainAndOldOnesGivenUp(): void
@@ -77,11 +78,12 @@ final class OnlinePaymentsCatchUpTest extends TestCase
 
         $repository = $this->createStub(RentCallRepository::class);
         $repository->method('findOnlinePending')->willReturn([$recent, $old]);
-        $entityManager = $this->createMock(EntityManagerInterface::class);
-        $entityManager->method('getRepository')->willReturn($repository);
-        $entityManager->expects(self::once())->method('flush');
+        $repositories = $this->createStub(Repositories::class);
+        $repositories->method('of')->willReturn($repository);
+        $unitOfWork = $this->createMock(UnitOfWork::class);
+        $unitOfWork->expects(self::once())->method('flush');
 
-        self::assertSame(0, $this->online($entityManager)->catchUp(15, $now), 'not paid yet: nothing recorded');
+        self::assertSame(0, $this->online($unitOfWork, $repositories)->catchUp(15, $now), 'not paid yet: nothing recorded');
         self::assertSame(['cs_test_1'], $this->read, 'the old one is not asked for');
     }
 }

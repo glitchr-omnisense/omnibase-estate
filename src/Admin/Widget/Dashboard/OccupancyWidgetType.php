@@ -7,7 +7,7 @@ use Base\Estate\Entity\Unit;
 use Base\Estate\Enum\LeaseStatus;
 use Base\Estate\Repository\UnitRepository;
 use Base\Estate\Service\PortfolioFigures;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 
 /**
  * Occupancy: a donut of the homes let and vacant, then each home and where it stands - vacant since
@@ -22,9 +22,9 @@ final class OccupancyWidgetType extends AbstractEstateWidgetType
     /** The homes the card lists; the donut counts them all. */
     private const ROWS = 5;
 
-    public function __construct(EntityManagerInterface $entityManager, private readonly PortfolioFigures $figures, private readonly UnitRepository $units)
+    public function __construct(Repositories $repositories, private readonly PortfolioFigures $figures, private readonly UnitRepository $units)
     {
-        parent::__construct($entityManager);
+        parent::__construct($repositories);
     }
 
     public static function getName(): string { return 'estate_occupancy'; }

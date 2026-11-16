@@ -13,7 +13,7 @@ use Base\Field\BooleanField;
 use Base\Field\EmailField;
 use Base\Field\TextareaField;
 use Base\Field\TextField;
-use Omnibridge\Persistence\UnitOfWork;
+use Base\Contract\UnitOfWork;
 use Symfony\Contracts\Service\Attribute\Required;
 
 /**

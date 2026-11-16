@@ -4,7 +4,7 @@ namespace Base\Estate\Command;
 
 use Base\Estate\Entity\Organisation;
 use Base\Estate\Service\CompanyRecords;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 use Omnistate\Exception\UnavailableException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -18,7 +18,7 @@ final class CompanyRefreshCommand extends Command
 {
     public function __construct(
         private readonly CompanyRecords $records,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly Repositories $repositories,
     ) {
         parent::__construct();
     }
@@ -27,7 +27,7 @@ final class CompanyRefreshCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
         $failed = false;
-        foreach ($this->entityManager->getRepository(Organisation::class)->findAll() as $organisation) {
+        foreach ($this->repositories->of(Organisation::class)->findAll() as $organisation) {
             try {
                 $found = $this->records->refresh($organisation);
             } catch (UnavailableException $e) {

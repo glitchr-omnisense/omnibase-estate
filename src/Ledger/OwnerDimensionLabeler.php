@@ -4,7 +4,7 @@ namespace Base\Estate\Ledger;
 
 use Base\Estate\Entity\Mandator;
 use Base\Ledger\Dimension\DimensionLabelerInterface;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 
 /**
  * Names the ledger's "owner" axis: the owner's name (Hélène Roth) for the
@@ -15,7 +15,7 @@ class OwnerDimensionLabeler implements DimensionLabelerInterface
 {
     public const AXIS = 'owner';
 
-    public function __construct(private readonly EntityManagerInterface $entityManager)
+    public function __construct(private readonly Repositories $repositories)
     {
     }
 
@@ -31,7 +31,7 @@ class OwnerDimensionLabeler implements DimensionLabelerInterface
             return [];
         }
         $labels = [];
-        foreach ($this->entityManager->getRepository(Mandator::class)->findBy(['id' => $ids]) as $mandator) {
+        foreach ($this->repositories->of(Mandator::class)->findBy(['id' => $ids]) as $mandator) {
             $labels[(string) $mandator->getId()] = $mandator->getName();
         }
 

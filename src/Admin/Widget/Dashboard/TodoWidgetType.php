@@ -7,7 +7,7 @@ use Base\Estate\Repository\LeaseRepository;
 use Base\Estate\Repository\MessageRepository;
 use Base\Estate\Repository\RentCallRepository;
 use Base\Estate\Service\RentRevisions;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 
 /**
  * What waits for the management, as tinted rows each with its icon, a short
@@ -18,14 +18,14 @@ use Doctrine\ORM\EntityManagerInterface;
 final class TodoWidgetType extends AbstractEstateWidgetType
 {
     public function __construct(
-        EntityManagerInterface $entityManager,
+        Repositories $repositories,
         private readonly RentRevisions $revisions,
         private readonly MessageRepository $messages,
         private readonly ApplicationRepository $applications,
         private readonly RentCallRepository $calls,
         private readonly LeaseRepository $leases,
     ) {
-        parent::__construct($entityManager);
+        parent::__construct($repositories);
     }
 
     public static function getName(): string { return 'estate_todo'; }

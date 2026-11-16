@@ -3,7 +3,7 @@
 namespace Base\Estate\Entity;
 
 use Base\Entity\User;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * An owner who entrusts homes to the agency (the mandant of a management

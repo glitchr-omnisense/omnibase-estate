@@ -113,7 +113,7 @@ final class PayoutsTest extends ManagementTestCase
         $posted = \count($this->drafts);
         $issued = new Entry($this->book, new Journal($this->book, 'OD', 'OD'), new \DateTimeImmutable('2026-11-02'), 'Reversement', 'estate:management:payout:'.$second->getId(), $second->getReference());
         $line = self::withId(new BankLine($this->escrow(), 'tx-1', new \DateTimeImmutable('2026-11-05'), -22440, 'VIR SEPA EMIS RV-2026-0002 HELENE ROTH'), 77);
-        (new ManagementSettlement($this->entityManager(), $management))(new BankLineReconciled($line, $issued, [new EntryLine($issued, new Account($this->book, '4678', '4678'), 0, 22440)]));
+        (new ManagementSettlement($this->persistence(), $management))(new BankLineReconciled($line, $issued, [new EntryLine($issued, new Account($this->book, '4678', '4678'), 0, 22440)]));
 
         self::assertTrue($second->isPaid());
         self::assertSame(['2026-11-05', 'bank:77'], [$second->getPaidOn()->format('Y-m-d'), $second->getPaidReference()]);

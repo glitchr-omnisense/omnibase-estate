@@ -7,8 +7,8 @@ use Base\Estate\Repository\LeaseRepository;
 use Base\Estate\Service\Activities;
 use Base\Estate\Service\Spaces;
 use Base\Estate\Entity\OwnershipShare;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\EntityRepository;
+use Base\Database\Repository\Entities;
+use Base\Database\Repository\Repositories;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\SecurityBundle\Security;
 
@@ -22,10 +22,10 @@ final class OwnershipSpacesTest extends TestCase
     public function testTheActivityOffShowsNoCoOwnerSpace(): void
     {
         $read = [];
-        $entityManager = $this->createStub(EntityManagerInterface::class);
-        $entityManager->method('getRepository')->willReturnCallback(function (string $class) use (&$read) {
+        $repositories = $this->createStub(Repositories::class);
+        $repositories->method('of')->willReturnCallback(function (string $class) use (&$read) {
             $read[] = $class;
-            $repository = $this->createStub(EntityRepository::class);
+            $repository = $this->createStub(Entities::class);
             $repository->method('findBy')->willReturn([]);
 
             return $repository;
@@ -34,7 +34,7 @@ final class OwnershipSpacesTest extends TestCase
         $leases->method('findForUser')->willReturn([]);
         $user = (new \ReflectionClass(User::class))->newInstanceWithoutConstructor();
 
-        $spaces = new Spaces($entityManager, $leases, $this->createStub(Security::class), new Activities(['assets']));
+        $spaces = new Spaces($repositories, $leases, $this->createStub(Security::class), new Activities(['assets']));
 
         self::assertSame([], $spaces->coOwnerships($user));
         self::assertSame([], $spaces->ownerships($user));

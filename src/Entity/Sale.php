@@ -6,7 +6,7 @@ use Base\Estate\Enum\FeePayer;
 use Base\Estate\Enum\SaleStep;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * A sale under way, from the offer accepted: the price, the step it has

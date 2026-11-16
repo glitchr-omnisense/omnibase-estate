@@ -2,10 +2,10 @@
 
 namespace Base\Estate\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /** A word to the tenants of a building, or of all the units: a water cut, works on the stairs. */
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: \Base\Estate\Repository\NoticeRepository::class)]
 #[ORM\Table(name: 'estate_notice')]
 class Notice
 {

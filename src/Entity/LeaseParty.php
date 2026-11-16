@@ -4,7 +4,7 @@ namespace Base\Estate\Entity;
 
 use Base\Entity\User;
 use Base\Estate\Enum\PartyRole;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * Someone on a lease: a tenant, a co-tenant, a guarantor - and, once invited, their account; a

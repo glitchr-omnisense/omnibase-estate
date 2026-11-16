@@ -5,7 +5,7 @@ namespace Base\Estate\Admin\Widget\Dashboard;
 use Base\Estate\Repository\RentCallRepository;
 use Base\Estate\Repository\WorkOrderRepository;
 use Base\Estate\Service\PortfolioFigures;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 
 /**
  * The summary: one band across the dashboard with the figures read first - the homes let, the
@@ -18,12 +18,12 @@ use Doctrine\ORM\EntityManagerInterface;
 final class SummaryWidgetType extends AbstractEstateWidgetType
 {
     public function __construct(
-        EntityManagerInterface $entityManager,
+        Repositories $repositories,
         private readonly PortfolioFigures $figures,
         private readonly RentCallRepository $calls,
         private readonly WorkOrderRepository $workOrders,
     ) {
-        parent::__construct($entityManager);
+        parent::__construct($repositories);
     }
 
     public static function getName(): string { return 'estate_summary'; }

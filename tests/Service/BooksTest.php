@@ -24,7 +24,9 @@ use Base\Ledger\Model\EntryDraft;
 use Base\Ledger\Service\Lettering;
 use Base\Ledger\Service\Parties;
 use Base\Ledger\Service\Posting;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Entities;
+use Base\Database\Repository\Repositories;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -45,8 +47,11 @@ final class BooksTest extends TestCase
 
     private function books(Book $book, ?Tax $tax = null, ?Management $management = null): Books
     {
-        $entityManager = $this->createStub(EntityManagerInterface::class);
-        $entityManager->method('find')->willReturn($book);
+        // find() of the book, whatever the class asked: the test's book.
+        $books = $this->createStub(Entities::class);
+        $books->method('find')->willReturn($book);
+        $repositories = $this->createStub(Repositories::class);
+        $repositories->method('of')->willReturn($books);
         $posting = $this->createStub(Posting::class);
         $posting->method('post')->willReturnCallback(function (EntryDraft $draft) use ($book) {
             $this->drafts[] = $draft;
@@ -59,7 +64,7 @@ final class BooksTest extends TestCase
         $taxes = $this->createStub(TaxRepository::class);
         $taxes->method('findOneByCode')->willReturnCallback(fn (Book $b, string $code) => $tax && $tax->getCode() === $code ? $tax : null);
 
-        return new Books($entityManager, $posting, $parties, $this->createStub(Lettering::class), $management, $taxes);
+        return new Books($this->createStub(UnitOfWork::class), $repositories, $posting, $parties, $this->createStub(Lettering::class), $management, $taxes);
     }
 
     private static function withId(object $entity, int $id): object

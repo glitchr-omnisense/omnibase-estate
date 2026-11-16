@@ -15,9 +15,9 @@ use Base\Field\DateField;
 use Base\Field\DateTimeField;
 use Base\Field\FileField;
 use Base\Field\TextField;
-use Doctrine\ORM\EntityManagerInterface;
-use Omnibridge\Persistence\UnitOfWork;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Base\Database\Repository\Repositories;
+use Base\Contract\UnitOfWork;
+use Base\Field\Type\SelectType;
 use Symfony\Contracts\Service\Attribute\Required;
 
 /**
@@ -30,13 +30,13 @@ use Symfony\Contracts\Service\Attribute\Required;
 class MandateExpenseCrudController extends AbstractEstateCrudController
 {
     private ?Management $management = null;
-    private ?EntityManagerInterface $expenseEntityManager = null;
+    private ?Repositories $expenseRepositories = null;
 
     #[Required]
-    public function setManagement(Management $management, EntityManagerInterface $entityManager): void
+    public function setManagement(Management $management, Repositories $repositories): void
     {
         $this->management = $management;
-        $this->expenseEntityManager = $entityManager;
+        $this->expenseRepositories = $repositories;
     }
 
     public static function getEntityFqcn(): string { return MandateExpense::class; }
@@ -56,11 +56,11 @@ class MandateExpenseCrudController extends AbstractEstateCrudController
 
     public function configureFields(string $pageName): iterable
     {
-        yield AssociationField::new('mandate', 'Mandat')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Mandate::class])->setColumns(4);
+        yield AssociationField::new('mandate', 'Mandat')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Mandate::class])->setColumns(4);
         yield TextField::new('label', 'Objet')->setColumns(5);
         yield DateField::new('date', 'Date')->setColumns(3);
-        yield AssociationField::new('unit', 'Bien')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Unit::class, 'required' => false])->setRequired(false)->setColumns(4)->hideOnIndex();
-        yield AssociationField::new('contractor', 'Artisan')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Contractor::class, 'required' => false])->setRequired(false)->setColumns(4)->hideOnIndex();
+        yield AssociationField::new('unit', 'Bien')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Unit::class, 'required' => false])->setRequired(false)->setColumns(4)->hideOnIndex();
+        yield AssociationField::new('contractor', 'Artisan')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Contractor::class, 'required' => false])->setRequired(false)->setColumns(4)->hideOnIndex();
         yield TextField::new('supplierName', 'Ou fournisseur')->setRequired(false)->setColumns(4)->hideOnIndex()->setHelp('Le syndic, un assureur, le Trésor public.');
         yield TextField::new('supplier', 'Fournisseur')->onlyOnIndex();
         yield TextField::new('number', 'N° de facture')->setRequired(false)->setColumns(4)->hideOnIndex();
@@ -74,7 +74,7 @@ class MandateExpenseCrudController extends AbstractEstateCrudController
     public function createEntity(string $entityFqcn): MandateExpense
     {
         $expense = new MandateExpense();
-        if (null !== $mandate = $this->expenseEntityManager?->getRepository(Mandate::class)->findOneBy([], ['id' => 'ASC'])) {
+        if (null !== $mandate = $this->expenseRepositories?->of(Mandate::class)->findOneBy([], ['id' => 'ASC'])) {
             $expense->setMandate($mandate);
         }
 

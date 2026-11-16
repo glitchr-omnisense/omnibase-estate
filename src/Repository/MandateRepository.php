@@ -2,19 +2,24 @@
 
 namespace Base\Estate\Repository;
 
+use Base\Database\Repository\Repositories;
 use Base\Entity\User;
 use Base\Estate\Entity\Mandate;
 use Base\Estate\Entity\Mandator;
 use Base\Estate\Entity\Unit;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
+use Base\Database\Repository\Finder\Criterion;
+use Base\Database\Repository\Finder\Group;
+use Base\Database\Repository\Finder\Key;
+use Base\Database\Repository\Finder\Parser;
+use Base\Database\Repository\ServiceEntityRepository;
+use Base\Database\Repository\Finders;
 
 /** @extends ServiceEntityRepository<Mandate> */
 class MandateRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(Finders $finders, private readonly Repositories $repositories)
     {
-        parent::__construct($registry, Mandate::class);
+        parent::__construct($finders, Mandate::class);
     }
 
     /** The mandate a home is managed under on $on, if any (the latest started when two overlap). */
@@ -22,31 +27,35 @@ class MandateRepository extends ServiceEntityRepository
     {
         $day = \DateTimeImmutable::createFromInterface($on)->setTime(0, 0);
 
-        return $this->createQueryBuilder('m')->join('m.units', 'u')
-            ->where('u = :unit')->setParameter('unit', $unit)
-            ->andWhere('m.startsOn <= :day')->andWhere('m.endsOn IS NULL OR m.endsOn >= :day')->setParameter('day', $day)
-            ->orderBy('m.startsOn', 'DESC')->addOrderBy('m.id', 'DESC')->setMaxResults(1)
-            ->getQuery()->getOneOrNullResult();
+        return $this->findOneBy([
+            'units' => $unit,
+            Group::of(Parser::SEPARATOR_AND, Criterion::of('startsOn', $day, Parser::OPTION_LOWER_EQUAL)),
+            Group::of(Parser::SEPARATOR_OR,
+                Criterion::of('endsOn', null, Parser::OPTION_NULL),
+                Criterion::of('endsOn', $day, Parser::OPTION_GREATER_EQUAL),
+            ),
+        ], ['startsOn' => 'DESC', 'id' => 'DESC']);
     }
 
     /** @return list<Mandate> the mandates running on one day at least of the period, by owner */
     public function inForce(\DateTimeImmutable $from, \DateTimeImmutable $to): array
     {
-        return $this->createQueryBuilder('m')->join('m.mandator', 'o')->addSelect('o')
-            ->where('m.startsOn <= :to')->andWhere('m.endsOn IS NULL OR m.endsOn >= :from')
-            ->setParameter('from', $from->setTime(0, 0))->setParameter('to', $to->setTime(0, 0))
-            ->orderBy('o.name', 'ASC')->addOrderBy('m.startsOn', 'ASC')
-            ->getQuery()->getResult();
+        return $this->findBy([
+            Group::of(Parser::SEPARATOR_AND, Criterion::of('startsOn', $to->setTime(0, 0), Parser::OPTION_LOWER_EQUAL)),
+            Group::of(Parser::SEPARATOR_OR,
+                Criterion::of('endsOn', null, Parser::OPTION_NULL),
+                Criterion::of('endsOn', $from->setTime(0, 0), Parser::OPTION_GREATER_EQUAL),
+            ),
+        ], ['mandator.name' => 'ASC', 'startsOn' => 'ASC']);
     }
 
     /** @return list<Mandate> the mandates ending between today and $until, the soonest first */
     public function ending(\DateTimeImmutable $today, \DateTimeImmutable $until): array
     {
-        return $this->createQueryBuilder('m')->join('m.mandator', 'o')->addSelect('o')
-            ->where('m.endsOn >= :today')->andWhere('m.endsOn <= :until')
-            ->setParameter('today', $today->setTime(0, 0))->setParameter('until', $until->setTime(0, 0))
-            ->orderBy('m.endsOn', 'ASC')
-            ->getQuery()->getResult();
+        return $this->findBy([Group::of(Parser::SEPARATOR_AND,
+            Criterion::of('endsOn', $today->setTime(0, 0), Parser::OPTION_GREATER_EQUAL),
+            Criterion::of('endsOn', $until->setTime(0, 0), Parser::OPTION_LOWER_EQUAL),
+        )], ['endsOn' => 'ASC']);
     }
 
     /**
@@ -60,23 +69,19 @@ class MandateRepository extends ServiceEntityRepository
             return [];
         }
 
-        return $this->createQueryBuilder('m')
-            ->where('m.mandator IN (:mandators)')->setParameter('mandators', $mandators)
-            ->orderBy('m.startsOn', 'DESC')->addOrderBy('m.id', 'DESC')
-            ->getQuery()->getResult();
+        return $this->findBy(['mandator' => Key::of($mandators)], ['startsOn' => 'DESC', 'id' => 'DESC']);
     }
 
     /** @return list<Mandator> the owners an account is */
     public function mandatorsOf(User $user): array
     {
-        return $this->getEntityManager()->getRepository(Mandator::class)->findBy(['user' => $user], ['name' => 'ASC']);
+        return $this->repositories->of(Mandator::class)->findBy(['user' => $user], ['name' => 'ASC']);
     }
 
     public function lastNumber(string $prefix): ?string
     {
-        return $this->createQueryBuilder('m')
-            ->select('MAX(m.number)')
-            ->where('m.number LIKE :prefix')->setParameter('prefix', $prefix.'%')
-            ->getQuery()->getSingleScalarResult();
+        $last = $this->maxOfNumberBy([Group::of(Parser::SEPARATOR_AND, Criterion::of('number', $prefix, Parser::OPTION_STARTING_WITH))]);
+
+        return null === $last ? null : (string) $last;
     }
 }

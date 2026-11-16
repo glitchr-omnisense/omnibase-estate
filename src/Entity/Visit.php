@@ -2,7 +2,7 @@
 
 namespace Base\Estate\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * A buyer's visit of a property on sale: when, and a few words after (the

@@ -4,7 +4,7 @@ namespace Base\Estate\Ledger;
 
 use Base\Estate\Entity\SaleMandate;
 use Base\Ledger\Dimension\DimensionLabelerInterface;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 
 /**
  * Names the ledger's "transaction" axis: the sale mandate's number and
@@ -16,7 +16,7 @@ class TransactionDimensionLabeler implements DimensionLabelerInterface
 {
     public const AXIS = 'transaction';
 
-    public function __construct(private readonly EntityManagerInterface $entityManager)
+    public function __construct(private readonly Repositories $repositories)
     {
     }
 
@@ -32,7 +32,7 @@ class TransactionDimensionLabeler implements DimensionLabelerInterface
             return [];
         }
         $labels = [];
-        foreach ($this->entityManager->getRepository(SaleMandate::class)->findBy(['id' => $ids]) as $mandate) {
+        foreach ($this->repositories->of(SaleMandate::class)->findBy(['id' => $ids]) as $mandate) {
             $labels[(string) $mandate->getId()] = (string) $mandate;
         }
 

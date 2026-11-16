@@ -6,48 +6,37 @@ use Base\Estate\Entity\Organisation;
 use Base\Estate\Entity\RentCall;
 use Base\Estate\Entity\Unit;
 use Base\Estate\Enum\RentStatus;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\ORM\QueryBuilder;
-use Doctrine\Persistence\ManagerRegistry;
+use Base\Database\Repository\Finder\Aggregate;
+use Base\Database\Repository\Finder\Criterion;
+use Base\Database\Repository\Finder\Group;
+use Base\Database\Repository\Finder\Parser;
+use Base\Database\Repository\ServiceEntityRepository;
+use Base\Database\Repository\Finders;
 
 /** @extends ServiceEntityRepository<RentCall> */
 class RentCallRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(Finders $finders)
     {
-        parent::__construct($registry, RentCall::class);
+        parent::__construct($finders, RentCall::class);
     }
 
     /** @return list<RentCall> unpaid, due before a day */
     public function findOverdue(\DateTimeImmutable $today, ?Organisation $organisation = null): array
     {
-        $query = $this->createQueryBuilder('r')
-            ->join('r.lease', 'l')->join('l.unit', 'u')
-            ->where('r.status != :paid')->setParameter('paid', RentStatus::PAID)
-            ->andWhere('r.dueOn < :today')->setParameter('today', $today, 'date_immutable')
-            ->orderBy('r.dueOn', 'ASC');
-        if ($organisation) {
-            $query->andWhere('u.organisation = :organisation')->setParameter('organisation', $organisation);
-        }
-
-        return $query->getQuery()->getResult();
+        return $this->findBy($this->overdue(null === $organisation ? null : [$organisation], $today), ['dueOn' => 'ASC']);
     }
 
     /** @return list<RentCall> an organisation's calls between two months (inclusive), oldest first */
     public function findForOrganisation(Organisation $organisation, \DateTimeImmutable $from, \DateTimeImmutable $to): array
     {
-        return $this->createQueryBuilder('r')
-            ->join('r.lease', 'l')->join('l.unit', 'u')
-            ->where('u.organisation = :organisation')->setParameter('organisation', $organisation)
-            ->andWhere('r.period >= :from')->setParameter('from', $from->modify('first day of this month')->setTime(0, 0), 'date_immutable')
-            ->andWhere('r.period <= :to')->setParameter('to', $to->modify('first day of this month')->setTime(0, 0), 'date_immutable')
-            ->orderBy('r.period', 'ASC')
-            ->getQuery()->getResult();
+        return $this->findBy(['lease.unit.organisation' => $organisation, $this->periods($from, $to)], ['period' => 'ASC']);
     }
 
     /**
      * What is late for these organisations together: how many calls are unpaid past their due
-     * day, and what remains of them (findOverdue()'s calls, read as two figures).
+     * day, and what remains of them (findOverdue()'s calls, read as two figures: what remains of
+     * each, never below zero, summed here).
      *
      * @param list<Organisation> $organisations
      *
@@ -58,12 +47,13 @@ class RentCallRepository extends ServiceEntityRepository
         if ([] === $organisations) {
             return ['count' => 0, 'total' => 0];
         }
-        $remaining = 'r.rent + r.charges + r.vat - r.paid';
-        $row = $this->overdue($organisations, $today)
-            ->select('COUNT(r.id) AS calls', "COALESCE(SUM(CASE WHEN $remaining > 0 THEN $remaining ELSE 0 END), 0) AS total")
-            ->getQuery()->getSingleResult();
+        $calls = $this->findBy($this->overdue($organisations, $today));
+        $total = 0;
+        foreach ($calls as $call) {
+            $total += max(0, $call->getRent() + $call->getCharges() + $call->getVat() - $call->getPaid());
+        }
 
-        return ['count' => (int) $row['calls'], 'total' => (int) $row['total']];
+        return ['count' => \count($calls), 'total' => $total];
     }
 
     /**
@@ -80,14 +70,12 @@ class RentCallRepository extends ServiceEntityRepository
             return [];
         }
 
-        return $this->overdue($organisations, $today)->addSelect('l', 'u')->join('u.organisation', 'o')
-            ->orderBy('r.dueOn', 'ASC')->addOrderBy('o.name', 'ASC')->addOrderBy('o.id', 'ASC')->addOrderBy('r.id', 'ASC')
-            ->setMaxResults($limit)
-            ->getQuery()->getResult();
+        return $this->findBy($this->overdue($organisations, $today), self::BY_ORGANISATION, $limit);
     }
 
     /**
-     * Per organisation, how many of its calls are late and the oldest of them (its id).
+     * Per organisation, how many of its calls are late and the oldest of them (its id), in the
+     * order of their oldest late call.
      *
      * @param list<Organisation> $organisations
      *
@@ -98,12 +86,8 @@ class RentCallRepository extends ServiceEntityRepository
         if ([] === $organisations) {
             return [];
         }
-        $rows = $this->overdue($organisations, $today)
-            ->select('IDENTITY(u.organisation) AS organisation', 'r.id AS id')
-            ->orderBy('r.dueOn', 'ASC')->addOrderBy('r.id', 'ASC')
-            ->getQuery()->getScalarResult();
         $by = [];
-        foreach ($rows as $row) {
+        foreach ($this->findValuesBy(['organisation' => 'lease.unit.organisation', 'id' => 'id'], $this->overdue($organisations, $today), ['dueOn' => 'ASC', 'id' => 'ASC']) as $row) {
             $by[(int) $row['organisation']] ??= ['count' => 0, 'first' => (int) $row['id']];
             ++$by[(int) $row['organisation']]['count'];
         }
@@ -124,20 +108,17 @@ class RentCallRepository extends ServiceEntityRepository
         if ([] === $organisations) {
             return [];
         }
-        $rows = $this->createQueryBuilder('r')->join('r.lease', 'l')->join('l.unit', 'u')
-            ->select('r.period AS period', 'SUM(r.rent + r.charges + r.vat) AS called', 'SUM(r.paid) AS received', 'COUNT(r.id) AS calls')
-            ->where('u.organisation IN (:organisations)')->setParameter('organisations', $organisations)
-            ->andWhere('r.period >= :from')->setParameter('from', $from->modify('first day of this month')->setTime(0, 0), 'date_immutable')
-            ->andWhere('r.period <= :to')->setParameter('to', $to->modify('first day of this month')->setTime(0, 0), 'date_immutable')
-            ->groupBy('r.period')
-            ->getQuery()->getScalarResult();
         $months = [];
-        foreach ($rows as $row) {
-            $period = $row['period'] instanceof \DateTimeInterface ? $row['period'] : new \DateTimeImmutable($row['period']);
+        foreach ($this->findValuesBy(
+            ['period' => 'period', 'rent' => Aggregate::sum('rent'), 'charges' => Aggregate::sum('charges'), 'vat' => Aggregate::sum('vat'), 'paid' => Aggregate::sum('paid'), 'calls' => Aggregate::count()],
+            ['lease.unit.organisation' => $organisations, $this->periods($from, $to)],
+            ['period' => 'ASC'],
+        ) as $row) {
+            $period = $row['period'] instanceof \DateTimeInterface ? $row['period'] : new \DateTimeImmutable((string) $row['period']);
             $key = $period->format('Y-m');
             $months[$key] ??= ['called' => 0, 'received' => 0, 'count' => 0];
-            $months[$key]['called'] += (int) $row['called'];
-            $months[$key]['received'] += (int) $row['received'];
+            $months[$key]['called'] += (int) $row['rent'] + (int) $row['charges'] + (int) $row['vat'];
+            $months[$key]['received'] += (int) $row['paid'];
             $months[$key]['count'] += (int) $row['calls'];
         }
 
@@ -146,7 +127,8 @@ class RentCallRepository extends ServiceEntityRepository
 
     /**
      * A month's calls for these organisations that are not late (those are listed apart), at
-     * most $limit, their lease and home with them: the ones still due first, by due day.
+     * most $limit, their lease and home with them: the ones still due first, by due day, then
+     * the paid ones.
      *
      * @param list<Organisation> $organisations
      *
@@ -154,43 +136,66 @@ class RentCallRepository extends ServiceEntityRepository
      */
     public function findInMonthNotOverdue(array $organisations, \DateTimeImmutable $month, \DateTimeImmutable $today, int $limit): array
     {
-        if ([] === $organisations) {
+        if ([] === $organisations || $limit < 1) {
             return [];
         }
+        $criteria = ['lease.unit.organisation' => $organisations, 'period' => $month->modify('first day of this month')->setTime(0, 0)];
+        $due = $this->findBy([...$criteria, Group::of(Parser::SEPARATOR_AND,
+            Criterion::of('status', RentStatus::PAID, Parser::OPTION_NOT_EQUAL),
+            Criterion::of('dueOn', $today, Parser::OPTION_GREATER_EQUAL),
+        )], self::BY_ORGANISATION, $limit);
+        if (\count($due) >= $limit) {
+            return $due;
+        }
 
-        return $this->createQueryBuilder('r')->join('r.lease', 'l')->join('l.unit', 'u')->join('u.organisation', 'o')
-            ->addSelect('l', 'u')
-            ->addSelect('CASE WHEN r.status = :paid THEN 1 ELSE 0 END AS HIDDEN settled')
-            ->where('u.organisation IN (:organisations)')->setParameter('organisations', $organisations)
-            ->andWhere('r.period = :month')->setParameter('month', $month->modify('first day of this month')->setTime(0, 0), 'date_immutable')
-            ->andWhere('r.status = :paid OR r.dueOn >= :today')->setParameter('paid', RentStatus::PAID)->setParameter('today', $today, 'date_immutable')
-            ->orderBy('settled', 'ASC')->addOrderBy('r.dueOn', 'ASC')->addOrderBy('o.name', 'ASC')->addOrderBy('o.id', 'ASC')->addOrderBy('r.id', 'ASC')
-            ->setMaxResults($limit)
-            ->getQuery()->getResult();
+        return [...$due, ...$this->findBy([...$criteria, 'status' => RentStatus::PAID], self::BY_ORGANISATION, $limit - \count($due))];
     }
 
-    /** @param list<Organisation> $organisations findOverdue()'s conditions, for several organisations */
-    private function overdue(array $organisations, \DateTimeImmutable $today): QueryBuilder
+    /** The dashboard's order: the due day, then the organisation's name. */
+    private const BY_ORGANISATION = ['dueOn' => 'ASC', 'lease.unit.organisation.name' => 'ASC', 'lease.unit.organisation.id' => 'ASC', 'id' => 'ASC'];
+
+    /**
+     * findOverdue()'s conditions, for several organisations (null: every organisation's).
+     *
+     * @param list<Organisation>|null $organisations
+     *
+     * @return array<int|string, mixed>
+     */
+    private function overdue(?array $organisations, \DateTimeImmutable $today): array
     {
-        return $this->createQueryBuilder('r')
-            ->join('r.lease', 'l')->join('l.unit', 'u')
-            ->where('r.status != :paid')->setParameter('paid', RentStatus::PAID)
-            ->andWhere('r.dueOn < :today')->setParameter('today', $today, 'date_immutable')
-            ->andWhere('u.organisation IN (:organisations)')->setParameter('organisations', $organisations);
+        $criteria = [Group::of(Parser::SEPARATOR_AND,
+            Criterion::of('status', RentStatus::PAID, Parser::OPTION_NOT_EQUAL),
+            Criterion::of('dueOn', $today, Parser::OPTION_LOWER),
+        )];
+        if (null !== $organisations) {
+            $criteria['lease.unit.organisation'] = $organisations;
+        }
+
+        return $criteria;
+    }
+
+    /** r.period between the first days of two months (inclusive). */
+    private function periods(\DateTimeImmutable $from, \DateTimeImmutable $to): Group
+    {
+        return Group::of(Parser::SEPARATOR_AND,
+            Criterion::of('period', $from->modify('first day of this month')->setTime(0, 0), Parser::OPTION_GREATER_EQUAL),
+            Criterion::of('period', $to->modify('first day of this month')->setTime(0, 0), Parser::OPTION_LOWER_EQUAL),
+        );
     }
 
     /** @return list<RentCall> the calls an online payment was started for and not seen paid (estate:payment:check) */
     public function findOnlinePending(): array
     {
-        return $this->createQueryBuilder('c')
-            ->where('c.onlineReference IS NOT NULL')->andWhere('c.status != :paid')->setParameter('paid', RentStatus::PAID)
-            ->getQuery()->getResult();
+        return $this->findBy([Group::of(Parser::SEPARATOR_AND,
+            Criterion::of('onlineReference', null, Parser::OPTION_NOT_NULL),
+            Criterion::of('status', RentStatus::PAID, Parser::OPTION_NOT_EQUAL),
+        )]);
     }
 
     /**
      * @param list<Unit> $units
      *
-     * @return list<RentCall> the rent calls of these homes, their leases and payments with them, oldest first
+     * @return list<RentCall> the rent calls of these homes, oldest first (their leases and payments load with them)
      */
     public function forUnits(array $units): array
     {
@@ -199,18 +204,13 @@ class RentCallRepository extends ServiceEntityRepository
             return [];
         }
 
-        return $this->createQueryBuilder('r')->select('r', 'l', 'p')
-            ->join('r.lease', 'l')->leftJoin('r.payments', 'p')
-            ->where('l.unit IN (:units)')->setParameter('units', $units)
-            ->orderBy('r.period', 'ASC')->addOrderBy('r.id', 'ASC')
-            ->getQuery()->getResult();
+        return $this->findBy(['lease.unit' => $units], ['period' => 'ASC', 'id' => 'ASC']);
     }
 
     public function lastReceiptNumber(string $prefix): ?string
     {
-        return $this->createQueryBuilder('r')
-            ->select('MAX(r.receiptNumber)')
-            ->where('r.receiptNumber LIKE :prefix')->setParameter('prefix', $prefix.'%')
-            ->getQuery()->getSingleScalarResult();
+        $last = $this->maxOfReceiptNumberBy([Group::of(Parser::SEPARATOR_AND, Criterion::of('receiptNumber', $prefix, Parser::OPTION_STARTING_WITH))]);
+
+        return null === $last ? null : (string) $last;
     }
 }

@@ -16,7 +16,7 @@ use Base\Estate\Entity\OwnershipShare;
 use Base\Estate\Entity\SaleMandate;
 use Base\Estate\Enum\Activity;
 use Base\Estate\Repository\LeaseRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Contracts\Service\ResetInterface;
 
@@ -36,7 +36,7 @@ class Spaces implements ResetInterface
     private array $memo = [];
 
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly Repositories $repositories,
         private readonly LeaseRepository $leases,
         private readonly Security $security,
         private readonly ?Activities $activities = null,
@@ -50,10 +50,10 @@ class Spaces implements ResetInterface
             return [];
         }
         if ($this->security->isGranted('ROLE_ADMIN')) {
-            return $this->entityManager->getRepository(Organisation::class)->findBy([], ['name' => 'ASC']);
+            return $this->repositories->of(Organisation::class)->findBy([], ['name' => 'ASC']);
         }
 
-        return $this->memo['managed'.$user->getId()] ??= array_map(fn (Member $m) => $m->getOrganisation(), $this->entityManager->getRepository(Member::class)->findBy(['user' => $user]));
+        return $this->memo['managed'.$user->getId()] ??= array_map(fn (Member $m) => $m->getOrganisation(), $this->repositories->of(Member::class)->findBy(['user' => $user]));
     }
 
     public function manages(?User $user, Organisation $organisation): bool
@@ -70,7 +70,7 @@ class Spaces implements ResetInterface
     /** @return list<Associate> */
     public function associateships(?User $user): array
     {
-        return $user ? $this->memo['associate'.$user->getId()] ??= $this->entityManager->getRepository(Associate::class)->findBy(['user' => $user]) : [];
+        return $user ? $this->memo['associate'.$user->getId()] ??= $this->repositories->of(Associate::class)->findBy(['user' => $user]) : [];
     }
 
     public function isAssociateOf(?User $user, Organisation $organisation): bool
@@ -98,7 +98,7 @@ class Spaces implements ResetInterface
     /** @return list<Contractor> */
     public function contractorships(?User $user): array
     {
-        return $user ? $this->memo['contractor'.$user->getId()] ??= $this->entityManager->getRepository(Contractor::class)->findBy(['user' => $user]) : [];
+        return $user ? $this->memo['contractor'.$user->getId()] ??= $this->repositories->of(Contractor::class)->findBy(['user' => $user]) : [];
     }
 
     /**
@@ -113,7 +113,7 @@ class Spaces implements ResetInterface
             return [];
         }
 
-        return $this->memo['coowner'.$user->getId()] ??= $this->entityManager->getRepository(OwnershipShare::class)->findBy(['user' => $user], ['startsOn' => 'ASC', 'id' => 'ASC']);
+        return $this->memo['coowner'.$user->getId()] ??= $this->repositories->of(OwnershipShare::class)->findBy(['user' => $user], ['startsOn' => 'ASC', 'id' => 'ASC']);
     }
 
     /** @return list<Ownership> the ownerships they hold a share of, each once */
@@ -157,7 +157,7 @@ class Spaces implements ResetInterface
             return [];
         }
 
-        return $this->memo['mandator'.$user->getId()] ??= $this->entityManager->getRepository(Mandator::class)->findBy(['user' => $user], ['name' => 'ASC', 'id' => 'ASC']);
+        return $this->memo['mandator'.$user->getId()] ??= $this->repositories->of(Mandator::class)->findBy(['user' => $user], ['name' => 'ASC', 'id' => 'ASC']);
     }
 
     public function isMandator(?User $user, Mandator $mandator): bool
@@ -173,7 +173,7 @@ class Spaces implements ResetInterface
             return [];
         }
 
-        return $this->memo['mandate'.$user->getId()] ??= $this->entityManager->getRepository(Mandate::class)->findBy(['mandator' => $mandators], ['startsOn' => 'DESC', 'id' => 'DESC']);
+        return $this->memo['mandate'.$user->getId()] ??= $this->repositories->of(Mandate::class)->findBy(['mandator' => $mandators], ['startsOn' => 'DESC', 'id' => 'DESC']);
     }
 
     /**
@@ -189,7 +189,7 @@ class Spaces implements ResetInterface
             return [];
         }
 
-        return $this->memo['seller'.$user->getId()] ??= $this->entityManager->getRepository(Mandator::class)->findBy(['user' => $user], ['name' => 'ASC', 'id' => 'ASC']);
+        return $this->memo['seller'.$user->getId()] ??= $this->repositories->of(Mandator::class)->findBy(['user' => $user], ['name' => 'ASC', 'id' => 'ASC']);
     }
 
     /** @return list<SaleMandate> the sale mandates the sellers they are signed, the latest started first */
@@ -201,7 +201,7 @@ class Spaces implements ResetInterface
         }
         if (!isset($this->memo['sale'.$user->getId()])) {
             $mandates = [];
-            foreach ($this->entityManager->getRepository(SaleMandate::class)->findBy([], ['startsOn' => 'DESC', 'id' => 'DESC']) as $mandate) {
+            foreach ($this->repositories->of(SaleMandate::class)->findBy([], ['startsOn' => 'DESC', 'id' => 'DESC']) as $mandate) {
                 foreach ($sellers as $seller) {
                     if ($mandate->hasSeller($seller)) {
                         $mandates[] = $mandate;
@@ -238,7 +238,7 @@ class Spaces implements ResetInterface
             return [];
         }
 
-        return $this->memo['buyer'.$user->getId()] ??= $this->entityManager->getRepository(Buyer::class)->findBy(['user' => $user], ['id' => 'ASC']);
+        return $this->memo['buyer'.$user->getId()] ??= $this->repositories->of(Buyer::class)->findBy(['user' => $user], ['id' => 'ASC']);
     }
 
     public function isBuyer(?User $user, Buyer $buyer): bool

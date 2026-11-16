@@ -17,7 +17,8 @@ use Base\Estate\Service\EstateMailer;
 use Base\Estate\Service\Receipts;
 use Base\Event\SignatureEvent;
 use Base\Service\Signatures;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 use Omnisign\Model\Document as SignedDocument;
 use Omnisign\Model\Envelope as SignatureRequest;
 use Omnisign\Model\Field;
@@ -77,7 +78,8 @@ class LeaseSignatures
     public function __construct(
         private readonly Signatures $signatures,
         private readonly Receipts $receipts,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
+        private readonly Repositories $repositories,
         private readonly ActivityLog $activities,
         private readonly EstateMailer $mailer,
         private readonly Environment $twig,
@@ -177,7 +179,7 @@ class LeaseSignatures
         }
         $envelope = $this->signatures->send($lease, $this->request($lease, $by, $kind), $this->gateway);
         $this->activities->log($lease->getOrganisation(), ActivityKind::DOCUMENT, sprintf('%s %s envoyé à la signature (%s)', self::LEASE === $kind ? 'Bail' : 'État des lieux du bail', $lease->getReference(), implode(', ', array_map(static fn (array $s) => $s['name'], $envelope->getSigners()))), $lease->getUnit());
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         return $envelope;
     }
@@ -229,7 +231,7 @@ class LeaseSignatures
         $what = self::LEASE === $kind ? 'Bail' : 'État des lieux du bail';
         $this->activities->log($lease->getOrganisation(), ActivityKind::DOCUMENT, sprintf('%s %s signé par toutes les parties', $what, $lease->getReference()), $lease->getUnit());
         $this->fileSigned($lease, $event->getEnvelope(), $kind);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
         $this->mailer->send((string) $lease->getOrganisation()->getEmail(), sprintf('%s %s signé', $what, $lease->getReference()), 'lease_signature', ['lease' => $lease, 'organisation' => $lease->getOrganisation(), 'kind' => $kind, 'status' => Envelope::STATUS_COMPLETED]);
     }
 
@@ -244,7 +246,7 @@ class LeaseSignatures
         $status = $event->getEnvelope()->getStatus();
         $what = self::LEASE === $kind ? 'Bail' : 'État des lieux du bail';
         $this->activities->log($lease->getOrganisation(), ActivityKind::DOCUMENT, sprintf('%s %s : %s', $what, $lease->getReference(), mb_strtolower(self::label($status, 0, 0))), $lease->getUnit());
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
         $this->mailer->send((string) $lease->getOrganisation()->getEmail(), sprintf('%s %s : %s', $what, $lease->getReference(), mb_strtolower(self::label($status, 0, 0))), 'lease_signature', ['lease' => $lease, 'organisation' => $lease->getOrganisation(), 'kind' => $kind, 'status' => $status]);
     }
 
@@ -257,7 +259,7 @@ class LeaseSignatures
     public function signers(Lease $lease, User $by, string $kind = self::LEASE): array
     {
         // The sender's name as the company's team knows them (a Member), else their e-mail.
-        $member = $this->entityManager->getRepository(Member::class)->findOneBy(['organisation' => $lease->getOrganisation(), 'user' => $by]);
+        $member = $this->repositories->of(Member::class)->findOneBy(['organisation' => $lease->getOrganisation(), 'user' => $by]);
         $landlordName = $member?->getName() ?: (string) $by->getEmail();
         $signers = [new Signer('landlord', sprintf('%s pour %s', $landlordName, $lease->getOrganisation()->getName()), (string) $by->getEmail(), order: 1, role: 'Bailleur')];
         $tenants = 0;
@@ -343,7 +345,7 @@ class LeaseSignatures
         if (null === $lease->getId()) {
             return null;
         }
-        $documents = $this->entityManager->getRepository(Document::class)->findBy(['lease' => $lease, 'kind' => $kind], ['id' => 'DESC']);
+        $documents = $this->repositories->of(Document::class)->findBy(['lease' => $lease, 'kind' => $kind], ['id' => 'DESC']);
         foreach ($documents as $document) {
             if (str_ends_with($document->getTitle(), '(signé)')) {
                 continue;
@@ -370,7 +372,7 @@ class LeaseSignatures
             file_put_contents($path, $content);
             $document = (new Document($lease->getOrganisation(), self::LEASE === $kind ? DocumentKind::LEASE : DocumentKind::INVENTORY, sprintf('%s %s (signé)', self::LEASE === $kind ? 'Bail' : 'État des lieux', $lease->getReference())))
                 ->setLease($lease)->setFile(new UploadFile($path))->setTenantVisible(true);
-            $this->entityManager->persist($document);
+            $this->unitOfWork->persist($document);
         } catch (\Throwable $e) {
             // The envelope keeps the signed PDF: filing a copy never stops the signature being recorded.
             $this->logger?->warning('The signed {kind} of lease {lease} was not filed as a document: {message}', ['kind' => $kind, 'lease' => $lease->getReference(), 'message' => $e->getMessage()]);

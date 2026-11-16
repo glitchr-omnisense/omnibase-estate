@@ -6,7 +6,7 @@ use Base\Drive\Share\FileShare;
 use Base\Entity\User;
 use Base\Estate\Entity\Sale;
 use Base\Estate\Entity\SaleMandate;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
@@ -26,7 +26,7 @@ class SaleFolders
 
     public function __construct(
         private readonly FileShare $share,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
         #[Autowire('%drive.default_audience%')] private readonly string $staff = 'staff',
     ) {
     }
@@ -65,7 +65,7 @@ class SaleFolders
         }
         if ($mandate->getFolder() !== $path) {
             $mandate->setFolder($path);
-            $this->entityManager->flush();
+            $this->unitOfWork->flush();
         }
 
         return $path;
@@ -79,7 +79,7 @@ class SaleFolders
             return;
         }
         $row->removeMember($user);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
     }
 
     /** A step's document into the folder (replacing a file of that name); its path. */

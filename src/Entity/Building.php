@@ -2,7 +2,7 @@
 
 namespace Base\Estate\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /** A building some units are in: its address, its year, its common parts. */
 #[ORM\Entity]

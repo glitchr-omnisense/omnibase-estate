@@ -3,7 +3,7 @@
 namespace Base\Estate\Entity;
 
 use Base\Entity\User;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /** A line of a work order's timeline: a step, or a note from whoever follows it. */
 #[ORM\Entity]

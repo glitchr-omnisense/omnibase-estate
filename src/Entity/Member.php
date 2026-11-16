@@ -3,7 +3,7 @@
 namespace Base\Estate\Entity;
 
 use Base\Entity\User;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /** Someone of the management team of an organisation: they run its back office. */
 #[ORM\Entity]

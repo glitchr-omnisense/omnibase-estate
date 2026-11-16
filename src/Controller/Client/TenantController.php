@@ -19,7 +19,7 @@ use Base\Estate\Service\OnlinePayments;
 use Base\Estate\Service\Receipts;
 use Base\Estate\Service\Spaces;
 use Base\Estate\Service\WorkOrders;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -40,7 +40,7 @@ class TenantController extends AbstractController
 {
     public function __construct(
         private readonly Spaces $spaces,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly Repositories $repositories,
     ) {
     }
 
@@ -87,11 +87,7 @@ class TenantController extends AbstractController
         }
         $invalid = ($form->isSubmitted() && !$form->isValid()) || ($insurance->isSubmitted() && !$insurance->isValid()) || ($message->isSubmitted() && !$message->isValid());
 
-        $notices = $this->entityManager->createQueryBuilder()->select('n')->from(\Base\Estate\Entity\Notice::class, 'n')
-            ->where('n.organisation = :organisation')->setParameter('organisation', $lease->getOrganisation())
-            ->andWhere('n.building IS NULL OR n.building = :building')->setParameter('building', $lease->getUnit()->getBuilding())
-            ->andWhere('n.sentAt IS NOT NULL')->orderBy('n.sentAt', 'DESC')->setMaxResults(5)
-            ->getQuery()->getResult();
+        $notices = $this->repositories->of(\Base\Estate\Entity\Notice::class)->latestSentFor($lease, 5);
 
         return $this->render('@Estate/client/tenant.html.twig', [
             'leases' => $leases,

@@ -3,7 +3,7 @@
 namespace Base\Estate\Entity;
 
 use Base\Database\Attribute\Uploader;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /** A photograph of a unit, in its gallery's order. */
 #[ORM\Entity]

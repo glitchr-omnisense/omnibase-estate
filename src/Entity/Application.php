@@ -6,7 +6,7 @@ use Base\Estate\Enum\ApplicationStatus;
 use Base\Estate\Enum\Guarantee;
 use Base\Estate\Enum\Occupation;
 use Base\Estate\Repository\ApplicationRepository;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**

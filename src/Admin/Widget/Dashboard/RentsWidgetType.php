@@ -3,7 +3,7 @@
 namespace Base\Estate\Admin\Widget\Dashboard;
 
 use Base\Estate\Service\PortfolioFigures;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 
 /**
  * Rents called and received, month by month: for each month the rent called
@@ -16,9 +16,9 @@ final class RentsWidgetType extends AbstractEstateWidgetType
 {
     public const PERIODS = [6, 12];
 
-    public function __construct(EntityManagerInterface $entityManager, private readonly PortfolioFigures $figures)
+    public function __construct(Repositories $repositories, private readonly PortfolioFigures $figures)
     {
-        parent::__construct($entityManager);
+        parent::__construct($repositories);
     }
 
     public static function getName(): string { return 'estate_rents'; }

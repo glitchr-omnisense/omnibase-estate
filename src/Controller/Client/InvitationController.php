@@ -5,7 +5,7 @@ namespace Base\Estate\Controller\Client;
 use Base\Entity\User;
 use Base\Estate\Form\InvitationAcceptType;
 use Base\Estate\Service\Invitations;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Form\FormError;
@@ -22,7 +22,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 class InvitationController extends AbstractController
 {
     #[Route('/invitation/{token}', name: 'estate_invitation', requirements: ['token' => '[a-f0-9]{48}'], methods: ['GET', 'POST'])]
-    public function accept(Request $request, string $token, Invitations $invitations, Security $security, EntityManagerInterface $entityManager, TranslatorInterface $translator): Response
+    public function accept(Request $request, string $token, Invitations $invitations, Security $security, Repositories $repositories, TranslatorInterface $translator): Response
     {
         $invitation = $invitations->find($token);
         if (!$invitation) {
@@ -43,7 +43,7 @@ class InvitationController extends AbstractController
             $form->handleRequest($request);
             if ($form->isSubmitted() && $form->isValid()) {
                 $data = $form->getData();
-                $taken = $entityManager->getRepository($this->getParameter('estate.user_class'))->findOneBy(['username' => $data['username']]);
+                $taken = $repositories->of($this->getParameter('estate.user_class'))->findOneBy(['username' => $data['username']]);
                 if ($taken) {
                     $form->get('username')->addError(new FormError($translator->trans('invitation.username_taken', [], 'estate')));
                 } else {

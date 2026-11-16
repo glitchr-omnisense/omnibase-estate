@@ -14,7 +14,7 @@ use Base\Field\BooleanField;
 use Base\Field\DateField;
 use Base\Field\TextareaField;
 use Base\Field\TextField;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Base\Field\Type\SelectType;
 
 /**
  * The buyers' offers: amount, conditions (a loan, until when it holds),
@@ -44,8 +44,8 @@ class OfferCrudController extends AbstractEstateCrudController
 
     public function configureFields(string $pageName): iterable
     {
-        yield AssociationField::new('mandate', 'Mandat')->setFormType(EntityType::class)->setFormTypeOptions(['class' => SaleMandate::class])->setColumns(5);
-        yield AssociationField::new('buyer', 'Acquéreur')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Buyer::class])->setColumns(4);
+        yield AssociationField::new('mandate', 'Mandat')->setFormType(SelectType::class)->setFormTypeOptions(['class' => SaleMandate::class])->setColumns(5);
+        yield AssociationField::new('buyer', 'Acquéreur')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Buyer::class])->setColumns(4);
         yield DateField::new('madeOn', 'Faite le')->setColumns(3);
         yield $this->euros('amount', 'Montant')->setColumns(4);
         yield BooleanField::new('loanCondition', 'Sous condition de prêt')->setColumns(4)->hideOnIndex();

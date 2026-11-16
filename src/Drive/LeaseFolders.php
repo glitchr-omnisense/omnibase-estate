@@ -6,7 +6,7 @@ use Base\Drive\Share\FileShare;
 use Base\Estate\Entity\Lease;
 use Base\Estate\Entity\LeaseParty;
 use Base\Estate\Enum\LeaseStatus;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
@@ -29,7 +29,7 @@ class LeaseFolders
 
     public function __construct(
         private readonly FileShare $share,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
         #[Autowire('%drive.default_audience%')] private readonly string $staff = 'staff',
         private readonly ?FlatshareFolders $flatshares = null,
     ) {
@@ -85,7 +85,7 @@ class LeaseFolders
         }
         if ($party->getFolder() !== $path) {
             $party->setFolder($path);
-            $this->entityManager->flush();
+            $this->unitOfWork->flush();
         }
 
         return $path;

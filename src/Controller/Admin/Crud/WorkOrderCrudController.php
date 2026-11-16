@@ -43,7 +43,7 @@ class WorkOrderCrudController extends AbstractEstateCrudController
     public function configureFields(string $pageName): iterable
     {
         yield TextField::new('title', 'Problème')->setColumns(6);
-        yield AssociationField::new('unit', 'Bien')->setFormType(\Symfony\Bridge\Doctrine\Form\Type\EntityType::class)->setFormTypeOptions(['class' => \Base\Estate\Entity\Unit::class])->setColumns(6);
+        yield AssociationField::new('unit', 'Bien')->setFormType(\Base\Field\Type\SelectType::class)->setFormTypeOptions(['class' => \Base\Estate\Entity\Unit::class])->setColumns(6);
         yield TextField::new('category', 'Catégorie')->setColumns(3)->hideOnIndex();
         yield $this->enum('urgency', 'Urgence', Urgency::class, fn (Urgency $u) => self::URGENCIES[$u->value])->setColumns(3);
         yield $this->enum('status', 'État', WorkOrderStatus::class, fn (WorkOrderStatus $s) => self::STATUSES[$s->value])->setColumns(3);

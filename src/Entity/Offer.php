@@ -3,7 +3,7 @@
 namespace Base\Estate\Entity;
 
 use Base\Estate\Enum\OfferStatus;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * A buyer's offer on a property on sale (offre d'achat): the amount, its

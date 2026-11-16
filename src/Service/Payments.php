@@ -7,7 +7,8 @@ use Base\Estate\Entity\RentCall;
 use Base\Estate\Enum\ActivityKind;
 use Base\Estate\Enum\PaymentMethod;
 use Base\Estate\Repository\RentCallRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 
 /**
  * Money received for a rent: recorded once per reference, posted to the
@@ -19,7 +20,8 @@ use Doctrine\ORM\EntityManagerInterface;
 class Payments
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
+        private readonly Repositories $repositories,
         private readonly RentCallRepository $calls,
         private readonly ActivityLog $activities,
         private readonly EstateMailer $mailer,
@@ -36,13 +38,13 @@ class Payments
         if ($amount <= 0) {
             throw new \InvalidArgumentException('A payment is a positive amount.');
         }
-        if ($reference && $existing = $this->entityManager->getRepository(Payment::class)->findOneBy(['reference' => $reference])) {
+        if ($reference && $existing = $this->repositories->of(Payment::class)->findOneBy(['reference' => $reference])) {
             return $existing;
         }
 
         $wasPaid = $call->isPaid();
         $payment = new Payment($call, $amount, $method, $paidOn, $reference);
-        $this->entityManager->persist($payment);
+        $this->unitOfWork->persist($payment);
         $call->addPayment($payment);
 
         $lease = $call->getLease();
@@ -53,7 +55,7 @@ class Payments
         if (!$wasPaid && $call->isPaid()) {
             $this->receipts->number($call);
         }
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
         if ($post) {
             $this->books?->paymentReceived($payment);
         }
@@ -87,8 +89,8 @@ class Payments
         $this->ownerships?->rentCancelled($payment);
         $this->management?->rentCancelled($payment);
         $payment->getRentCall()->removePayment($payment);
-        $this->entityManager->remove($payment);
-        $this->entityManager->flush();
+        $this->unitOfWork->remove($payment);
+        $this->unitOfWork->flush();
     }
 
     public function method(PaymentMethod $method): string

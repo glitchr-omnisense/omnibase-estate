@@ -5,15 +5,19 @@ namespace Base\Estate\Repository;
 use Base\Estate\Entity\Document;
 use Base\Estate\Entity\Lease;
 use Base\Estate\Entity\WorkOrder;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
+use Base\Database\Repository\Finder\Criterion;
+use Base\Database\Repository\Finder\Group;
+use Base\Database\Repository\Finder\Key;
+use Base\Database\Repository\Finder\Parser;
+use Base\Database\Repository\ServiceEntityRepository;
+use Base\Database\Repository\Finders;
 
 /** @extends ServiceEntityRepository<Document> */
 class DocumentRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(Finders $finders)
     {
-        parent::__construct($registry, Document::class);
+        parent::__construct($finders, Document::class);
     }
 
     /**
@@ -23,12 +27,17 @@ class DocumentRepository extends ServiceEntityRepository
      */
     public function forTenants(Lease $lease): array
     {
-        return $this->createQueryBuilder('d')
-            ->where('d.lease = :lease OR (d.unit = :unit AND d.lease IS NULL AND d.workOrder IS NULL)')
-            ->andWhere('d.tenantVisible = true')
-            ->setParameter('lease', $lease)->setParameter('unit', $lease->getUnit())
-            ->orderBy('d.createdAt', 'DESC')
-            ->getQuery()->getResult();
+        return $this->findBy([
+            Group::of(Parser::SEPARATOR_OR,
+                Criterion::of('lease', Key::of($lease)),
+                Group::of(Parser::SEPARATOR_AND,
+                    Criterion::of('unit', Key::of($lease->getUnit())),
+                    Criterion::of('lease', Key::of(null)),
+                    Criterion::of('workOrder', Key::of(null)),
+                ),
+            ),
+            'tenantVisible' => true,
+        ], ['createdAt' => 'DESC']);
     }
 
     /** @return list<Document> */

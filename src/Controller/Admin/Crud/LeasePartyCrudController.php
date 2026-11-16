@@ -10,7 +10,7 @@ use Base\Estate\Enum\PartyRole;
 use Base\Field\AssociationField;
 use Base\Field\EmailField;
 use Base\Field\TextField;
-use Omnibridge\Persistence\UnitOfWork;
+use Base\Contract\UnitOfWork;
 use Symfony\Contracts\Service\Attribute\Required;
 
 /**

@@ -6,7 +6,7 @@ use Base\Database\Attribute\Uploader;
 use Base\Estate\Enum\SplitMode;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * A supplier's invoice the co-owners share - the roof repaired for

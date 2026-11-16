@@ -8,7 +8,7 @@ use Base\Estate\Entity\Mandator;
 use Base\Estate\Model\Period;
 use Base\Estate\Repository\MandatePayoutRepository;
 use Base\Estate\Service\Management;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -29,7 +29,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class ManagementController extends AbstractController
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly Repositories $repositories,
         private readonly Management $management,
         private readonly MandatePayoutRepository $payouts,
     ) {
@@ -140,7 +140,7 @@ class ManagementController extends AbstractController
                     return $this->redirectToRoute('estate_admin_management_payouts', ['on' => $on->format('Y-m-d')]);
                 }
             }
-            if ($request->request->getInt('cancel') && $payout = $this->entityManager->find(MandatePayout::class, $request->request->getInt('cancel'))) {
+            if ($request->request->getInt('cancel') && $payout = $this->repositories->of(MandatePayout::class)->find($request->request->getInt('cancel'))) {
                 try {
                     $this->management->cancelPayout($payout);
                     $this->addFlash('success', 'Reversement annulé : le solde du propriétaire est rétabli.');

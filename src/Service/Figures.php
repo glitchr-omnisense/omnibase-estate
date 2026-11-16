@@ -9,7 +9,7 @@ use Base\Estate\Enum\PaymentMethod;
 use Base\Estate\Repository\RentCallRepository;
 use Base\Estate\Repository\UnitRepository;
 use Base\Estate\Repository\WorkOrderRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 
 /**
  * An organisation in numbers, for its associates and its back office: what
@@ -22,7 +22,7 @@ class Figures
         private readonly UnitRepository $units,
         private readonly RentCallRepository $calls,
         private readonly WorkOrderRepository $workOrders,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly Repositories $repositories,
     ) {
     }
 

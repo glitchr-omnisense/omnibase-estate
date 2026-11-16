@@ -6,7 +6,7 @@ use Base\Estate\Entity\RentCall;
 use Base\Estate\Enum\PaymentMethod;
 use Base\Estate\Service\Payments;
 use Base\Ledger\Event\BankLineReconciled;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 /**
@@ -20,7 +20,7 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 final class BankSettlement
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly Repositories $repositories,
         private readonly Payments $payments,
     ) {
     }
@@ -37,7 +37,7 @@ final class BankSettlement
             if (!str_starts_with($source, 'estate:rent:') || $left <= 0) {
                 continue;
             }
-            $call = $this->entityManager->getRepository(RentCall::class)->findOneBy(['reference' => substr($source, \strlen('estate:rent:'))]);
+            $call = $this->repositories->of(RentCall::class)->findOneBy(['reference' => substr($source, \strlen('estate:rent:'))]);
             if (!$call || $call->isPaid()) {
                 continue;
             }

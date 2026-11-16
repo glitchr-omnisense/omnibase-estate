@@ -17,8 +17,9 @@ use Base\Estate\Service\Receipts;
 use Base\Estate\Signature\LeaseSignatures;
 use Base\Estate\Signature\SuretySignatures;
 use Base\Service\Signatures;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\EntityRepository;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Entities;
+use Base\Database\Repository\Repositories;
 use Omnisign\Docuseal\DocusealGatewayFactory;
 use Omnisign\Model\Capabilities;
 use Omnisign\Model\Envelope as SignatureRequest;
@@ -78,8 +79,8 @@ final class SuretySignaturesTest extends TestCase
 
             return new Envelope(LeaseParty::class, '7', $request->title, (string) $gateway);
         });
-        $entityManager = $this->createStub(EntityManagerInterface::class);
-        $entityManager->method('getRepository')->willReturn($this->createStub(EntityRepository::class));
+        $repositories = $this->createStub(Repositories::class);
+        $repositories->method('of')->willReturn($this->createStub(Entities::class));
         $twig = $this->createStub(Environment::class);
         $twig->method('render')->willReturnCallback(function (string $name, array $context) {
             $this->rendered[$name] = $context;
@@ -87,9 +88,9 @@ final class SuretySignaturesTest extends TestCase
             return '<html><body><h1>'.$name.'</h1></body></html>';
         });
         $receipts = new Receipts($this->createStub(RentCallRepository::class), $twig);
-        $leases = new LeaseSignatures($core, $receipts, $entityManager, $this->createStub(ActivityLog::class), $this->createStub(EstateMailer::class), $twig, null, $gateway);
+        $leases = new LeaseSignatures($core, $receipts, $this->createStub(UnitOfWork::class), $repositories, $this->createStub(ActivityLog::class), $this->createStub(EstateMailer::class), $twig, null, $gateway);
 
-        return new SuretySignatures($core, $leases, $receipts, $entityManager, $this->createStub(ActivityLog::class), $this->createStub(EstateMailer::class), $twig, registry: $registry ?? self::registry());
+        return new SuretySignatures($core, $leases, $receipts, $this->createStub(UnitOfWork::class), $this->createStub(ActivityLog::class), $this->createStub(EstateMailer::class), $twig, registry: $registry ?? self::registry());
     }
 
     /** @return array{Lease, LeaseParty} */

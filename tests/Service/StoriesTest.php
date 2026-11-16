@@ -15,7 +15,8 @@ use Base\Estate\Enum\StoryState;
 use Base\Estate\Enum\WorkOrderStatus;
 use Base\Estate\Service\Stories;
 use Base\Estate\Service\StoryImages;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 use Imagine\Image\Box;
 use Imagine\Image\Palette\RGB;
 use PHPUnit\Framework\TestCase;
@@ -37,7 +38,7 @@ final class StoriesTest extends TestCase
         $routes->add('estate_unit', new Route('/biens/{slug}'));
         $routes->add('estate_works', new Route('/travaux'));
 
-        return new Stories($this->createStub(EntityManagerInterface::class), new UrlGenerator($routes, new RequestContext('', 'GET', 'example.org', 'https')));
+        return new Stories($this->createStub(UnitOfWork::class), $this->createStub(Repositories::class), new UrlGenerator($routes, new RequestContext('', 'GET', 'example.org', 'https')));
     }
 
     private function home(): Unit

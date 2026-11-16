@@ -4,7 +4,7 @@ namespace Base\Estate\Entity;
 
 use Base\Database\Attribute\Uploader;
 use Base\Estate\Enum\SaleStep;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * A line of a sale's timeline: a step reached on its date, a few words,

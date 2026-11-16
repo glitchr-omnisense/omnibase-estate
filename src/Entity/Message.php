@@ -4,7 +4,7 @@ namespace Base\Estate\Entity;
 
 use Base\Entity\User;
 use Base\Estate\Repository\MessageRepository;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * A message between a lease's tenants and the management - one thread per

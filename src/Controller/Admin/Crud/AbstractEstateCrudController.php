@@ -7,7 +7,7 @@ use Base\Admin\Config\Actions;
 use Base\Admin\Config\Crud;
 use Base\Admin\Controller\AbstractCrudController;
 use Base\Field\MoneyField;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 use Symfony\Contracts\Service\Attribute\Required;
 use Base\Field\TextField;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
@@ -15,12 +15,12 @@ use Symfony\Component\Form\Extension\Core\Type\EnumType;
 /** The estate screens' shared pieces: an enum as a select, euros stored as cents, the actions' tokens. */
 abstract class AbstractEstateCrudController extends AbstractCrudController
 {
-    private ?EntityManagerInterface $estateEntityManager = null;
+    private ?Repositories $estateRepositories = null;
 
     #[Required]
-    public function setEstateEntityManager(EntityManagerInterface $entityManager): void
+    public function setEstateRepositories(Repositories $repositories): void
     {
-        $this->estateEntityManager = $entityManager;
+        $this->estateRepositories = $repositories;
     }
 
     /** The screens' names, singular and plural. */
@@ -89,7 +89,7 @@ abstract class AbstractEstateCrudController extends AbstractCrudController
                 'int' === $name => 0,
                 \DateTimeImmutable::class === $name => new \DateTimeImmutable('today'),
                 enum_exists($name) => $name::cases()[0],
-                class_exists($name) => $this->estateEntityManager->getRepository($name)->findOneBy([], ['id' => 'ASC'])
+                class_exists($name) => $this->estateRepositories->of($name)->findOneBy([], ['id' => 'ASC'])
                     ?? throw new \RuntimeException(sprintf('Create a %s first.', (new \ReflectionClass($name))->getShortName())),
                 default => null,
             };
@@ -111,14 +111,14 @@ abstract class AbstractEstateCrudController extends AbstractCrudController
      */
     protected function prefillSale(\Base\Estate\Entity\Visit|\Base\Estate\Entity\Offer $record): object
     {
-        if (null === $this->estateEntityManager) {
+        if (null === $this->estateRepositories) {
             return $record;
         }
         $query = $this->container->has('request_stack') ? $this->container->get('request_stack')->getCurrentRequest()?->query : null;
-        $mandate = ($id = $query?->getInt('mandate')) ? $this->estateEntityManager->find(\Base\Estate\Entity\SaleMandate::class, $id) : null;
-        $buyer = ($id = $query?->getInt('buyer')) ? $this->estateEntityManager->find(\Base\Estate\Entity\Buyer::class, $id) : null;
-        $mandate ??= $this->estateEntityManager->getRepository(\Base\Estate\Entity\SaleMandate::class)->findOneBy([], ['id' => 'DESC']);
-        $buyer ??= $this->estateEntityManager->getRepository(\Base\Estate\Entity\Buyer::class)->findOneBy([], ['id' => 'DESC']);
+        $mandate = ($id = $query?->getInt('mandate')) ? $this->estateRepositories->of(\Base\Estate\Entity\SaleMandate::class)->find($id) : null;
+        $buyer = ($id = $query?->getInt('buyer')) ? $this->estateRepositories->of(\Base\Estate\Entity\Buyer::class)->find($id) : null;
+        $mandate ??= $this->estateRepositories->of(\Base\Estate\Entity\SaleMandate::class)->findOneBy([], ['id' => 'DESC']);
+        $buyer ??= $this->estateRepositories->of(\Base\Estate\Entity\Buyer::class)->findOneBy([], ['id' => 'DESC']);
         if (null !== $mandate) {
             $record->setMandate($mandate);
         }

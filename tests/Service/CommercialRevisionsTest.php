@@ -16,7 +16,7 @@ use Base\Estate\Repository\LeaseRepository;
 use Base\Estate\Service\ActivityLog;
 use Base\Estate\Service\EstateMailer;
 use Base\Estate\Service\RentRevisions;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
 use Omnistate\Insee\Insee;
 use Omnistate\Omnistate;
 use PHPUnit\Framework\TestCase;
@@ -50,7 +50,7 @@ final class CommercialRevisionsTest extends TestCase
             return new MockResponse((string) file_get_contents(__DIR__.'/../Fixtures/'.$file), ['response_headers' => ['content-type' => 'application/xml']]);
         });
 
-        return new RentRevisions($this->createStub(EntityManagerInterface::class), $this->createStub(LeaseRepository::class), $this->createStub(ActivityLog::class), $this->createStub(EstateMailer::class), new OfficialIndex(new Omnistate(statistics: [new Insee($http)])));
+        return new RentRevisions($this->createStub(UnitOfWork::class), $this->createStub(LeaseRepository::class), $this->createStub(ActivityLog::class), $this->createStub(EstateMailer::class), new OfficialIndex(new Omnistate(statistics: [new Insee($http)])));
     }
 
     /** A shop let 2 000 € a month (excluding VAT and charges). */

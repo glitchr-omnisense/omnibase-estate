@@ -20,9 +20,9 @@ use Base\Field\IntegerField;
 use Base\Field\NumberField;
 use Base\Field\TextareaField;
 use Base\Field\TextField;
-use Doctrine\ORM\EntityManagerInterface;
-use Omnibridge\Persistence\UnitOfWork;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Base\Database\Repository\Repositories;
+use Base\Contract\UnitOfWork;
+use Base\Field\Type\SelectType;
 use Symfony\Contracts\Service\Attribute\Required;
 
 /**
@@ -35,13 +35,13 @@ use Symfony\Contracts\Service\Attribute\Required;
 class SaleMandateCrudController extends AbstractEstateCrudController
 {
     private ?Transactions $transactions = null;
-    private ?EntityManagerInterface $saleEntityManager = null;
+    private ?Repositories $saleRepositories = null;
 
     #[Required]
-    public function setTransactions(Transactions $transactions, EntityManagerInterface $entityManager): void
+    public function setTransactions(Transactions $transactions, Repositories $repositories): void
     {
         $this->transactions = $transactions;
-        $this->saleEntityManager = $entityManager;
+        $this->saleRepositories = $repositories;
     }
 
     public static function getEntityFqcn(): string { return SaleMandate::class; }
@@ -69,10 +69,10 @@ class SaleMandateCrudController extends AbstractEstateCrudController
     public function configureFields(string $pageName): iterable
     {
         yield TextField::new('number', 'N° de mandat')->setRequired(false)->setColumns(3)->setHelp('Vide : numéroté au registre à l\'enregistrement (VT-2026-0001).');
-        yield AssociationField::new('sellers', 'Vendeur(s)')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Mandator::class, 'multiple' => true, 'by_reference' => false])->setRequired(false)->setColumns(5)->hideOnIndex()->setHelp('Les propriétaires qui signent le mandat ; leur compte ouvre leur espace vendeur.');
+        yield AssociationField::new('sellers', 'Vendeur(s)')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Mandator::class, 'multiple' => true, 'by_reference' => false])->setRequired(false)->setColumns(5)->hideOnIndex()->setHelp('Les propriétaires qui signent le mandat ; leur compte ouvre leur espace vendeur.');
         yield TextField::new('sellersSummary', 'Vendeur(s)')->onlyOnIndex();
-        yield AssociationField::new('organisation', 'Agence')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Organisation::class])->setColumns(4)->hideOnIndex();
-        yield AssociationField::new('unit', 'Bien géré')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Unit::class, 'required' => false])->setRequired(false)->setColumns(4)->hideOnIndex()->setHelp('Un des biens ; sinon, décrivez le bien ci-dessous.');
+        yield AssociationField::new('organisation', 'Agence')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Organisation::class])->setColumns(4)->hideOnIndex();
+        yield AssociationField::new('unit', 'Bien géré')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Unit::class, 'required' => false])->setRequired(false)->setColumns(4)->hideOnIndex()->setHelp('Un des biens ; sinon, décrivez le bien ci-dessous.');
         yield TextField::new('propertyName', 'Bien')->onlyOnIndex();
         yield TextField::new('address', 'Adresse')->setRequired(false)->setColumns(4)->hideOnIndex();
         yield TextField::new('postcode', 'Code postal')->setRequired(false)->setColumns(2)->hideOnIndex();
@@ -100,7 +100,7 @@ class SaleMandateCrudController extends AbstractEstateCrudController
     public function createEntity(string $entityFqcn): SaleMandate
     {
         $mandate = new SaleMandate();
-        if (null !== $organisation = $this->saleEntityManager?->getRepository(Organisation::class)->findOneBy([], ['id' => 'ASC'])) {
+        if (null !== $organisation = $this->saleRepositories?->of(Organisation::class)->findOneBy([], ['id' => 'ASC'])) {
             $mandate->setOrganisation($organisation);
         }
 

@@ -4,7 +4,7 @@ namespace Base\Estate\Entity;
 
 use Base\Database\Attribute\Uploader;
 use Base\Estate\Enum\PhotoPhase;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * A photo of a story's entry: before or after the works (or neither), the

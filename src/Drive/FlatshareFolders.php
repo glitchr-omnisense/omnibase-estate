@@ -7,7 +7,8 @@ use Base\Drive\Share\FileShare;
 use Base\Entity\User;
 use Base\Estate\Entity\Lease;
 use Base\Estate\Enum\LeaseStatus;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
@@ -38,7 +39,8 @@ class FlatshareFolders
 
     public function __construct(
         private readonly FileShare $share,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
+        private readonly Repositories $repositories,
         #[Autowire('%drive.default_audience%')] private readonly string $staff = 'staff',
     ) {
     }
@@ -56,7 +58,7 @@ class FlatshareFolders
             return $lease->getFolder();
         }
         $path = self::ROOT.'/'.(FileShare::name($lease->getUnit()->getName()) ?: 'Logement '.$lease->getUnit()->getId());
-        $holder = $this->entityManager->getRepository(Lease::class)->findOneBy(['folder' => $path]);
+        $holder = $this->repositories->of(Lease::class)->findOneBy(['folder' => $path]);
         if (null !== $holder && $holder !== $lease) {
             $path .= ' - '.(FileShare::name($lease->getReference()) ?: 'bail '.$lease->getId());
         }
@@ -67,7 +69,7 @@ class FlatshareFolders
     /** Its group of occupants, once made (and while the team has not deleted it). */
     public function groupOf(Lease $lease): ?ShareGroup
     {
-        return null !== $lease->getGroupId() ? $this->entityManager->find(ShareGroup::class, $lease->getGroupId()) : null;
+        return null !== $lease->getGroupId() ? $this->repositories->of(ShareGroup::class)->find($lease->getGroupId()) : null;
     }
 
     /**
@@ -85,7 +87,7 @@ class FlatshareFolders
         if ($ended) {
             if (null !== $group && $group->getMembers()->count()) {
                 $this->members($group, []);
-                $this->entityManager->flush();
+                $this->unitOfWork->flush();
             }
 
             return $lease->getFolder();
@@ -114,15 +116,15 @@ class FlatshareFolders
             }
         }
         $this->members($group, $occupants);
-        $this->entityManager->persist($group);
-        $this->entityManager->flush();
+        $this->unitOfWork->persist($group);
+        $this->unitOfWork->flush();
 
         if (!$this->share->row($path)?->getGroups()->contains($group)) {
             $this->share->shareWithGroup($path, $group, false);
         }
         if ($lease->getFolder() !== $path || $lease->getGroupId() !== $group->getId()) {
             $lease->setFolder($path)->setGroupId($group->getId());
-            $this->entityManager->flush();
+            $this->unitOfWork->flush();
         }
 
         return $path;
@@ -132,8 +134,8 @@ class FlatshareFolders
     private function newGroup(Lease $lease): ShareGroup
     {
         $name = self::groupName($lease);
-        foreach ($this->entityManager->getRepository(ShareGroup::class)->findBy(['name' => $name]) as $group) {
-            if (null === $this->entityManager->getRepository(Lease::class)->findOneBy(['groupId' => $group->getId()])) {
+        foreach ($this->repositories->of(ShareGroup::class)->findBy(['name' => $name]) as $group) {
+            if (null === $this->repositories->of(Lease::class)->findOneBy(['groupId' => $group->getId()])) {
                 return $group;
             }
         }

@@ -5,7 +5,7 @@ namespace Base\Estate\Ledger;
 use Base\Estate\Entity\Payment;
 use Base\Estate\Service\Payments;
 use Base\Ledger\Event\BankLineUnreconciled;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 /**
@@ -17,16 +17,14 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 final class BankUnsettlement
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly Repositories $repositories,
         private readonly Payments $payments,
     ) {
     }
 
     public function __invoke(BankLineUnreconciled $event): void
     {
-        $recorded = $this->entityManager->getRepository(Payment::class)->createQueryBuilder('p')
-            ->where('p.reference LIKE :prefix')->setParameter('prefix', 'bank:'.$event->line->getId().':%')
-            ->getQuery()->getResult();
+        $recorded = $this->repositories->of(Payment::class)->withReferenceStartingWith('bank:'.$event->line->getId().':');
         foreach ($recorded as $payment) {
             $this->payments->cancel($payment);
         }

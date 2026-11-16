@@ -6,7 +6,7 @@ use Base\Entity\User;
 use Base\Estate\Entity\Lease;
 use Base\Estate\Entity\Message;
 use Base\Estate\Repository\MessageRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
 
 /**
  * The thread between a lease's tenants and the management: a message is kept,
@@ -16,7 +16,7 @@ use Doctrine\ORM\EntityManagerInterface;
 class Messages
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
         private readonly MessageRepository $messages,
         private readonly EstateMailer $mailer,
     ) {
@@ -25,8 +25,8 @@ class Messages
     public function post(Lease $lease, string $body, bool $fromManagement, ?User $author, string $authorName): Message
     {
         $message = new Message($lease, $authorName, trim($body), $fromManagement, $author);
-        $this->entityManager->persist($message);
-        $this->entityManager->flush();
+        $this->unitOfWork->persist($message);
+        $this->unitOfWork->flush();
 
         $organisation = $lease->getOrganisation();
         $to = $fromManagement
@@ -49,7 +49,7 @@ class Messages
             }
         }
         if ($changed) {
-            $this->entityManager->flush();
+            $this->unitOfWork->flush();
         }
 
         return $thread;

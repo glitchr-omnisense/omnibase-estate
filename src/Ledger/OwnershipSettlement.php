@@ -5,7 +5,7 @@ namespace Base\Estate\Ledger;
 use Base\Estate\Entity\OwnershipCall;
 use Base\Estate\Service\Ownerships;
 use Base\Ledger\Event\BankLineReconciled;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 /**
@@ -21,7 +21,7 @@ final class OwnershipSettlement
     private const SOURCE = 'estate:ownership:call:';
 
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly Repositories $repositories,
         private readonly Ownerships $ownerships,
     ) {
     }
@@ -38,7 +38,7 @@ final class OwnershipSettlement
             if (!str_starts_with($source, self::SOURCE) || $left <= 0) {
                 continue;
             }
-            $call = $this->entityManager->find(OwnershipCall::class, (int) substr($source, \strlen(self::SOURCE)));
+            $call = $this->repositories->of(OwnershipCall::class)->find((int) substr($source, \strlen(self::SOURCE)));
             if (!$call || $call->isPaid()) {
                 continue;
             }

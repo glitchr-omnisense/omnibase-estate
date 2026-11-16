@@ -5,7 +5,7 @@ namespace Base\Estate\Entity;
 use Base\Estate\Enum\StatementFrequency;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * A management mandate (mandat de gestion): an owner (Mandator) entrusts

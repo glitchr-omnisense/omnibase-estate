@@ -3,7 +3,7 @@
 namespace Base\Estate\Entity;
 
 use Base\Database\Attribute\Uploader;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * An expense the agency charges to an owner's account: a work order's

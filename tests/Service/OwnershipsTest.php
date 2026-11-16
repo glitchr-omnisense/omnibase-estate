@@ -32,7 +32,9 @@ use Base\Ledger\Repository\TaxRepository;
 use Base\Ledger\Service\Lettering;
 use Base\Ledger\Service\Parties;
 use Base\Ledger\Service\Posting;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Entities;
+use Base\Database\Repository\Repositories;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Mailer\MailerInterface;
 use Twig\Environment;
@@ -64,10 +66,13 @@ final class OwnershipsTest extends TestCase
 
     private function service(Book $book): Ownerships
     {
-        $entityManager = $this->createStub(EntityManagerInterface::class);
-        $entityManager->method('find')->willReturn($book);
+        $books = $this->createStub(Entities::class);
+        $books->method('find')->willReturn($book);
+        $repositories = $this->createStub(Repositories::class);
+        $repositories->method('of')->willReturn($books);
         // Saved: a call gets its id, as the database would give it.
-        $entityManager->method('persist')->willReturnCallback(function (object $entity) {
+        $unitOfWork = $this->createStub(UnitOfWork::class);
+        $unitOfWork->method('persist')->willReturnCallback(function (object $entity) {
             if ($entity instanceof OwnershipCall && null === $entity->getId()) {
                 self::withId($entity, ++$this->ids);
             }
@@ -84,10 +89,10 @@ final class OwnershipsTest extends TestCase
         $taxes->method('findOneByCode')->willReturn(new Tax($book, 'A20', 'TVA déductible 20 %', 2000, TaxKind::DEDUCTIBLE, new Account($book, '44566', 'TVA déductible', AccountType::ASSET)));
         $accounts = $this->createStub(AccountRepository::class);
         $accounts->method('findOneByNumber')->willReturn(new Account($book, '7551', 'Quote-part', AccountType::INCOME));
-        $books = new OwnershipBooks($entityManager, $posting, $parties, $this->createStub(Lettering::class), $taxes, $accounts);
+        $books = new OwnershipBooks($unitOfWork, $repositories, $posting, $parties, $this->createStub(Lettering::class), $taxes, $accounts);
 
-        return new Ownerships($entityManager, new Activities(['assets', 'ownership']), $this->createStub(OwnershipRepository::class), $this->createStub(OwnershipCallRepository::class),
-            new EstateMailer($this->createStub(MailerInterface::class)), $this->createStub(Receipts::class), $this->createStub(Environment::class), new ActivityLog($entityManager), $books);
+        return new Ownerships($unitOfWork, $repositories, new Activities(['assets', 'ownership']), $this->createStub(OwnershipRepository::class), $this->createStub(OwnershipCallRepository::class),
+            new EstateMailer($this->createStub(MailerInterface::class)), $this->createStub(Receipts::class), $this->createStub(Environment::class), new ActivityLog($unitOfWork), $books);
     }
 
     /** SCI Exemple 1/2, Claire Hoffmann 1/4, Antoine Schaller 1/4; the roof of the house, 6 000 €. */

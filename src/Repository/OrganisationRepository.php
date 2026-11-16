@@ -3,14 +3,14 @@
 namespace Base\Estate\Repository;
 
 use Base\Estate\Entity\Organisation;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
+use Base\Database\Repository\ServiceEntityRepository;
+use Base\Database\Repository\Finders;
 
 /** @extends ServiceEntityRepository<Organisation> */
 class OrganisationRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(Finders $finders)
     {
-        parent::__construct($registry, Organisation::class);
+        parent::__construct($finders, Organisation::class);
     }
 }

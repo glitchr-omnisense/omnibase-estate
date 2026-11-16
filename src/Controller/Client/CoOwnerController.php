@@ -11,7 +11,7 @@ use Base\Estate\Model\Period;
 use Base\Estate\Security\Voter\EstateVoter;
 use Base\Estate\Service\Ownerships;
 use Base\Estate\Service\Spaces;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\File\File;
@@ -35,7 +35,7 @@ class CoOwnerController extends AbstractController
     public function __construct(
         private readonly Spaces $spaces,
         private readonly Ownerships $ownerships,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly Repositories $repositories,
     ) {
     }
 
@@ -60,7 +60,7 @@ class CoOwnerController extends AbstractController
         $year = Period::parse($today->format('Y'));
         $statement = $this->ownerships->statement($ownership, $holder, $year[0], $today);
         $calls = array_values(array_filter(
-            $this->entityManager->getRepository(OwnershipCall::class)->findBy(['ownership' => $ownership], ['issuedOn' => 'DESC', 'id' => 'DESC']),
+            $this->repositories->of(OwnershipCall::class)->findBy(['ownership' => $ownership], ['issuedOn' => 'DESC', 'id' => 'DESC']),
             fn (OwnershipCall $call) => \in_array($call->getHolder(), $holders, true),
         ));
 
@@ -71,7 +71,7 @@ class CoOwnerController extends AbstractController
             'holder' => $holder,
             'statement' => $statement,
             'calls' => $calls,
-            'invoices' => $this->entityManager->getRepository(OwnershipInvoice::class)->findBy(['ownership' => $ownership], ['date' => 'DESC']),
+            'invoices' => $this->repositories->of(OwnershipInvoice::class)->findBy(['ownership' => $ownership], ['date' => 'DESC']),
             'periods' => array_map(fn (string $key) => ['key' => $key] + array_combine(['from', 'to'], Period::parse($key)), Period::recent($today)),
             'folder' => $this->ownerships->hasCloud() ? $ownership->getFolder() : null,
         ]);

@@ -7,7 +7,7 @@ use Base\Estate\Enum\FeePayer;
 use Base\Estate\Enum\UnitKind;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * A sale mandate (mandat de vente): the seller(s) - owners, Mandator, as

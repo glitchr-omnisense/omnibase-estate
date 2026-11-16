@@ -2,7 +2,7 @@
 
 namespace Base\Estate\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /** A date the company must not miss: the property tax, the general meeting, an insurance renewal. */
 #[ORM\Entity]

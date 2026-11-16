@@ -20,8 +20,9 @@ use Base\Estate\Enum\LeaseStatus;
 use Base\Estate\Enum\PartyRole;
 use Base\Estate\Repository\LeaseRepository;
 use Base\Estate\Service\Activities;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\EntityRepository;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Entities;
+use Base\Database\Repository\Repositories;
 use League\Flysystem\Filesystem;
 use League\Flysystem\Local\LocalFilesystemAdapter;
 use PHPUnit\Framework\TestCase;
@@ -40,7 +41,8 @@ final class TenantFoldersTest extends TestCase
     /** @var array<string, SharedPath> */
     private array $rows = [];
     private FileShare $share;
-    private EntityManagerInterface $entityManager;
+    private UnitOfWork $unitOfWork;
+    private Repositories $repositories;
     /** @var list<Mandator> */
     private array $mandators = [];
 
@@ -51,14 +53,15 @@ final class TenantFoldersTest extends TestCase
         }
         $this->directory = sys_get_temp_dir().'/estate-drive-'.bin2hex(random_bytes(4));
         $this->storage = new Filesystem(new LocalFilesystemAdapter($this->directory));
-        $this->entityManager = $this->createStub(EntityManagerInterface::class);
-        $this->entityManager->method('persist')->willReturnCallback(function (object $entity): void {
+        $this->unitOfWork = $this->createStub(UnitOfWork::class);
+        $this->unitOfWork->method('persist')->willReturnCallback(function (object $entity): void {
             if ($entity instanceof SharedPath) {
                 $this->rows[$entity->getPath()] = $entity;
             }
         });
-        $this->entityManager->method('getRepository')->willReturnCallback(function (string $class) {
-            $repository = $this->createStub(EntityRepository::class);
+        $this->repositories = $this->createStub(Repositories::class);
+        $this->repositories->method('of')->willReturnCallback(function (string $class) {
+            $repository = $this->createStub(Entities::class);
             $repository->method('findBy')->willReturnCallback(fn (array $criteria) => Mandator::class === $class
                 ? array_values(array_filter($this->mandators, fn (Mandator $m) => $m->getUser() === ($criteria['user'] ?? null)))
                 : []);
@@ -69,7 +72,7 @@ final class TenantFoldersTest extends TestCase
         $paths->method('byPath')->willReturnCallback(fn () => $this->rows);
         $downloads = $this->createStub(ShareDownloadRepository::class);
         $downloads->method('counts')->willReturn([]);
-        $this->share = new FileShare($this->storage, $paths, $this->entityManager, $downloads);
+        $this->share = new FileShare($this->storage, $paths, $this->unitOfWork, $downloads);
     }
 
     protected function tearDown(): void
@@ -84,7 +87,7 @@ final class TenantFoldersTest extends TestCase
     {
         $lea = self::user(41);
         [$lease, $leaParty, $tomParty] = $this->lease($lea);
-        $folders = new LeaseFolders($this->share, $this->entityManager);
+        $folders = new LeaseFolders($this->share, $this->unitOfWork);
 
         self::assertSame(['Locataires/Léa Muller', 'Locataires/Tom Krebs'], $folders->sync($lease), 'the tenant and the co-tenant, not the guarantor');
         self::assertTrue($this->share->isDirectory('Locataires/Léa Muller'));
@@ -118,7 +121,7 @@ final class TenantFoldersTest extends TestCase
         $this->share->describe('Locataires/Léa Muller', 'staff', 'Ses papiers, rangés par la gestion.');
         [$lease, $leaParty] = $this->lease(self::user(41));
 
-        (new LeaseFolders($this->share, $this->entityManager))->sync($lease);
+        (new LeaseFolders($this->share, $this->unitOfWork))->sync($lease);
 
         self::assertSame('Ses papiers, rangés par la gestion.', $this->share->row('Locataires/Léa Muller')->getDescription());
         self::assertTrue($this->storage->fileExists('Locataires/Léa Muller/Quittance octobre.pdf'));
@@ -133,8 +136,8 @@ final class TenantFoldersTest extends TestCase
         $this->mandators[] = (new Mandator('Hélène Roth'))->setUser($helene);
         $leases = $this->createStub(LeaseRepository::class);
         $leases->method('findForUser')->willReturnCallback(fn (User $user) => $user === $lea ? [$lease] : []);
-        $spaces = fn (array $activities) => new EstateSpaces($this->entityManager, $leases, new Activities($activities),
-            new LeaseFolders($this->share, $this->entityManager), new MandatorFolders($this->share, $this->entityManager), new OwnershipFolders($this->share, $this->entityManager));
+        $spaces = fn (array $activities) => new EstateSpaces($this->repositories, $leases, new Activities($activities),
+            new LeaseFolders($this->share, $this->unitOfWork), new MandatorFolders($this->share, $this->unitOfWork), new OwnershipFolders($this->share, $this->unitOfWork));
 
         self::assertSame('Locataires/Léa Muller', $spaces(['assets'])->spaceOf($lea), 'made the first time she is shared something');
         self::assertTrue($this->share->isSharedWith('Locataires/Léa Muller', $lea));

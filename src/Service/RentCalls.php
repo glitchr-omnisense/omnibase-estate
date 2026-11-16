@@ -9,7 +9,7 @@ use Base\Estate\Enum\ActivityKind;
 use Base\Estate\Enum\RentStatus;
 use Base\Estate\Repository\LeaseRepository;
 use Base\Estate\Repository\RentCallRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
@@ -20,7 +20,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 class RentCalls
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
         private readonly LeaseRepository $leases,
         private readonly RentCallRepository $calls,
         private readonly ActivityLog $activities,
@@ -39,7 +39,7 @@ class RentCalls
                 $made[] = $call;
             }
         }
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         return $made;
     }
@@ -56,8 +56,8 @@ class RentCalls
         if (null !== $vat = $this->books?->vatOf($lease, $call->getRent(), $call->getCharges(), $period)) {
             $call->setVat($vat['vat'], $vat['code']);
         }
-        $this->entityManager->persist($call);
-        $this->entityManager->flush();
+        $this->unitOfWork->persist($call);
+        $this->unitOfWork->flush();
 
         // Notices go out a week before the month: that is when it happened, or today if later.
         $at = min(new \DateTimeImmutable(), $period->modify('-6 days')->setTime(9, 0));
@@ -103,7 +103,7 @@ class RentCalls
                 $call->setRemindedAt(new \DateTimeImmutable());
             }
         }
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         return $late;
     }

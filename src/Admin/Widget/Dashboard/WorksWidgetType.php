@@ -3,7 +3,7 @@
 namespace Base\Estate\Admin\Widget\Dashboard;
 
 use Base\Estate\Repository\WorkOrderRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 
 /**
  * Works: the interventions in progress, their status and quote, and what the year's works cost. A
@@ -13,9 +13,9 @@ final class WorksWidgetType extends AbstractEstateWidgetType
 {
     protected const COMPACT = true;
 
-    public function __construct(EntityManagerInterface $entityManager, private readonly WorkOrderRepository $workOrders)
+    public function __construct(Repositories $repositories, private readonly WorkOrderRepository $workOrders)
     {
-        parent::__construct($entityManager);
+        parent::__construct($repositories);
     }
 
     public static function getName(): string { return 'estate_works'; }

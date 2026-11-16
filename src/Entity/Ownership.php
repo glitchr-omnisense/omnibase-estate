@@ -5,7 +5,7 @@ namespace Base\Estate\Entity;
 use Base\Estate\Model\Shares;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * A shared ownership (indivision): homes held by several co-owners, each

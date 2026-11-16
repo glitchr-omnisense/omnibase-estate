@@ -19,7 +19,8 @@ use Base\Ledger\Repository\TaxRepository;
 use Base\Ledger\Service\Lettering;
 use Base\Ledger\Service\Parties;
 use Base\Ledger\Service\Posting;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 
 /**
  * The organisation's books (omnibase/ledger), when it keeps them here:
@@ -44,7 +45,8 @@ use Doctrine\ORM\EntityManagerInterface;
 class Books
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
+        private readonly Repositories $repositories,
         private readonly Posting $posting,
         private readonly Parties $parties,
         private readonly Lettering $lettering,
@@ -85,7 +87,7 @@ class Books
 
     public function bookFor(Organisation $organisation): ?Book
     {
-        return $organisation->getBookId() ? $this->entityManager->find(Book::class, $organisation->getBookId()) : null;
+        return $organisation->getBookId() ? $this->repositories->of(Book::class)->find($organisation->getBookId()) : null;
     }
 
     public function rentCalled(RentCall $call): void
@@ -140,7 +142,7 @@ class Books
         if ($call->isPaid()) {
             $lines = [];
             foreach (['estate:rent:'.$call->getReference(), ...array_map(fn ($p) => 'estate:payment:'.$p->getId(), $call->getPayments()->toArray())] as $source) {
-                $entry = $this->entityManager->getRepository(Entry::class)->findOneBy(['book' => $book, 'source' => $source]);
+                $entry = $this->repositories->of(Entry::class)->findOneBy(['book' => $book, 'source' => $source]);
                 foreach ($entry?->getLines() ?? [] as $line) {
                     if ($line->getParty() === $party && !$line->isLettered()) {
                         $lines[] = $line;
@@ -150,7 +152,7 @@ class Books
             $net = array_sum(array_map(fn (EntryLine $l) => $l->getNet(), $lines));
             if (\count($lines) >= 2 && 0 === $net) {
                 $this->lettering->letter($lines);
-                $this->entityManager->flush();
+                $this->unitOfWork->flush();
             }
         }
     }
@@ -184,14 +186,14 @@ class Books
     {
         $tagged = 0;
         $tag = function (?Book $book, string $source, ?Unit $unit) use (&$tagged): void {
-            $entry = null === $book ? null : $this->entityManager->getRepository(Entry::class)->findOneBy(['book' => $book, 'source' => $source]);
+            $entry = null === $book ? null : $this->repositories->of(Entry::class)->findOneBy(['book' => $book, 'source' => $source]);
             foreach (self::unit($unit) as $axis => $value) {
                 foreach ($entry?->getLines() ?? [] as $line) {
                     $tagged += $line->addDimension($axis, $value) ? 1 : 0;
                 }
             }
         };
-        foreach ($this->entityManager->getRepository(RentCall::class)->findAll() as $call) {
+        foreach ($this->repositories->of(RentCall::class)->findAll() as $call) {
             $lease = $call->getLease();
             $book = $this->bookFor($lease->getOrganisation());
             $tag($book, 'estate:rent:'.$call->getReference(), $lease->getUnit());
@@ -199,10 +201,10 @@ class Books
                 $tag($book, 'estate:payment:'.$payment->getId(), $lease->getUnit());
             }
         }
-        foreach ($this->entityManager->getRepository(WorkOrder::class)->findAll() as $order) {
+        foreach ($this->repositories->of(WorkOrder::class)->findAll() as $order) {
             $tag($this->bookFor($order->getOrganisation()), 'estate:work:'.$order->getId(), $order->getUnit());
         }
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         return $tagged;
     }

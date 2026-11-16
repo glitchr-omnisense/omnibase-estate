@@ -4,7 +4,7 @@ namespace Base\Estate\Ledger;
 
 use Base\Estate\Entity\Unit;
 use Base\Ledger\Dimension\DimensionLabelerInterface;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 
 /**
  * Names the ledger's "unit" axis: the unit's name (Appartement A)
@@ -15,7 +15,7 @@ class UnitDimensionLabeler implements DimensionLabelerInterface
 {
     public const AXIS = 'unit';
 
-    public function __construct(private readonly EntityManagerInterface $entityManager)
+    public function __construct(private readonly Repositories $repositories)
     {
     }
 
@@ -31,7 +31,7 @@ class UnitDimensionLabeler implements DimensionLabelerInterface
             return [];
         }
         $labels = [];
-        foreach ($this->entityManager->getRepository(Unit::class)->findBy(['id' => $ids]) as $unit) {
+        foreach ($this->repositories->of(Unit::class)->findBy(['id' => $ids]) as $unit) {
             $labels[(string) $unit->getId()] = $unit->getName();
         }
 

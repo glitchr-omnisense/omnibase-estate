@@ -13,9 +13,9 @@ use Base\Field\DateField;
 use Base\Field\EmailField;
 use Base\Field\IntegerField;
 use Base\Field\TextField;
-use Doctrine\ORM\EntityManagerInterface;
-use Omnibridge\Persistence\UnitOfWork;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Base\Database\Repository\Repositories;
+use Base\Contract\UnitOfWork;
+use Base\Field\Type\SelectType;
 use Symfony\Contracts\Service\Attribute\Required;
 
 /**
@@ -28,13 +28,13 @@ use Symfony\Contracts\Service\Attribute\Required;
 class OwnershipShareCrudController extends AbstractEstateCrudController
 {
     private ?Ownerships $ownerships = null;
-    private ?EntityManagerInterface $ownershipEntityManager = null;
+    private ?Repositories $ownershipRepositories = null;
 
     #[Required]
-    public function setOwnerships(Ownerships $ownerships, EntityManagerInterface $entityManager): void
+    public function setOwnerships(Ownerships $ownerships, Repositories $repositories): void
     {
         $this->ownerships = $ownerships;
-        $this->ownershipEntityManager = $entityManager;
+        $this->ownershipRepositories = $repositories;
     }
 
     public static function getEntityFqcn(): string { return OwnershipShare::class; }
@@ -47,11 +47,11 @@ class OwnershipShareCrudController extends AbstractEstateCrudController
 
     public function configureFields(string $pageName): iterable
     {
-        yield AssociationField::new('ownership', 'Indivision')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Ownership::class])->setColumns(4);
+        yield AssociationField::new('ownership', 'Indivision')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Ownership::class])->setColumns(4);
         yield TextField::new('name', 'Indivisaire')->setRequired(false)->setColumns(4)->setHelp('Vide pour la société gestionnaire : son nom.');
         yield EmailField::new('email', 'E-mail')->setRequired(false)->setColumns(4)->setHelp('Appels de fonds et relevés partent à cette adresse.');
         yield BooleanField::new('company', 'La société elle-même')->setColumns(3)->hideOnIndex()->setHelp('Sa quote-part reste dans ses propres comptes.');
-        yield AssociationField::new('associate', 'Associé·e')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Associate::class, 'required' => false])->setRequired(false)->setColumns(3)->hideOnIndex();
+        yield AssociationField::new('associate', 'Associé·e')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Associate::class, 'required' => false])->setRequired(false)->setColumns(3)->hideOnIndex();
         yield AssociationField::new('user', 'Compte')->setRequired(false)->setColumns(3)->hideOnIndex()->setHelp('Son compte ouvre son espace indivisaire et le dossier cloud de l\'indivision.');
         yield TextField::new('iban', 'IBAN')->setRequired(false)->setColumns(3)->hideOnIndex();
         yield IntegerField::new('numerator', 'Quote-part : numérateur')->setColumns(3)->onlyOnForms();
@@ -64,7 +64,7 @@ class OwnershipShareCrudController extends AbstractEstateCrudController
     public function createEntity(string $entityFqcn): OwnershipShare
     {
         $share = new OwnershipShare();
-        if (null !== $ownership = $this->ownershipEntityManager?->getRepository(Ownership::class)->findOneBy([], ['id' => 'ASC'])) {
+        if (null !== $ownership = $this->ownershipRepositories?->of(Ownership::class)->findOneBy([], ['id' => 'ASC'])) {
             $share->setOwnership($ownership);
         }
 

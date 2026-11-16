@@ -21,7 +21,8 @@ use Base\Ledger\Repository\TaxRepository;
 use Base\Ledger\Service\Lettering;
 use Base\Ledger\Service\Parties;
 use Base\Ledger\Service\Posting;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 
 /**
  * Sales for third parties in the agency's books (loi Hoguet: no fee is
@@ -53,7 +54,8 @@ class TransactionBooks
     public const FEES = '7062';
 
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
+        private readonly Repositories $repositories,
         private readonly Posting $posting,
         private readonly Parties $parties,
         private readonly Lettering $lettering,
@@ -67,7 +69,7 @@ class TransactionBooks
     {
         $id = $mandate->getOrganisation()->getBookId();
 
-        return $id ? $this->entityManager->find(Book::class, $id) : null;
+        return $id ? $this->repositories->of(Book::class)->find($id) : null;
     }
 
     /** The fee's VAT code in the agency's book, when the book is liable and the code collects VAT; null otherwise. */
@@ -140,7 +142,7 @@ class TransactionBooks
 
         $lines = [];
         foreach (['estate:transaction:deposit:'.$sale->getId(), 'estate:transaction:deposit:'.$sale->getId().':out'] as $source) {
-            $entry = $this->entityManager->getRepository(Entry::class)->findOneBy(['book' => $book, 'source' => $source]);
+            $entry = $this->repositories->of(Entry::class)->findOneBy(['book' => $book, 'source' => $source]);
             foreach ($entry?->getLines() ?? [] as $line) {
                 if ($line->getAccount()->getNumber() === $party->getAccountNumber() && !$line->isLettered()) {
                     $lines[] = $line;
@@ -149,7 +151,7 @@ class TransactionBooks
         }
         if (\count($lines) >= 2 && 0 === array_sum(array_map(fn (EntryLine $l) => $l->getNet(), $lines))) {
             $this->lettering->letter($lines);
-            $this->entityManager->flush();
+            $this->unitOfWork->flush();
         }
     }
 
@@ -189,7 +191,7 @@ class TransactionBooks
         if (null === $this->accounts || null !== $this->accounts->findOneByNumber($book, $number)) {
             return;
         }
-        $this->entityManager->persist(new Account($book, $number, $label, $type));
-        $this->entityManager->flush();
+        $this->unitOfWork->persist(new Account($book, $number, $label, $type));
+        $this->unitOfWork->flush();
     }
 }

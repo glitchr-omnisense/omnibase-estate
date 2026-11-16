@@ -9,7 +9,7 @@ use Base\Estate\Entity\Visit;
 use Base\Field\AssociationField;
 use Base\Field\DateTimeField;
 use Base\Field\TextareaField;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Base\Field\Type\SelectType;
 
 /**
  * The visits: a buyer, a mandate, when, and a few words after. The seller
@@ -28,8 +28,8 @@ class VisitCrudController extends AbstractEstateCrudController
 
     public function configureFields(string $pageName): iterable
     {
-        yield AssociationField::new('mandate', 'Mandat')->setFormType(EntityType::class)->setFormTypeOptions(['class' => SaleMandate::class])->setColumns(5);
-        yield AssociationField::new('buyer', 'Acquéreur')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Buyer::class])->setColumns(4);
+        yield AssociationField::new('mandate', 'Mandat')->setFormType(SelectType::class)->setFormTypeOptions(['class' => SaleMandate::class])->setColumns(5);
+        yield AssociationField::new('buyer', 'Acquéreur')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Buyer::class])->setColumns(4);
         yield DateTimeField::new('visitedAt', 'Le')->setColumns(3);
         yield TextareaField::new('feedback', 'Retour de visite')->setRequired(false)->setColumns(12)->setHelp('Quelques mots, lus par le vendeur dans son espace (sans le nom de l\'acquéreur).');
     }

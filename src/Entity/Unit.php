@@ -7,7 +7,7 @@ use Base\Estate\Enum\UnitKind;
 use Base\Estate\Repository\UnitRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * A home the organisation lets: a house, a flat, a studio, a parking space,

@@ -24,7 +24,8 @@ use Base\Ledger\Repository\TaxRepository;
 use Base\Ledger\Service\Lettering;
 use Base\Ledger\Service\Parties;
 use Base\Ledger\Service\Posting;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 
 /**
  * A shared ownership in its managing organisation's books - the way the
@@ -57,7 +58,8 @@ class OwnershipBooks
     public const TRANSFERRED_PROFIT = '6551';
 
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
+        private readonly Repositories $repositories,
         private readonly Posting $posting,
         private readonly Parties $parties,
         private readonly Lettering $lettering,
@@ -70,7 +72,7 @@ class OwnershipBooks
     {
         $id = $ownership->getOrganisation()->getBookId();
 
-        return $id ? $this->entityManager->find(Book::class, $id) : null;
+        return $id ? $this->repositories->of(Book::class)->find($id) : null;
     }
 
     /** The invoice's VAT code in its book, when the book is liable and the code posts VAT; null otherwise. */
@@ -185,7 +187,7 @@ class OwnershipBooks
         if (!$book = $this->bookFor($ownership)) {
             return;
         }
-        $entry = $this->entityManager->getRepository(Entry::class)->findOneBy(['book' => $book, 'source' => 'estate:ownership:income:'.$payment->getId()]);
+        $entry = $this->repositories->of(Entry::class)->findOneBy(['book' => $book, 'source' => 'estate:ownership:income:'.$payment->getId()]);
         if (null !== $entry) {
             $this->posting->reverse($entry, 'estate:ownership:income:'.$payment->getId().':cancelled');
         }
@@ -211,7 +213,7 @@ class OwnershipBooks
         $lines = [];
         $sources = ['estate:ownership:call:'.$call->getId(), ...array_map(fn (OwnershipPayment $p) => 'estate:ownership:payment:'.$p->getId(), $call->getPayments()->toArray())];
         foreach ($sources as $source) {
-            $entry = $this->entityManager->getRepository(Entry::class)->findOneBy(['book' => $book, 'source' => $source]);
+            $entry = $this->repositories->of(Entry::class)->findOneBy(['book' => $book, 'source' => $source]);
             foreach ($entry?->getLines() ?? [] as $line) {
                 if ($line->getParty() === $party && !$line->isLettered()) {
                     $lines[] = $line;
@@ -220,7 +222,7 @@ class OwnershipBooks
         }
         if (\count($lines) >= 2 && 0 === array_sum(array_map(fn (EntryLine $l) => $l->getNet(), $lines))) {
             $this->lettering->letter($lines);
-            $this->entityManager->flush();
+            $this->unitOfWork->flush();
         }
     }
 
@@ -249,8 +251,8 @@ class OwnershipBooks
         if (null === $this->accounts || null !== $this->accounts->findOneByNumber($book, $number)) {
             return;
         }
-        $this->entityManager->persist(new Account($book, $number, $label, $type));
-        $this->entityManager->flush();
+        $this->unitOfWork->persist(new Account($book, $number, $label, $type));
+        $this->unitOfWork->flush();
     }
 
     private static function slug(string $name): string

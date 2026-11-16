@@ -6,7 +6,7 @@ use Base\Database\Attribute\Uploader;
 use Base\Drive\Share\FileShare;
 use Base\Estate\Entity\Ownership;
 use Base\Estate\Entity\OwnershipInvoice;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\File\File;
 
@@ -27,7 +27,7 @@ class OwnershipFolders
 
     public function __construct(
         private readonly FileShare $share,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
         #[Autowire('%drive.default_audience%')] private readonly string $staff = 'staff',
     ) {
     }
@@ -59,7 +59,7 @@ class OwnershipFolders
         }
         if ($ownership->getFolder() !== $path) {
             $ownership->setFolder($path);
-            $this->entityManager->flush();
+            $this->unitOfWork->flush();
         }
 
         return $path;

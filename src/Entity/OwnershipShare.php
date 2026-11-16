@@ -4,7 +4,7 @@ namespace Base\Estate\Entity;
 
 use Base\Entity\User;
 use Base\Estate\Model\Shares;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * A co-owner's share of a shared ownership, from a date: a person (their
@@ -18,7 +18,7 @@ use Doctrine\ORM\Mapping as ORM;
  * holder (holder(): the company, else their e-mail): one account in the
  * books, one statement.
  */
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: \Base\Estate\Repository\OwnershipShareRepository::class)]
 #[ORM\Table(name: 'estate_ownership_share')]
 class OwnershipShare
 {

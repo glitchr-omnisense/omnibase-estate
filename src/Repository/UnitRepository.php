@@ -6,32 +6,33 @@ use Base\Estate\Entity\Organisation;
 use Base\Estate\Entity\Unit;
 use Base\Estate\Enum\LeaseStatus;
 use Base\Estate\Enum\UnitKind;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
+use Base\Database\Repository\Finder\Criterion;
+use Base\Database\Repository\Finder\Group;
+use Base\Database\Repository\Finder\Key;
+use Base\Database\Repository\Finder\Parser;
+use Base\Database\Repository\ServiceEntityRepository;
+use Base\Database\Repository\Finders;
 
 /** @extends ServiceEntityRepository<Unit> */
 class UnitRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(Finders $finders)
     {
-        parent::__construct($registry, Unit::class);
+        parent::__construct($finders, Unit::class);
     }
 
     /** @return list<Unit> what the public site lists: published, free ones first */
     public function findPublished(?string $kind = null, bool $availableOnly = false): array
     {
-        $query = $this->createQueryBuilder('u')
-            ->leftJoin('u.photos', 'p')->addSelect('p')
-            ->where('u.published = true')
-            ->orderBy('u.availableFrom', 'DESC')->addOrderBy('u.position', 'ASC')->addOrderBy('u.name', 'ASC');
+        $criteria = ['published' => true];
         if ($kind) {
-            $query->andWhere('u.kind = :kind')->setParameter('kind', $kind);
+            $criteria['kind'] = $kind;
         }
         if ($availableOnly) {
-            $query->andWhere('u.availableFrom IS NOT NULL');
+            $criteria[] = Group::of(Parser::SEPARATOR_AND, Criterion::of('availableFrom', null, Parser::OPTION_NOT_NULL));
         }
 
-        return $query->getQuery()->getResult();
+        return $this->findBy($criteria, ['availableFrom' => 'DESC', 'position' => 'ASC', 'name' => 'ASC']);
     }
 
     /**
@@ -39,6 +40,9 @@ class UnitRepository extends ServiceEntityRepository
      * running on a day, as Unit::getCurrentLease() picks it (not ended, started, not past its
      * end; the latest started first): scalars, the organisations by name, then each one's homes
      * in their order. lease, notice, endOn and monthly are null for a home not let.
+     *
+     * The homes are read by the finder language, each one's lease by Unit::getCurrentLease()
+     * itself (the language has no join with a condition of its own, nor a select of expressions).
      *
      * @param list<Organisation> $organisations
      *
@@ -49,33 +53,23 @@ class UnitRepository extends ServiceEntityRepository
         if ([] === $organisations) {
             return [];
         }
-        $rows = $this->createQueryBuilder('u')->join('u.organisation', 'o')
-            ->leftJoin('u.leases', 'l', 'WITH', 'l.status != :ended AND l.startOn <= :on AND (l.endOn IS NULL OR l.endOn >= :on)')
-            ->select('u.id AS unit', 'u.name AS name', 'l.id AS lease', 'l.endOn AS endOn', 'l.rent + l.charges AS monthly', 'CASE WHEN l.status = :notice THEN 1 ELSE 0 END AS notice')
-            ->where('u.organisation IN (:organisations)')->setParameter('organisations', $organisations)
-            ->andWhere('u.kind != :parking')->setParameter('parking', UnitKind::PARKING)
-            ->setParameter('ended', LeaseStatus::ENDED)->setParameter('notice', LeaseStatus::NOTICE)->setParameter('on', $on, 'date_immutable')
-            ->orderBy('o.name', 'ASC')->addOrderBy('o.id', 'ASC')->addOrderBy('u.position', 'ASC')->addOrderBy('u.name', 'ASC')->addOrderBy('u.id', 'ASC')
-            ->addOrderBy('l.startOn', 'DESC')->addOrderBy('l.id', 'ASC')
-            ->getQuery()->getArrayResult();
         $homes = [];
-        foreach ($rows as $row) {
-            if (isset($homes[$row['unit']])) {
-                continue; // a second lease running: the first one counts, as getCurrentLease() returns it
-            }
-            $let = null !== $row['lease'];
-            $endOn = $row['endOn'];
-            $homes[$row['unit']] = [
-                'unit' => (int) $row['unit'],
-                'name' => (string) $row['name'],
-                'lease' => $let ? (int) $row['lease'] : null,
-                'notice' => $let ? 1 === (int) $row['notice'] : null,
-                'endOn' => $let && null !== $endOn ? ($endOn instanceof \DateTimeImmutable ? $endOn : new \DateTimeImmutable($endOn)) : null,
-                'monthly' => $let ? (int) $row['monthly'] : null,
+        foreach ($this->findBy([
+            'organisation' => Key::of($organisations),
+            Group::of(Parser::SEPARATOR_AND, Criterion::of('kind', UnitKind::PARKING, Parser::OPTION_NOT_EQUAL)),
+        ], ['organisation.name' => 'ASC', 'organisation.id' => 'ASC', 'position' => 'ASC', 'name' => 'ASC', 'id' => 'ASC']) as $unit) {
+            $lease = $unit->getCurrentLease($on);
+            $homes[] = [
+                'unit' => (int) $unit->getId(),
+                'name' => (string) $unit->getName(),
+                'lease' => null !== $lease ? (int) $lease->getId() : null,
+                'notice' => null !== $lease ? LeaseStatus::NOTICE === $lease->getStatus() : null,
+                'endOn' => $lease?->getEndOn(),
+                'monthly' => null !== $lease ? $lease->getRent() + $lease->getCharges() : null,
             ];
         }
 
-        return array_values($homes);
+        return $homes;
     }
 
     /**
@@ -91,11 +85,9 @@ class UnitRepository extends ServiceEntityRepository
             return [];
         }
         $units = [];
-        foreach ($this->createQueryBuilder('u')->leftJoin('u.leases', 'l')->leftJoin('l.parties', 'p')->addSelect('l', 'p')
-            ->where('u.id IN (:ids)')->setParameter('ids', $ids)
-            // The order the collections load in by themselves: Unit::$leases' latest started first, the parties as entered.
-            ->orderBy('l.startOn', 'DESC')->addOrderBy('l.id', 'ASC')->addOrderBy('p.id', 'ASC')
-            ->getQuery()->getResult() as $unit) {
+        // The leases and their parties load with the units' collections, in their own order (Unit::$leases'
+        // latest started first, the parties as entered): the finder language does not select joined rows.
+        foreach ($this->findBy(['id' => $ids]) as $unit) {
             $units[$unit->getId()] = $unit;
         }
 

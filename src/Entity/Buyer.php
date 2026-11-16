@@ -5,7 +5,7 @@ namespace Base\Estate\Entity;
 use Base\Entity\User;
 use Base\Estate\Enum\Financing;
 use Base\Estate\Enum\UnitKind;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * Someone looking to buy (acquéreur): how to reach them, their account

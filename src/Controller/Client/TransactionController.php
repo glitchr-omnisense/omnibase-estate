@@ -10,7 +10,7 @@ use Base\Estate\Enum\OfferStatus;
 use Base\Estate\Security\Voter\EstateVoter;
 use Base\Estate\Service\Spaces;
 use Base\Estate\Service\Transactions;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\File\File;
@@ -35,7 +35,7 @@ class TransactionController extends AbstractController
     public function __construct(
         private readonly Spaces $spaces,
         private readonly Transactions $transactions,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly Repositories $repositories,
     ) {
     }
 
@@ -77,7 +77,7 @@ class TransactionController extends AbstractController
         }
         $offers = [];
         foreach ($buyers as $buyer) {
-            array_push($offers, ...$this->entityManager->getRepository(Offer::class)->findBy(['buyer' => $buyer], ['madeOn' => 'DESC', 'id' => 'DESC']));
+            array_push($offers, ...$this->repositories->of(Offer::class)->findBy(['buyer' => $buyer], ['madeOn' => 'DESC', 'id' => 'DESC']));
         }
         $accepted = array_values(array_filter($offers, fn (Offer $o) => OfferStatus::ACCEPTED === $o->getStatus()));
         $sale = null;

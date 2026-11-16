@@ -4,34 +4,38 @@ namespace Base\Estate\Repository;
 
 use Base\Estate\Entity\Mandator;
 use Base\Estate\Entity\SaleMandate;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
+use Base\Database\Repository\Finder\Criterion;
+use Base\Database\Repository\Finder\Group;
+use Base\Database\Repository\Finder\Parser;
+use Base\Database\Repository\ServiceEntityRepository;
+use Base\Database\Repository\Finders;
 
 /** @extends ServiceEntityRepository<SaleMandate> */
 class SaleMandateRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(Finders $finders)
     {
-        parent::__construct($registry, SaleMandate::class);
+        parent::__construct($finders, SaleMandate::class);
     }
 
     /** @return list<SaleMandate> the mandates ending between today and $until, the soonest first */
     public function ending(\DateTimeImmutable $today, \DateTimeImmutable $until): array
     {
-        return $this->createQueryBuilder('m')
-            ->where('m.endsOn >= :today')->andWhere('m.endsOn <= :until')
-            ->setParameter('today', $today->setTime(0, 0))->setParameter('until', $until->setTime(0, 0))
-            ->orderBy('m.endsOn', 'ASC')
-            ->getQuery()->getResult();
+        return $this->findBy([Group::of(Parser::SEPARATOR_AND,
+            Criterion::of('endsOn', $today->setTime(0, 0), Parser::OPTION_GREATER_EQUAL),
+            Criterion::of('endsOn', $until->setTime(0, 0), Parser::OPTION_LOWER_EQUAL),
+        )], ['endsOn' => 'ASC']);
     }
 
     /** @return list<SaleMandate> the mandates running on $day, the latest started first */
     public function inForce(\DateTimeImmutable $day): array
     {
-        return $this->createQueryBuilder('m')
-            ->where('m.startsOn <= :day')->andWhere('m.endsOn >= :day')->setParameter('day', $day->setTime(0, 0))
-            ->orderBy('m.startsOn', 'DESC')->addOrderBy('m.id', 'DESC')
-            ->getQuery()->getResult();
+        $day = $day->setTime(0, 0);
+
+        return $this->findBy([Group::of(Parser::SEPARATOR_AND,
+            Criterion::of('startsOn', $day, Parser::OPTION_LOWER_EQUAL),
+            Criterion::of('endsOn', $day, Parser::OPTION_GREATER_EQUAL),
+        )], ['startsOn' => 'DESC', 'id' => 'DESC']);
     }
 
     /**
@@ -45,17 +49,13 @@ class SaleMandateRepository extends ServiceEntityRepository
             return [];
         }
 
-        return $this->createQueryBuilder('m')->join('m.sellers', 's')
-            ->where('s IN (:sellers)')->setParameter('sellers', $sellers)
-            ->orderBy('m.startsOn', 'DESC')->addOrderBy('m.id', 'DESC')
-            ->getQuery()->getResult();
+        return $this->findBy(['sellers' => $sellers], ['startsOn' => 'DESC', 'id' => 'DESC']);
     }
 
     public function lastNumber(string $prefix): ?string
     {
-        return $this->createQueryBuilder('m')
-            ->select('MAX(m.number)')
-            ->where('m.number LIKE :prefix')->setParameter('prefix', $prefix.'%')
-            ->getQuery()->getSingleScalarResult();
+        $last = $this->maxOfNumberBy([Group::of(Parser::SEPARATOR_AND, Criterion::of('number', $prefix, Parser::OPTION_STARTING_WITH))]);
+
+        return null === $last ? null : (string) $last;
     }
 }

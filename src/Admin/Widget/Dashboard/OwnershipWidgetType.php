@@ -7,7 +7,7 @@ use Base\Estate\Entity\OwnershipCall;
 use Base\Estate\Repository\OwnershipCallRepository;
 use Base\Estate\Service\Activities;
 use Base\Estate\Enum\Activity;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 
 /**
  * The shared ownerships: each one's calls for funds still to be paid and
@@ -17,9 +17,9 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 final class OwnershipWidgetType extends AbstractEstateWidgetType
 {
-    public function __construct(EntityManagerInterface $entityManager, private readonly OwnershipCallRepository $calls, private readonly Activities $activities)
+    public function __construct(Repositories $repositories, private readonly OwnershipCallRepository $calls, private readonly Activities $activities)
     {
-        parent::__construct($entityManager);
+        parent::__construct($repositories);
     }
 
     public static function getName(): string { return 'estate_ownership'; }
@@ -35,7 +35,7 @@ final class OwnershipWidgetType extends AbstractEstateWidgetType
         $today = new \DateTimeImmutable('today');
         $open = $this->calls->findOpen();
         $rows = [];
-        foreach ($this->entityManager->getRepository(Ownership::class)->findBy([], ['name' => 'ASC']) as $ownership) {
+        foreach ($this->repositories->of(Ownership::class)->findBy([], ['name' => 'ASC']) as $ownership) {
             $mine = array_filter($open, fn (OwnershipCall $c) => $c->getOwnership()->getId() === $ownership->getId());
             $late = array_filter($mine, fn (OwnershipCall $c) => $c->isLate($today));
             $rows[] = [

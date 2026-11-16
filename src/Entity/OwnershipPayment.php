@@ -2,7 +2,7 @@
 
 namespace Base\Estate\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * Money a co-owner paid on a call for funds: recorded once per reference

@@ -8,7 +8,7 @@ use Base\Estate\Entity\Organisation;
 use Base\Estate\Form\MessageType;
 use Base\Estate\Repository\MessageRepository;
 use Base\Estate\Service\Messages;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,7 +24,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/admin/estate/messages')]
 class MessageController extends AbstractController
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager)
+    public function __construct(private readonly Repositories $repositories)
     {
     }
 
@@ -32,7 +32,7 @@ class MessageController extends AbstractController
     public function index(MessageRepository $messages): Response
     {
         $threads = [];
-        foreach ($this->entityManager->getRepository(Organisation::class)->findBy([], ['name' => 'ASC']) as $organisation) {
+        foreach ($this->repositories->of(Organisation::class)->findBy([], ['name' => 'ASC']) as $organisation) {
             foreach ($messages->threads($organisation) as $thread) {
                 $threads[] = $thread;
             }

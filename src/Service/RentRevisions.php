@@ -11,7 +11,7 @@ use Base\Estate\Index\OfficialIndex;
 use Base\Estate\Model\IndexCaps;
 use Base\Estate\Model\RevisionProposal;
 use Base\Estate\Repository\LeaseRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
 
 /**
  * The yearly rent revision of a French residential lease (loi du 6 juillet 1989, art. 17-1):
@@ -36,7 +36,7 @@ use Doctrine\ORM\EntityManagerInterface;
 class RentRevisions
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
         private readonly LeaseRepository $leases,
         private readonly ActivityLog $activities,
         private readonly EstateMailer $mailer,
@@ -193,7 +193,7 @@ class RentRevisions
         $rent = $this->rentAt($lease, $newIndex, $newQuarter, $fromIndex);
         $lease->setRent($rent)->setIndexQuarter($newQuarter)->setIndexValue($newIndex)->setRevisedOn($on);
         $this->activities->log($lease->getOrganisation(), ActivityKind::OTHER, sprintf('Loyer révisé (%s %s) : %s → %s', $lease->getIndexName(), $newQuarter, number_format($former / 100, 2, ',', ' ').' €', number_format($rent / 100, 2, ',', ' ').' €'), $lease->getUnit(), $rent - $former);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         $this->mailer->send(
             array_values(array_filter(array_map(fn ($party) => $party->getEmail(), $lease->getTenants()))),

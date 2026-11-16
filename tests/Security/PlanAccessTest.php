@@ -16,8 +16,8 @@ use Base\Estate\Repository\LeaseRepository;
 use Base\Estate\Security\Voter\EstateVoter;
 use Base\Estate\Service\Activities;
 use Base\Estate\Service\Spaces;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\EntityRepository;
+use Base\Database\Repository\Entities;
+use Base\Database\Repository\Repositories;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
@@ -56,9 +56,9 @@ final class PlanAccessTest extends TestCase
      */
     private function voter(array $leases, array $members = [], array $associates = [], array $mandators = [], array $mandates = [], bool $admin = false, array $organisations = []): EstateVoter
     {
-        $entityManager = $this->createStub(EntityManagerInterface::class);
-        $entityManager->method('getRepository')->willReturnCallback(function (string $class) use ($members, $associates, $mandators, $mandates, $organisations) {
-            $repository = $this->createStub(EntityRepository::class);
+        $repositories = $this->createStub(Repositories::class);
+        $repositories->method('of')->willReturnCallback(function (string $class) use ($members, $associates, $mandators, $mandates, $organisations) {
+            $repository = $this->createStub(Entities::class);
             $repository->method('findBy')->willReturnCallback(fn (array $criteria) => array_values(array_filter(match ($class) {
                 Member::class => $members,
                 Associate::class => $associates,
@@ -79,7 +79,7 @@ final class PlanAccessTest extends TestCase
         $security = $this->createStub(Security::class);
         $security->method('isGranted')->willReturn($admin);
 
-        return new EstateVoter(new Spaces($entityManager, $repository, $security, new Activities(['assets', 'management'])));
+        return new EstateVoter(new Spaces($repositories, $repository, $security, new Activities(['assets', 'management'])));
     }
 
     private function can(EstateVoter $voter, User $user, Unit $unit): bool

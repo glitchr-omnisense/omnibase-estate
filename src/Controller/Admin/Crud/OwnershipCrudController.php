@@ -12,8 +12,8 @@ use Base\Field\AssociationField;
 use Base\Field\DateTimeField;
 use Base\Field\TextareaField;
 use Base\Field\TextField;
-use Omnibridge\Persistence\UnitOfWork;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Base\Contract\UnitOfWork;
+use Base\Field\Type\SelectType;
 use Symfony\Contracts\Service\Attribute\Required;
 
 /**
@@ -55,8 +55,8 @@ class OwnershipCrudController extends AbstractEstateCrudController
     public function configureFields(string $pageName): iterable
     {
         yield TextField::new('name', 'Nom')->setColumns(5);
-        yield AssociationField::new('organisation', 'Gérée par')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Organisation::class])->setColumns(3)->setHelp('La société qui la gère : ses comptes portent l\'indivision.');
-        yield AssociationField::new('units', 'Biens')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Unit::class, 'multiple' => true, 'by_reference' => false])->setRequired(false)->setColumns(4);
+        yield AssociationField::new('organisation', 'Gérée par')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Organisation::class])->setColumns(3)->setHelp('La société qui la gère : ses comptes portent l\'indivision.');
+        yield AssociationField::new('units', 'Biens')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Unit::class, 'multiple' => true, 'by_reference' => false])->setRequired(false)->setColumns(4);
         yield TextareaField::new('description', 'Quelques mots')->setRequired(false)->setColumns(12)->hideOnIndex();
         yield TextField::new('sharesSummary', 'Quotes-parts')->hideOnForm();
         yield TextField::new('folder', 'Dossier cloud')->hideOnForm()->hideOnIndex();

@@ -16,8 +16,8 @@ use Base\Estate\Repository\LeaseRepository;
 use Base\Estate\Security\Voter\EstateVoter;
 use Base\Estate\Service\Activities;
 use Base\Estate\Service\Spaces;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\EntityRepository;
+use Base\Database\Repository\Entities;
+use Base\Database\Repository\Repositories;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
@@ -37,10 +37,10 @@ final class TransactionSpacesTest extends TestCase
 
     private function spaces(array $activities, array $records): Spaces
     {
-        $entityManager = $this->createStub(EntityManagerInterface::class);
-        $entityManager->method('getRepository')->willReturnCallback(function (string $class) use ($records) {
+        $repositories = $this->createStub(Repositories::class);
+        $repositories->method('of')->willReturnCallback(function (string $class) use ($records) {
             $this->read[] = $class;
-            $repository = $this->createStub(EntityRepository::class);
+            $repository = $this->createStub(Entities::class);
             $repository->method('findBy')->willReturnCallback(fn (array $criteria) => array_values(array_filter($records[$class] ?? [],
                 fn (object $record) => !isset($criteria['user']) || $record->getUser() === $criteria['user'])));
 
@@ -49,7 +49,7 @@ final class TransactionSpacesTest extends TestCase
         $leases = $this->createStub(LeaseRepository::class);
         $leases->method('findForUser')->willReturn([]);
 
-        return new Spaces($entityManager, $leases, $this->createStub(Security::class), new Activities($activities));
+        return new Spaces($repositories, $leases, $this->createStub(Security::class), new Activities($activities));
     }
 
     private static function withId(object $entity, int $id): object

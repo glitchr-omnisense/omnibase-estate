@@ -4,7 +4,7 @@ namespace Base\Estate\Entity;
 
 use Base\Estate\Enum\ActivityKind;
 use Base\Estate\Repository\ActivityRepository;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /** A line of the company's day-to-day, as its associates read it: a rent paid, a boiler replaced. */
 #[ORM\Entity(repositoryClass: ActivityRepository::class)]

@@ -23,8 +23,8 @@ use Base\Estate\Repository\WorkOrderRepository;
 use Base\Estate\Service\PortfolioFigures;
 use Base\Estate\Service\RentRevisions;
 use Base\Estate\Twig\EstateExtension;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\EntityRepository;
+use Base\Database\Repository\Entities;
+use Base\Database\Repository\Repositories;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bridge\Twig\Extension\TranslationExtension;
 use Symfony\Component\Translation\Loader\YamlFileLoader;
@@ -69,16 +69,16 @@ class DashboardWidgetsTest extends TestCase
         (new \ReflectionProperty($this->organisation, 'id'))->setValue($this->organisation, 1);
     }
 
-    private function entityManager(array $leases = []): EntityManagerInterface
+    private function repositories(array $leases = []): Repositories
     {
-        $organisations = $this->createStub(EntityRepository::class);
+        $organisations = $this->createStub(Entities::class);
         $organisations->method('findBy')->willReturn([$this->organisation]);
-        $leaseRepository = $this->createStub(EntityRepository::class);
+        $leaseRepository = $this->createStub(Entities::class);
         $leaseRepository->method('findBy')->willReturn($leases);
-        $em = $this->createStub(EntityManagerInterface::class);
-        $em->method('getRepository')->willReturnCallback(fn (string $class) => Lease::class === $class ? $leaseRepository : $organisations);
+        $repositories = $this->createStub(Repositories::class);
+        $repositories->method('of')->willReturnCallback(fn (string $class) => Lease::class === $class ? $leaseRepository : $organisations);
 
-        return $em;
+        return $repositories;
     }
 
     private function render(PaletteDashboardWidgetTypeInterface $type, array $params = []): string
@@ -186,7 +186,7 @@ class DashboardWidgetsTest extends TestCase
     public function testOccupancyACompactDonut(): void
     {
         [$figures, $units] = $this->homes();
-        $html = $this->render(new Dashboard\OccupancyWidgetType($this->entityManager(), $figures, $units));
+        $html = $this->render(new Dashboard\OccupancyWidgetType($this->repositories(), $figures, $units));
 
         self::assertStringContainsString('dash-card--compact', $html, 'two to a row on a phone');
         self::assertStringContainsString('<h2 class="dash-card-title">Occupation</h2>', $html, 'the title above the card, from the admin domain');
@@ -219,7 +219,7 @@ class DashboardWidgetsTest extends TestCase
         $works = $this->createStub(WorkOrderRepository::class);
         $works->method('openTotals')->willReturn(['count' => 3, 'quoted' => 0]);
         $works->method('spentBy')->willReturn(235000);
-        $html = $this->render(new Dashboard\SummaryWidgetType($this->entityManager(), $figures, $this->calls(['count' => 0, 'total' => 0]), $works));
+        $html = $this->render(new Dashboard\SummaryWidgetType($this->repositories(), $figures, $this->calls(['count' => 0, 'total' => 0]), $works));
 
         self::assertSame(5, preg_match_all('/class="es-kpi( is-bad)?"/', $html), 'occupancy, the month, late, the rent roll, the works');
         self::assertStringContainsString('<h2 class="dash-card-title">En bref</h2>', $html);
@@ -234,7 +234,7 @@ class DashboardWidgetsTest extends TestCase
 
     public function testRentsMonthByMonthWithLegendAxisAndTable(): void
     {
-        $html = $this->render(new Dashboard\RentsWidgetType($this->entityManager(), $this->figures()), ['months' => 12]);
+        $html = $this->render(new Dashboard\RentsWidgetType($this->repositories(), $this->figures()), ['months' => 12]);
 
         self::assertStringContainsString('value="12" checked', $html);
         self::assertSame(2, substr_count($html, 'class="es-chart"'), '6 and 12 months, switched in the card');
@@ -248,14 +248,14 @@ class DashboardWidgetsTest extends TestCase
 
     public function testLateRentsWithTheirTenantAndAmount(): void
     {
-        $html = $this->render(new Dashboard\LateRentsWidgetType($this->entityManager(), $this->calls(['count' => 1, 'total' => 101000], [$this->lateCall()])));
+        $html = $this->render(new Dashboard\LateRentsWidgetType($this->repositories(), $this->calls(['count' => 1, 'total' => 101000], [$this->lateCall()])));
 
         self::assertStringContainsString('dash-card--compact', $html);
         self::assertStringContainsString('Léa Muller', $html);
         self::assertMatchesRegularExpression('/1\s010\s€/u', $html);
         self::assertStringContainsString('1 loyer', $html);
 
-        $quiet = $this->render(new Dashboard\LateRentsWidgetType($this->entityManager(), $this->calls(['count' => 0, 'total' => 0])));
+        $quiet = $this->render(new Dashboard\LateRentsWidgetType($this->repositories(), $this->calls(['count' => 0, 'total' => 0])));
         self::assertStringContainsString('Tous les loyers échus sont réglés.', $quiet);
         self::assertStringContainsString('tout est à jour', $quiet, 'not « aucun loyer » beside « 0 € dus »');
         self::assertStringContainsString('Aucun loyer appelé en', $quiet);
@@ -287,7 +287,7 @@ class DashboardWidgetsTest extends TestCase
             $call('Léa Muller', 101000, 0, '2026-11-05'),
             $call('Paul Klein', 80000, 80000, '2026-11-01', '2026-10-30'),
         ]);
-        $html = $this->render(new Dashboard\LateRentsWidgetType($this->entityManager(), $calls));
+        $html = $this->render(new Dashboard\LateRentsWidgetType($this->repositories(), $calls));
 
         self::assertMatchesRegularExpression('/<b>800\s€<\/b> \/ 1\s810\s€/u', $html, 'received over called');
         self::assertStringContainsString('width: 44%', $html);
@@ -312,7 +312,7 @@ class DashboardWidgetsTest extends TestCase
         $works->method('findOpenFirst')->willReturn([$order]);
         $works->method('openTotals')->willReturn(['count' => 1, 'quoted' => 0]);
         $works->method('spentBy')->willReturn(235000);
-        $html = $this->render(new Dashboard\WorksWidgetType($this->entityManager(), $works));
+        $html = $this->render(new Dashboard\WorksWidgetType($this->repositories(), $works));
 
         self::assertStringContainsString('Prise du séjour qui chauffe', $html);
         self::assertStringContainsString('Planifié', $html);
@@ -331,7 +331,7 @@ class DashboardWidgetsTest extends TestCase
         $leases->method('findUninsured')->willReturn([]);
         $revisions = $this->createStub(RentRevisions::class);
         $revisions->method('due')->willReturn([]);
-        $html = $this->render(new Dashboard\TodoWidgetType($this->entityManager(), $revisions, $messages, $applications, $calls, $leases));
+        $html = $this->render(new Dashboard\TodoWidgetType($this->repositories(), $revisions, $messages, $applications, $calls, $leases));
 
         self::assertStringContainsString('Appeler les loyers de', $html, 'the month\'s rents, always first');
         self::assertStringContainsString('2 candidatures à étudier', $html);
@@ -355,7 +355,7 @@ class DashboardWidgetsTest extends TestCase
         $payouts = $this->createStub(\Base\Estate\Repository\MandatePayoutRepository::class);
         $payouts->method('findUnpaid')->willReturn([(new \Base\Estate\Entity\MandatePayout($mandate, new \DateTimeImmutable('2026-09-30'), 30000, 0, 30000))->setReference('RV-2026-0003')]);
 
-        $html = $this->render(new Dashboard\ManagementWidgetType($this->entityManager(), $management, $mandates, $payouts, new \Base\Estate\Service\Activities(['management'])));
+        $html = $this->render(new Dashboard\ManagementWidgetType($this->repositories(), $management, $mandates, $payouts, new \Base\Estate\Service\Activities(['management'])));
 
         self::assertStringContainsString('<h2 class="dash-card-title">Gérance</h2>', $html);
         self::assertMatchesRegularExpression('/524\s€/u', $html, 'what the owners are due at the end of last month');
@@ -364,7 +364,7 @@ class DashboardWidgetsTest extends TestCase
         self::assertStringContainsString('1 compte rendu à envoyer', $html);
         self::assertStringContainsString('MG-2024-0002 prend fin le', $html);
 
-        $off = $this->render(new Dashboard\ManagementWidgetType($this->entityManager(), $management, $mandates, $payouts, new \Base\Estate\Service\Activities(['assets'])));
+        $off = $this->render(new Dashboard\ManagementWidgetType($this->repositories(), $management, $mandates, $payouts, new \Base\Estate\Service\Activities(['assets'])));
         self::assertStringContainsString('aucun compte rendu à envoyer', $off, 'the activity off: nothing read');
     }
 
@@ -385,7 +385,7 @@ class DashboardWidgetsTest extends TestCase
         $transactions->method('offersWaiting')->willReturn([new \Base\Estate\Entity\Offer($ending, new \Base\Estate\Entity\Buyer('Inès Roux'), 41000000)]);
         $transactions->method('ending')->willReturn([$ending]);
 
-        $html = $this->render(new Dashboard\TransactionWidgetType($this->entityManager(), $transactions));
+        $html = $this->render(new Dashboard\TransactionWidgetType($this->repositories(), $transactions));
 
         self::assertStringContainsString('<h2 class="dash-card-title">Transactions</h2>', $html);
         self::assertStringContainsString('trimestre 2026-Q4', $html);
@@ -398,7 +398,7 @@ class DashboardWidgetsTest extends TestCase
 
         $off = $this->createStub(\Base\Estate\Service\Transactions::class);
         $off->method('feesOfQuarter')->willReturn(['period' => '2026-Q4', 'invoiced' => 0, 'expected' => 0, 'total' => 0, 'count' => 0]);
-        $html = $this->render(new Dashboard\TransactionWidgetType($this->entityManager(), $off));
+        $html = $this->render(new Dashboard\TransactionWidgetType($this->repositories(), $off));
         self::assertStringContainsString('Aucune vente en cours', $html, 'the activity off: Transactions answers nothing');
         self::assertStringNotContainsString('estate_admin_transaction_sales', $html, 'and no link to its pages');
     }

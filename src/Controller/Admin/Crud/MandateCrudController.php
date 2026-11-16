@@ -16,9 +16,9 @@ use Base\Field\DateField;
 use Base\Field\NumberField;
 use Base\Field\TextareaField;
 use Base\Field\TextField;
-use Doctrine\ORM\EntityManagerInterface;
-use Omnibridge\Persistence\UnitOfWork;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Base\Database\Repository\Repositories;
+use Base\Contract\UnitOfWork;
+use Base\Field\Type\SelectType;
 use Symfony\Contracts\Service\Attribute\Required;
 
 /**
@@ -31,13 +31,13 @@ use Symfony\Contracts\Service\Attribute\Required;
 class MandateCrudController extends AbstractEstateCrudController
 {
     private ?Management $management = null;
-    private ?EntityManagerInterface $mandateEntityManager = null;
+    private ?Repositories $mandateRepositories = null;
 
     #[Required]
-    public function setManagement(Management $management, EntityManagerInterface $entityManager): void
+    public function setManagement(Management $management, Repositories $repositories): void
     {
         $this->management = $management;
-        $this->mandateEntityManager = $entityManager;
+        $this->mandateRepositories = $repositories;
     }
 
     public static function getEntityFqcn(): string { return Mandate::class; }
@@ -62,9 +62,9 @@ class MandateCrudController extends AbstractEstateCrudController
     public function configureFields(string $pageName): iterable
     {
         yield TextField::new('number', 'N° de mandat')->setRequired(false)->setColumns(3)->setHelp('Vide : numéroté au registre à l\'enregistrement (MG-2026-0001).');
-        yield AssociationField::new('mandator', 'Propriétaire')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Mandator::class])->setColumns(5);
-        yield AssociationField::new('organisation', 'Agence')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Organisation::class])->setColumns(4)->hideOnIndex()->setHelp('Ses comptes portent le compte du propriétaire.');
-        yield AssociationField::new('units', 'Biens')->setFormType(EntityType::class)->setFormTypeOptions(['class' => Unit::class, 'multiple' => true, 'by_reference' => false])->setRequired(false)->setColumns(12)->hideOnIndex();
+        yield AssociationField::new('mandator', 'Propriétaire')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Mandator::class])->setColumns(5);
+        yield AssociationField::new('organisation', 'Agence')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Organisation::class])->setColumns(4)->hideOnIndex()->setHelp('Ses comptes portent le compte du propriétaire.');
+        yield AssociationField::new('units', 'Biens')->setFormType(SelectType::class)->setFormTypeOptions(['class' => Unit::class, 'multiple' => true, 'by_reference' => false])->setRequired(false)->setColumns(12)->hideOnIndex();
         yield TextField::new('unitsSummary', 'Biens')->onlyOnIndex();
         yield NumberField::new('feePercent', 'Honoraires (% HT des encaissements)')->setRequired(false)->setColumns(3)->hideOnIndex()->setHelp('7 pour 7 % des loyers et charges encaissés, avant TVA.');
         yield TextField::new('feeLabel', 'Honoraires')->onlyOnIndex();
@@ -81,10 +81,10 @@ class MandateCrudController extends AbstractEstateCrudController
     public function createEntity(string $entityFqcn): Mandate
     {
         $mandate = new Mandate();
-        if (null !== $organisation = $this->mandateEntityManager?->getRepository(Organisation::class)->findOneBy([], ['id' => 'ASC'])) {
+        if (null !== $organisation = $this->mandateRepositories?->of(Organisation::class)->findOneBy([], ['id' => 'ASC'])) {
             $mandate->setOrganisation($organisation);
         }
-        if (null !== $mandator = $this->mandateEntityManager?->getRepository(Mandator::class)->findOneBy([], ['id' => 'ASC'])) {
+        if (null !== $mandator = $this->mandateRepositories?->of(Mandator::class)->findOneBy([], ['id' => 'ASC'])) {
             $mandate->setMandator($mandator);
         }
 

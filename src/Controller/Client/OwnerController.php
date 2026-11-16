@@ -10,7 +10,7 @@ use Base\Estate\Model\Period;
 use Base\Estate\Security\Voter\EstateVoter;
 use Base\Estate\Service\Management;
 use Base\Estate\Service\Spaces;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,7 +31,7 @@ class OwnerController extends AbstractController
     public function __construct(
         private readonly Spaces $spaces,
         private readonly Management $management,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly Repositories $repositories,
     ) {
     }
 
@@ -55,7 +55,7 @@ class OwnerController extends AbstractController
         $statement = $this->management->statement($mandate, max($yearStart, $mandate->getStartsOn()), $today);
         $leases = [];
         foreach ($mandate->getUnits() as $unit) {
-            $leases[$unit->getId()] = $this->entityManager->getRepository(Lease::class)->findBy(['unit' => $unit], ['startOn' => 'DESC'], 1)[0] ?? null;
+            $leases[$unit->getId()] = $this->repositories->of(Lease::class)->findBy(['unit' => $unit], ['startOn' => 'DESC'], 1)[0] ?? null;
         }
         $frequency = $mandate->getFrequency();
 
@@ -66,7 +66,7 @@ class OwnerController extends AbstractController
             'statement' => $statement,
             'available' => $this->management->available($mandate, $today),
             'leases' => $leases,
-            'payouts' => $this->entityManager->getRepository(MandatePayout::class)->findBy(['mandate' => $mandate], ['issuedOn' => 'DESC', 'id' => 'DESC'], 12),
+            'payouts' => $this->repositories->of(MandatePayout::class)->findBy(['mandate' => $mandate], ['issuedOn' => 'DESC', 'id' => 'DESC'], 12),
             'periods' => array_values(array_filter(
                 array_map(fn (string $key) => ['key' => $key] + array_combine(['from', 'to'], Period::parse($key)), [...$frequency->recent($today, 6), $today->modify('-1 year')->format('Y')]),
                 fn (array $p) => $mandate->overlaps($p['from'], $p['to']),

@@ -4,7 +4,8 @@ namespace Base\Estate\Service;
 
 use Base\Estate\Entity\RentCall;
 use Base\Estate\Enum\PaymentMethod;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 use Omnitrade\Model\Money;
 use Omnitrade\Model\Payment as OmnitradePayment;
 use Omnitrade\Model\Status;
@@ -24,7 +25,8 @@ class OnlinePayments
         private readonly ?Registry $registry = null,
         #[Autowire('%estate.payment_gateway%')] private readonly ?string $gateway = 'stripe',
         #[Autowire('%estate.payment_methods%')] private readonly array $methods = ['card', 'sepa_debit'],
-        private readonly ?EntityManagerInterface $entityManager = null,
+        private readonly ?UnitOfWork $unitOfWork = null,
+        private readonly ?Repositories $repositories = null,
         private readonly ?PaymentWebhook $webhook = null,
     ) {
     }
@@ -73,9 +75,9 @@ class OnlinePayments
         ));
 
         // Kept on the call: estate:payment:check reads the session again, should neither the tenant nor the webhook come back.
-        if (null !== $transaction->reference && null !== $this->entityManager) {
+        if (null !== $transaction->reference && null !== $this->unitOfWork) {
             $call->setOnline($transaction->reference, $now);
-            $this->entityManager->flush();
+            $this->unitOfWork->flush();
         }
 
         return $transaction->redirectUrl ?? $returnUrl;
@@ -90,12 +92,12 @@ class OnlinePayments
      */
     public function catchUp(int $days = 15, ?\DateTimeImmutable $now = null): int
     {
-        if (null === $this->entityManager || !$this->isAvailable()) {
+        if (null === $this->unitOfWork || null === $this->repositories || !$this->isAvailable()) {
             return 0;
         }
         $now ??= new \DateTimeImmutable();
         $recorded = 0;
-        foreach ($this->entityManager->getRepository(RentCall::class)->findOnlinePending() as $call) {
+        foreach ($this->repositories->of(RentCall::class)->findOnlinePending() as $call) {
             if ($call->getOnlineStartedAt() < $now->modify(sprintf('-%d days', $days))) {
                 $call->setOnline(null);
                 continue;
@@ -106,7 +108,7 @@ class OnlinePayments
                 // The provider unreachable, or the session gone: read again next time, until it is given up.
             }
         }
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         return $recorded;
     }
@@ -157,7 +159,7 @@ class OnlinePayments
         $method = 'sepa_debit' === $transaction->method ? PaymentMethod::SEPA_DEBIT : PaymentMethod::CARD;
         $this->payments->record($call, $transaction->amount?->amount ?? $call->getRemaining(), $method, new \DateTimeImmutable('today'), $transaction->reference);
         $call->setOnline(null);
-        $this->entityManager?->flush();
+        $this->unitOfWork?->flush();
 
         return true;
     }

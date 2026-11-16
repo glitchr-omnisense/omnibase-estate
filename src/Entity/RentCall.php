@@ -6,7 +6,7 @@ use Base\Estate\Enum\RentStatus;
 use Base\Estate\Repository\RentCallRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * A month's rent asked of a lease (the avis d'échéance): rent and charges,

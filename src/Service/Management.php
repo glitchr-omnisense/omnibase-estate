@@ -21,7 +21,8 @@ use Base\Estate\Model\Period;
 use Base\Estate\Repository\MandatePayoutRepository;
 use Base\Estate\Repository\MandateRepository;
 use Base\Estate\Repository\RentCallRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 use Omnibank\Files\Pain001Writer;
 use Omnibank\Model\Money;
 use Omnibank\Model\Transfer;
@@ -49,7 +50,8 @@ class Management
     private array $numbers = [];
 
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
+        private readonly Repositories $repositories,
         private readonly Activities $activities,
         private readonly MandateRepository $mandates,
         private readonly MandatePayoutRepository $payouts,
@@ -145,15 +147,15 @@ class Management
         if (null === $mandate) {
             return null;
         }
-        if (null !== $fee = $this->entityManager->getRepository(MandateFee::class)->findOneBy(['payment' => $payment])) {
+        if (null !== $fee = $this->repositories->of(MandateFee::class)->findOneBy(['payment' => $payment])) {
             return $fee;
         }
 
         [$amount, $vat, $code] = $this->fee($mandate, $payment->getAmount());
         $fee = (new MandateFee($mandate, $payment->getPaidOn(), sprintf('Loyer %s — %s', $call->getPeriod()->format('m/Y'), $unit->getName()), $payment->getAmount(), $mandate->getFeeRate(), $amount, $vat, $code))
             ->setPayment($payment)->setUnit($unit);
-        $this->entityManager->persist($fee);
-        $this->entityManager->flush();
+        $this->unitOfWork->persist($fee);
+        $this->unitOfWork->flush();
 
         $this->books?->rentCollected($payment, $mandate);
         $this->books?->feeCharged($fee);
@@ -167,14 +169,14 @@ class Management
         if (!$this->isActive() || null === $payment->getId()) {
             return;
         }
-        $fee = $this->entityManager->getRepository(MandateFee::class)->findOneBy(['payment' => $payment]);
+        $fee = $this->repositories->of(MandateFee::class)->findOneBy(['payment' => $payment]);
         if (null === $fee) {
             return;
         }
         $this->books?->rentCancelled($payment, $fee->getMandate());
         $this->books?->feeCancelled($fee);
-        $this->entityManager->remove($fee);
-        $this->entityManager->flush();
+        $this->unitOfWork->remove($fee);
+        $this->unitOfWork->flush();
     }
 
     /**
@@ -205,12 +207,12 @@ class Management
         if (null === $mandate) {
             return null;
         }
-        $expense = $this->entityManager->getRepository(MandateExpense::class)->findOneBy(['workOrder' => $order]);
+        $expense = $this->repositories->of(MandateExpense::class)->findOneBy(['workOrder' => $order]);
         if (null === $expense) {
             $expense = (new MandateExpense($mandate, sprintf('Travaux — %s', $order->getTitle()), $order->getInvoiceAmount(), $date))
                 ->setUnit($order->getUnit())->setWorkOrder($order)->setContractor($order->getContractor())->setNumber($order->getInvoiceNumber());
-            $this->entityManager->persist($expense);
-            $this->entityManager->flush();
+            $this->unitOfWork->persist($expense);
+            $this->unitOfWork->flush();
         }
         $this->postExpense($expense);
 
@@ -230,15 +232,15 @@ class Management
             return;
         }
         if (null === $expense->getId()) {
-            $this->entityManager->persist($expense);
-            $this->entityManager->flush();
+            $this->unitOfWork->persist($expense);
+            $this->unitOfWork->flush();
         }
         $expense->markPosted();
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
         $this->books?->expenseCharged($expense);
         $mandate = $expense->getMandate();
         $this->log->log($mandate->getOrganisation(), ActivityKind::OTHER, sprintf('Gérance %s : dépense « %s » imputée', $mandate->getMandator()->getName(), $expense->getLabel()), $expense->getUnit(), -$expense->getAmount());
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
     }
 
     /** An owner's statement for a period (MandateStatement). */
@@ -246,9 +248,9 @@ class Management
     {
         return MandateStatement::of($mandate, $from, $to,
             $this->rentCalls($mandate),
-            $this->entityManager->getRepository(MandateFee::class)->findBy(['mandate' => $mandate], ['date' => 'ASC', 'id' => 'ASC']),
-            $this->entityManager->getRepository(MandateExpense::class)->findBy(['mandate' => $mandate], ['date' => 'ASC', 'id' => 'ASC']),
-            $this->entityManager->getRepository(MandatePayout::class)->findBy(['mandate' => $mandate], ['issuedOn' => 'ASC', 'id' => 'ASC']));
+            $this->repositories->of(MandateFee::class)->findBy(['mandate' => $mandate], ['date' => 'ASC', 'id' => 'ASC']),
+            $this->repositories->of(MandateExpense::class)->findBy(['mandate' => $mandate], ['date' => 'ASC', 'id' => 'ASC']),
+            $this->repositories->of(MandatePayout::class)->findBy(['mandate' => $mandate], ['issuedOn' => 'ASC', 'id' => 'ASC']));
     }
 
     /** @return list<MandateStatement> each mandate running in the period's statement, by owner */
@@ -297,7 +299,7 @@ class Management
             ['statement' => $statement, 'mandate' => $statement->mandate, 'mandator' => $mandator, 'organisation' => $organisation], $organisation->getEmail(),
             null === $pdf ? [] : [$this->statementFilename($statement) => $pdf]);
         $statement->mandate->markStatementSent($statement->getPeriodKey());
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
         if (null !== $pdf && null !== $this->folders) {
             try {
                 $this->folders->fileStatement($mandator, $this->statementFilename($statement), $pdf);
@@ -344,7 +346,7 @@ class Management
     public function available(Mandate $mandate, \DateTimeImmutable $on): array
     {
         $balance = $this->balance($mandate, $on);
-        foreach ($this->entityManager->getRepository(MandatePayout::class)->findBy(['mandate' => $mandate]) as $payout) {
+        foreach ($this->repositories->of(MandatePayout::class)->findBy(['mandate' => $mandate]) as $payout) {
             if ($payout->getIssuedOn()->format('Y-m-d') > $on->format('Y-m-d') && $payout->getBalanceOn()->format('Y-m-d') <= $on->format('Y-m-d')) {
                 $balance -= $payout->getAmount();
             }
@@ -391,11 +393,11 @@ class Management
         $payout = new MandatePayout($mandate, $on, $available['balance'], max(0, $available['balance'] - $amount), $amount, $issuedOn ?? max($on->modify('+1 day'), new \DateTimeImmutable('today')));
         $prefix = 'RV-'.$payout->getIssuedOn()->format('Y').'-';
         $payout->setReference($prefix.$this->next($prefix, fn () => $this->payouts->lastReference($prefix)));
-        $this->entityManager->persist($payout);
-        $this->entityManager->flush();
+        $this->unitOfWork->persist($payout);
+        $this->unitOfWork->flush();
         $this->books?->payoutIssued($payout);
         $this->log->log($mandate->getOrganisation(), ActivityKind::OTHER, sprintf('Gérance %s : reversement %s', $mandate->getMandator()->getName(), $payout->getReference()), null, -$amount);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         return $payout;
     }
@@ -461,7 +463,7 @@ class Management
         foreach ($payouts as $payout) {
             $payout->markExported($now);
         }
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         return $xml;
     }
@@ -473,7 +475,7 @@ class Management
             return;
         }
         $payout->markPaid($paidOn ?? new \DateTimeImmutable('today'), $reference);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
         if ($post) {
             $this->books?->payoutPaid($payout);
         }
@@ -491,8 +493,8 @@ class Management
             throw new \InvalidArgumentException(sprintf('%s est payé : il reste.', $payout->getReference()));
         }
         $this->books?->payoutCancelled($payout);
-        $this->entityManager->remove($payout);
-        $this->entityManager->flush();
+        $this->unitOfWork->remove($payout);
+        $this->unitOfWork->flush();
     }
 
     /**

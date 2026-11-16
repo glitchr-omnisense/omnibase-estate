@@ -4,42 +4,39 @@ namespace Base\Estate\Repository;
 
 use Base\Estate\Entity\Ownership;
 use Base\Estate\Entity\OwnershipCall;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
+use Base\Database\Repository\Finder\Criterion;
+use Base\Database\Repository\Finder\Group;
+use Base\Database\Repository\Finder\Key;
+use Base\Database\Repository\Finder\Parser;
+use Base\Database\Repository\ServiceEntityRepository;
+use Base\Database\Repository\Finders;
 
 /** @extends ServiceEntityRepository<OwnershipCall> */
 class OwnershipCallRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(Finders $finders)
     {
-        parent::__construct($registry, OwnershipCall::class);
+        parent::__construct($finders, OwnershipCall::class);
     }
 
     public function lastReference(string $prefix): ?string
     {
-        return $this->createQueryBuilder('c')
-            ->select('MAX(c.reference)')
-            ->where('c.reference LIKE :prefix')->setParameter('prefix', $prefix.'%')
-            ->getQuery()->getSingleScalarResult();
+        $last = $this->maxOfReferenceBy([Group::of(Parser::SEPARATOR_AND, Criterion::of('reference', $prefix, Parser::OPTION_STARTING_WITH))]);
+
+        return null === $last ? null : (string) $last;
     }
 
     /** @return list<OwnershipCall> an ownership's calls (every one's when null), the latest first */
     public function forOwnership(?Ownership $ownership = null): array
     {
-        $query = $this->createQueryBuilder('c')->join('c.share', 's')->addSelect('s')
-            ->orderBy('c.issuedOn', 'DESC')->addOrderBy('c.id', 'DESC');
-        if (null !== $ownership) {
-            $query->where('c.ownership = :ownership')->setParameter('ownership', $ownership);
-        }
-
-        return $query->getQuery()->getResult();
+        return $this->findBy(null === $ownership ? [] : ['ownership' => Key::of($ownership)], ['issuedOn' => 'DESC', 'id' => 'DESC']);
     }
 
     /** @return list<OwnershipCall> the calls not paid yet, the oldest due first */
     public function findOpen(): array
     {
         return array_values(array_filter(
-            $this->createQueryBuilder('c')->orderBy('c.dueOn', 'ASC')->getQuery()->getResult(),
+            $this->findBy([], ['dueOn' => 'ASC']),
             fn (OwnershipCall $call) => !$call->isPaid(),
         ));
     }

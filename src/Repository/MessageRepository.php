@@ -5,15 +5,18 @@ namespace Base\Estate\Repository;
 use Base\Estate\Entity\Lease;
 use Base\Estate\Entity\Message;
 use Base\Estate\Entity\Organisation;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
+use Base\Database\Repository\Finder\Criterion;
+use Base\Database\Repository\Finder\Group;
+use Base\Database\Repository\Finder\Parser;
+use Base\Database\Repository\ServiceEntityRepository;
+use Base\Database\Repository\Finders;
 
 /** @extends ServiceEntityRepository<Message> */
 class MessageRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(Finders $finders)
     {
-        parent::__construct($registry, Message::class);
+        parent::__construct($finders, Message::class);
     }
 
     /** @return list<Message> a lease's thread, oldest first */
@@ -30,10 +33,7 @@ class MessageRepository extends ServiceEntityRepository
      */
     public function threads(Organisation $organisation): array
     {
-        $messages = $this->createQueryBuilder('m')->join('m.lease', 'l')->join('l.unit', 'u')
-            ->where('u.organisation = :organisation')->setParameter('organisation', $organisation)
-            ->orderBy('m.createdAt', 'DESC')->addOrderBy('m.id', 'DESC')
-            ->getQuery()->getResult();
+        $messages = $this->findBy(['lease.unit.organisation' => $organisation], ['createdAt' => 'DESC', 'id' => 'DESC']);
         $threads = [];
         foreach ($messages as $message) {
             $id = $message->getLease()->getId();
@@ -47,7 +47,7 @@ class MessageRepository extends ServiceEntityRepository
     }
 
     /**
-     * unreadByManagement() for several organisations in one query.
+     * unreadByManagement() for several organisations: one count each (the finder language has no GROUP BY).
      *
      * @param list<Organisation> $organisations
      *
@@ -58,22 +58,23 @@ class MessageRepository extends ServiceEntityRepository
         if ([] === $organisations) {
             return [];
         }
-        $rows = $this->createQueryBuilder('m')->join('m.lease', 'l')->join('l.unit', 'u')
-            ->select('IDENTITY(u.organisation) AS organisation', 'COUNT(m.id) AS messages')
-            ->where('u.organisation IN (:organisations)')->setParameter('organisations', $organisations)
-            ->andWhere('m.fromManagement = false AND m.readAt IS NULL')
-            ->groupBy('u.organisation')
-            ->getQuery()->getScalarResult();
+        $counts = [];
+        foreach ($organisations as $organisation) {
+            if (0 < $count = $this->unreadByManagement($organisation)) {
+                $counts[(int) $organisation->getId()] = $count;
+            }
+        }
 
-        return array_column(array_map(static fn (array $r) => [(int) $r['organisation'], (int) $r['messages']], $rows), 1, 0);
+        return $counts;
     }
 
     /** Tenant messages the management has not read yet, for the back office's badge. */
     public function unreadByManagement(Organisation $organisation): int
     {
-        return (int) $this->createQueryBuilder('m')->select('COUNT(m.id)')->join('m.lease', 'l')->join('l.unit', 'u')
-            ->where('u.organisation = :organisation')->setParameter('organisation', $organisation)
-            ->andWhere('m.fromManagement = false AND m.readAt IS NULL')
-            ->getQuery()->getSingleScalarResult();
+        return $this->count([
+            'lease.unit.organisation' => $organisation,
+            'fromManagement' => false,
+            Group::of(Parser::SEPARATOR_AND, Criterion::of('readAt', null, Parser::OPTION_NULL)),
+        ]);
     }
 }

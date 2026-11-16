@@ -18,7 +18,8 @@ use Base\Estate\Model\OwnershipStatement;
 use Base\Estate\Model\Shares;
 use Base\Estate\Repository\OwnershipCallRepository;
 use Base\Estate\Repository\OwnershipRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 use Psr\Log\LoggerInterface;
 use Twig\Environment;
 
@@ -39,7 +40,8 @@ class Ownerships
     private array $numbers = [];
 
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
+        private readonly Repositories $repositories,
         private readonly Activities $activities,
         private readonly OwnershipRepository $ownerships,
         private readonly OwnershipCallRepository $calls,
@@ -180,7 +182,7 @@ class Ownerships
             $calls[] = $this->call($part['share'], $invoice->getLabel(), $part['amount'], $dueOn, $invoice, $today);
         }
         $invoice->markPosted($parts, $split['shared']);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         $this->books?->invoicePosted($invoice, $calls);
         try {
@@ -191,7 +193,7 @@ class Ownerships
         }
         $ownership = $invoice->getOwnership();
         $this->log->log($ownership->getOrganisation(), ActivityKind::OTHER, sprintf('%s : facture « %s » répartie, %d appel(s) de fonds', $ownership->getName(), $invoice->getLabel(), \count($calls)), $invoice->getUnit(), -$invoice->getAmount());
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         if ($send) {
             foreach ($calls as $call) {
@@ -213,8 +215,8 @@ class Ownerships
         }
         $call = (new OwnershipCall($share, $label, $amount, $dueOn, $issuedOn))->setInvoice($invoice);
         $this->number($call);
-        $this->entityManager->persist($call);
-        $this->entityManager->flush();
+        $this->unitOfWork->persist($call);
+        $this->unitOfWork->flush();
 
         return $call;
     }
@@ -248,7 +250,7 @@ class Ownerships
         $this->mailer->send($share->getEmail(), sprintf('Appel de fonds %s — %s', $call->getReference(), $ownership->getName()), 'ownership_call',
             ['call' => $call, 'share' => $share, 'ownership' => $ownership, 'organisation' => $organisation], $organisation->getEmail());
         $call->setSentAt(new \DateTimeImmutable());
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         return true;
     }
@@ -262,14 +264,14 @@ class Ownerships
         if ($amount <= 0) {
             throw new \InvalidArgumentException('Un versement est d\'un montant positif.');
         }
-        if ($reference && $existing = $this->entityManager->getRepository(OwnershipPayment::class)->findOneBy(['reference' => $reference])) {
+        if ($reference && $existing = $this->repositories->of(OwnershipPayment::class)->findOneBy(['reference' => $reference])) {
             return $existing;
         }
         $payment = new OwnershipPayment($call, $amount, $paidOn, $reference);
-        $this->entityManager->persist($payment);
+        $this->unitOfWork->persist($payment);
         $ownership = $call->getOwnership();
         $this->log->log($ownership->getOrganisation(), ActivityKind::OTHER, sprintf('%s : versement de %s (%s)', $ownership->getName(), $call->getShare()->getName(), $call->getReference()), $call->getInvoice()?->getUnit(), $amount, $payment->getPaidOn()->setTime(12, 0));
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
         if ($post) {
             $this->books?->paymentReceived($payment);
         }
@@ -331,16 +333,16 @@ class Ownerships
     public function statement(Ownership $ownership, string $holder, \DateTimeImmutable $from, \DateTimeImmutable $to): OwnershipStatement
     {
         return OwnershipStatement::of($ownership, $holder, $from, $to,
-            $this->entityManager->getRepository(OwnershipInvoice::class)->findBy(['ownership' => $ownership]),
-            $this->entityManager->getRepository(OwnershipCall::class)->findBy(['ownership' => $ownership]),
+            $this->repositories->of(OwnershipInvoice::class)->findBy(['ownership' => $ownership]),
+            $this->repositories->of(OwnershipCall::class)->findBy(['ownership' => $ownership]),
             $this->rentPayments($ownership));
     }
 
     /** @return list<OwnershipStatement> every co-owner's statement for the period, the company's first */
     public function statements(Ownership $ownership, \DateTimeImmutable $from, \DateTimeImmutable $to): array
     {
-        $invoices = $this->entityManager->getRepository(OwnershipInvoice::class)->findBy(['ownership' => $ownership]);
-        $calls = $this->entityManager->getRepository(OwnershipCall::class)->findBy(['ownership' => $ownership]);
+        $invoices = $this->repositories->of(OwnershipInvoice::class)->findBy(['ownership' => $ownership]);
+        $calls = $this->repositories->of(OwnershipCall::class)->findBy(['ownership' => $ownership]);
         $rents = $this->rentPayments($ownership);
         $statements = [];
         foreach ($ownership->holders() as $holder => $share) {
@@ -421,11 +423,7 @@ class Ownerships
             return [];
         }
 
-        return $this->entityManager->createQueryBuilder()->select('p', 'r', 'l')->from(Payment::class, 'p')
-            ->join('p.rentCall', 'r')->join('r.lease', 'l')
-            ->where('l.unit IN (:units)')->setParameter('units', array_values($units))
-            ->orderBy('p.paidOn', 'ASC')->addOrderBy('p.id', 'ASC')
-            ->getQuery()->getResult();
+        return $this->repositories->of(Payment::class)->forUnits(array_values($units));
     }
 
     private static function euros(int $minor): string

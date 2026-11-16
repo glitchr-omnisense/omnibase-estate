@@ -7,7 +7,7 @@ use Base\Estate\Enum\StoryState;
 use Base\Estate\Repository\StoryEntryRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * A line of a home's story, its public timeline: built in, bought, a new

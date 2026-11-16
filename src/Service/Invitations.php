@@ -2,7 +2,7 @@
 
 namespace Base\Estate\Service;
 
-use Base\Database\UnitOfWorks;
+use Base\Contract\UnitOfWork;
 use Base\Entity\User;
 use Base\Estate\Drive\LeaseFolders;
 use Base\Estate\Entity\Associate;
@@ -13,7 +13,7 @@ use Base\Estate\Entity\Member;
 use Base\Estate\Entity\Organisation;
 use Base\Estate\Enum\InvitationKind;
 use Base\Service\Invitations as BaseInvitations;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -30,7 +30,8 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 class Invitations extends BaseInvitations
 {
     public function __construct(
-        EntityManagerInterface $entityManager,
+        UnitOfWork $unitOfWork,
+        private readonly Repositories $repositories,
         private readonly EstateMailer $mailer,
         private readonly UrlGeneratorInterface $urls,
         #[Autowire('%estate.invitation_days%')] private readonly int $days = 14,
@@ -38,7 +39,7 @@ class Invitations extends BaseInvitations
         private readonly ?LeaseFolders $leaseFolders = null,
         private readonly ?LoggerInterface $logger = null,
     ) {
-        parent::__construct(UnitOfWorks::of($entityManager), $userClass);
+        parent::__construct($unitOfWork, $userClass);
     }
 
     /** @return array{0: Invitation, 1: string} the invitation and its token (sent, never stored) */
@@ -79,11 +80,7 @@ class Invitations extends BaseInvitations
             InvitationKind::MEMBER => Member::class,
         };
 
-        // The core's unit of work and its repositories (omnisense/omnibase 5.x, and 4.x since its step F2d); a core
-        // before them keeps the entity manager it was given.
-        return property_exists($this, 'unitOfWork')
-            ? UnitOfWorks::repositories($this->unitOfWork)->of($class)->find($invitation->getTargetId())
-            : $this->entityManager->find($class, $invitation->getTargetId());
+        return $this->repositories->of($class)->find($invitation->getTargetId());
     }
 
     /** The invitation's account, attached to what it opens. */

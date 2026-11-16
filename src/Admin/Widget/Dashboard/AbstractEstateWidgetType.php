@@ -5,7 +5,7 @@ namespace Base\Estate\Admin\Widget\Dashboard;
 use Base\Admin\Config\Menu\MenuItem;
 use Base\Admin\Widget\PaletteDashboardWidgetTypeInterface;
 use Base\Estate\Entity\Organisation;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 
 /**
  * A card of the property company's dashboard: one of omnibase/admin's
@@ -21,7 +21,7 @@ abstract class AbstractEstateWidgetType implements PaletteDashboardWidgetTypeInt
 {
     protected const COMPACT = false;
 
-    public function __construct(protected readonly EntityManagerInterface $entityManager)
+    public function __construct(protected readonly Repositories $repositories)
     {
     }
 
@@ -38,7 +38,7 @@ abstract class AbstractEstateWidgetType implements PaletteDashboardWidgetTypeInt
 
     public function getTemplateVars(MenuItem $widget): array
     {
-        $organisations = $this->entityManager->getRepository(Organisation::class)->findBy([], ['name' => 'ASC']);
+        $organisations = $this->repositories->of(Organisation::class)->findBy([], ['name' => 'ASC']);
 
         return ['card' => $this->template(), 'compact' => static::COMPACT, 'organisations' => $organisations] + $this->data($organisations, $widget->getParams());
     }

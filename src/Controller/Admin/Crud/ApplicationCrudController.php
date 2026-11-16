@@ -16,7 +16,7 @@ use Base\Field\EmailField;
 use Base\Field\IntegerField;
 use Base\Field\TextareaField;
 use Base\Field\TextField;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Base\Field\Type\SelectType;
 
 /**
  * The applications to rent the free homes, the newest first: who, their income against the
@@ -58,7 +58,7 @@ class ApplicationCrudController extends AbstractEstateCrudController
     public function configureFields(string $pageName): iterable
     {
         yield TextField::new('name', 'Candidat')->onlyOnIndex();
-        yield AssociationField::new('unit', 'Bien')->setFormType(EntityType::class)->setFormTypeOptions(['class' => \Base\Estate\Entity\Unit::class])->setColumns(4);
+        yield AssociationField::new('unit', 'Bien')->setFormType(SelectType::class)->setFormTypeOptions(['class' => \Base\Estate\Entity\Unit::class])->setColumns(4);
         yield TextField::new('incomeRatio', 'Revenus / loyer')->onlyOnIndex()->formatValue(fn ($v) => null === $v ? '—' : number_format((float) $v, 1, ',', '').' ×');
         yield $this->enum('status', 'État', ApplicationStatus::class, fn (ApplicationStatus $s) => self::STATUSES[$s->value])->setColumns(4);
         yield DateTimeField::new('createdAt', 'Reçue le')->hideOnForm();

@@ -12,8 +12,8 @@ use Base\Field\AssociationField;
 use Base\Field\DateField;
 use Base\Field\DateTimeField;
 use Base\Field\TextField;
-use Omnibridge\Persistence\UnitOfWork;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Base\Contract\UnitOfWork;
+use Base\Field\Type\SelectType;
 use Symfony\Contracts\Service\Attribute\Required;
 
 /**
@@ -58,7 +58,7 @@ class OwnershipCallCrudController extends AbstractEstateCrudController
     public function configureFields(string $pageName): iterable
     {
         yield TextField::new('reference', 'Référence')->hideOnForm();
-        yield AssociationField::new('share', 'Indivisaire')->setFormType(EntityType::class)->setFormTypeOptions(['class' => OwnershipShare::class])->setColumns(4);
+        yield AssociationField::new('share', 'Indivisaire')->setFormType(SelectType::class)->setFormTypeOptions(['class' => OwnershipShare::class])->setColumns(4);
         yield TextField::new('label', 'Objet')->setColumns(4);
         yield $this->euros('amount', 'Montant')->setColumns(2);
         yield DateField::new('dueOn', 'À régler avant le')->setColumns(2);

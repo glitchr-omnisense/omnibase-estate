@@ -3,7 +3,7 @@
 namespace Base\Estate\Entity;
 
 use Base\Estate\Enum\PayoutStatus;
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * What the agency transfers to an owner at a period's end: their balance

@@ -9,7 +9,8 @@ use Base\Estate\Enum\ActivityKind;
 use Base\Estate\Enum\ApplicationStatus;
 use Base\Estate\Enum\PartyRole;
 use Base\Estate\Repository\ApplicationRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 
 /**
  * Applications to rent a free home, from received to let: the applicant is told at every
@@ -21,7 +22,8 @@ use Doctrine\ORM\EntityManagerInterface;
 class Applications
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
+        private readonly Repositories $repositories,
         private readonly ApplicationRepository $applications,
         private readonly ActivityLog $activities,
         private readonly EstateMailer $mailer,
@@ -30,10 +32,10 @@ class Applications
 
     public function submit(Application $application): Application
     {
-        $this->entityManager->persist($application);
+        $this->unitOfWork->persist($application);
         $unit = $application->getUnit();
         $this->activities->log($unit->getOrganisation(), ActivityKind::OTHER, 'Candidature reçue : '.$application->getName(), $unit);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         $this->mailer->send($unit->getOrganisation()->getEmail(), sprintf('[Candidature] %s — %s', $unit->getName(), $application->getName()), 'application_received', ['application' => $application], $application->getEmail());
         $this->mailer->send($application->getEmail(), 'Votre candidature — '.$unit->getName(), 'application_ack', ['application' => $application, 'organisation' => $unit->getOrganisation()], $unit->getOrganisation()->getEmail());
@@ -44,14 +46,14 @@ class Applications
     public function shortlist(Application $application): void
     {
         $application->setStatus(ApplicationStatus::SHORTLISTED);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
     }
 
     /** The applicant invited to visit at $at, with the management's words. */
     public function inviteToVisit(Application $application, \DateTimeImmutable $at, ?string $message = null): void
     {
         $application->setStatus(ApplicationStatus::VISIT)->setVisitAt($at);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
         $this->mailer->send($application->getEmail(), 'Visite de '.$application->getUnit()->getName(), 'application_visit', ['application' => $application, 'organisation' => $application->getOrganisation(), 'note' => $message], $application->getOrganisation()->getEmail());
     }
 
@@ -62,7 +64,7 @@ class Applications
             return;
         }
         $application->setStatus(ApplicationStatus::DECLINED);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
         if ($notify) {
             $this->mailer->send($application->getEmail(), 'Votre candidature — '.$application->getUnit()->getName(), 'application_declined', ['application' => $application, 'organisation' => $application->getOrganisation(), 'note' => $message], $application->getOrganisation()->getEmail());
         }
@@ -79,10 +81,10 @@ class Applications
         $lease->addParty((new LeaseParty($application->getFirstName(), $application->getLastName(), $application->getEmail(), PartyRole::TENANT))->setPhone($application->getPhone()));
         $unit->getLeases()->add($lease);
         $unit->setAvailableFrom(null);
-        $this->entityManager->persist($lease);
+        $this->unitOfWork->persist($lease);
         $application->setStatus(ApplicationStatus::ACCEPTED)->setLease($lease);
         $this->activities->log($unit->getOrganisation(), ActivityKind::LEASE_STARTED, sprintf('Bail %s : %s, à partir du %s', $lease->getReference(), $application->getName(), $startOn->format('d/m/Y')), $unit);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         if ($declineOthers) {
             foreach ($this->applications->openFor($unit) as $other) {
@@ -98,9 +100,9 @@ class Applications
     {
         $expired = $this->applications->expired($months);
         foreach ($expired as $application) {
-            $this->entityManager->remove($application);
+            $this->unitOfWork->remove($application);
         }
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         return \count($expired);
     }
@@ -111,8 +113,7 @@ class Applications
         $words = array_filter(preg_split('/[^\pL]+/u', $company), fn ($w) => mb_strlen($w) > 1 && !\in_array(mb_strtoupper($w), ['SCI', 'SARL', 'SAS', 'SA', 'ET', 'DE', 'DU', 'LA', 'LE', 'LES'], true));
         $initials = mb_strtoupper(implode('', array_map(fn ($w) => mb_substr($w, 0, 1), \array_slice(array_values($words), 0, 3)))) ?: 'B';
         $prefix = $initials.'-'.$startOn->format('Y').'-';
-        $taken = $this->entityManager->createQueryBuilder()->select('l.reference')->from(Lease::class, 'l')
-            ->where('l.reference LIKE :prefix')->setParameter('prefix', $prefix.'%')->getQuery()->getSingleColumnResult();
+        $taken = $this->repositories->of(Lease::class)->referencesStartingWith($prefix);
         $next = 1 + max([0, ...array_map(fn ($r) => (int) substr((string) $r, \strlen($prefix)), $taken)]);
 
         return $prefix.sprintf('%03d', $next);

@@ -4,7 +4,7 @@ namespace Base\Estate\Ledger;
 
 use Base\Estate\Entity\Ownership;
 use Base\Ledger\Dimension\DimensionLabelerInterface;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 
 /**
  * Names the ledger's "ownership" axis: the shared ownership's name
@@ -15,7 +15,7 @@ class OwnershipDimensionLabeler implements DimensionLabelerInterface
 {
     public const AXIS = 'ownership';
 
-    public function __construct(private readonly EntityManagerInterface $entityManager)
+    public function __construct(private readonly Repositories $repositories)
     {
     }
 
@@ -31,7 +31,7 @@ class OwnershipDimensionLabeler implements DimensionLabelerInterface
             return [];
         }
         $labels = [];
-        foreach ($this->entityManager->getRepository(Ownership::class)->findBy(['id' => $ids]) as $ownership) {
+        foreach ($this->repositories->of(Ownership::class)->findBy(['id' => $ids]) as $ownership) {
             $labels[(string) $ownership->getId()] = $ownership->getName();
         }
 

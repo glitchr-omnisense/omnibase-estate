@@ -8,8 +8,8 @@ use Base\Estate\Entity\LeaseParty;
 use Base\Estate\Form\SuretyTermsType;
 use Base\Estate\Model\SuretyTerms;
 use Base\Estate\Signature\SuretySignatures;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bridge\Doctrine\Attribute\MapEntity;
+use Base\Contract\UnitOfWork;
+use Base\Controller\Attribute\MapRecord;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -50,7 +50,7 @@ class SuretyController extends AbstractController
     }
 
     #[Route('/{party}/terms', name: 'estate_admin_surety_terms', requirements: ['party' => '\d+'], methods: ['POST'])]
-    public function saveTerms(Request $request, Lease $lease, #[MapEntity(id: 'party')] LeaseParty $party, EntityManagerInterface $entityManager): Response
+    public function saveTerms(Request $request, Lease $lease, #[MapRecord(id: 'party')] LeaseParty $party, UnitOfWork $unitOfWork): Response
     {
         $this->assertGuarantorOf($party, $lease);
         $form = $this->terms($party);
@@ -59,7 +59,7 @@ class SuretyController extends AbstractController
             /** @var SuretyTerms $terms */
             $terms = $form->getData();
             $terms->applyTo($party);
-            $entityManager->flush();
+            $unitOfWork->flush();
             $this->addFlash('success', sprintf('Engagement de %s enregistré.', $party->getName()));
         } else {
             foreach ($form->getErrors(true) as $error) {
@@ -72,7 +72,7 @@ class SuretyController extends AbstractController
 
     /** The deed as it would be sent, to read first. */
     #[Route('/{party}/deed', name: 'estate_admin_surety_deed', requirements: ['party' => '\d+'], methods: ['GET'])]
-    public function deed(Lease $lease, #[MapEntity(id: 'party')] LeaseParty $party, ?SuretySignatures $sureties = null): Response
+    public function deed(Lease $lease, #[MapRecord(id: 'party')] LeaseParty $party, ?SuretySignatures $sureties = null): Response
     {
         $this->assertGuarantorOf($party, $lease);
         if (null === $sureties) {
@@ -91,7 +91,7 @@ class SuretyController extends AbstractController
     }
 
     #[Route('/{party}/{do}', name: 'estate_admin_surety_do', requirements: ['party' => '\d+', 'do' => 'send|refresh|remind|cancel'], methods: ['POST'])]
-    public function act(Request $request, Lease $lease, #[MapEntity(id: 'party')] LeaseParty $party, string $do, ?SuretySignatures $sureties = null): Response
+    public function act(Request $request, Lease $lease, #[MapRecord(id: 'party')] LeaseParty $party, string $do, ?SuretySignatures $sureties = null): Response
     {
         $this->assertGuarantorOf($party, $lease);
         if (!$this->isCsrfTokenValid('estate_surety_'.$party->getId(), (string) $request->request->get('_token'))) {
@@ -131,7 +131,7 @@ class SuretyController extends AbstractController
     }
 
     #[Route('/{party}/file/{file}', name: 'estate_admin_surety_file', requirements: ['party' => '\d+', 'file' => 'document|evidence'], methods: ['GET'])]
-    public function download(Lease $lease, #[MapEntity(id: 'party')] LeaseParty $party, string $file, ?SuretySignatures $sureties = null): Response
+    public function download(Lease $lease, #[MapRecord(id: 'party')] LeaseParty $party, string $file, ?SuretySignatures $sureties = null): Response
     {
         $this->assertGuarantorOf($party, $lease);
         $content = $sureties?->file($party, $file) ?? throw $this->createNotFoundException();

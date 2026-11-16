@@ -5,7 +5,7 @@ namespace Base\Estate\Ledger;
 use Base\Estate\Entity\MandatePayout;
 use Base\Estate\Service\Management;
 use Base\Ledger\Event\BankLineReconciled;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Database\Repository\Repositories;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 /**
@@ -21,7 +21,7 @@ final class ManagementSettlement
     private const SOURCE = 'estate:management:payout:';
 
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly Repositories $repositories,
         private readonly Management $management,
     ) {
     }
@@ -37,7 +37,7 @@ final class ManagementSettlement
             if (!str_starts_with($source, self::SOURCE) || !ctype_digit($id = substr($source, \strlen(self::SOURCE)))) {
                 continue;
             }
-            $payout = $this->entityManager->find(MandatePayout::class, (int) $id);
+            $payout = $this->repositories->of(MandatePayout::class)->find((int) $id);
             if ($payout && !$payout->isPaid()) {
                 $this->management->markPaid($payout, $line->getBookedOn(), 'bank:'.$line->getId(), false);
             }

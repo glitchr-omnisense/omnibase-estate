@@ -5,7 +5,7 @@ namespace Base\Estate\Service;
 use Base\Estate\Entity\Room;
 use Base\Estate\Entity\Unit;
 use Base\Estate\Enum\RoomKind;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
 use Symfony\Component\HttpFoundation\File\File;
 
 /**
@@ -20,7 +20,7 @@ class Plans
     /** Rooms on one home's plan at most: a mistake past that. */
     private const MAX_ROOMS = 80;
 
-    public function __construct(private readonly EntityManagerInterface $entityManager)
+    public function __construct(private readonly UnitOfWork $unitOfWork)
     {
     }
 
@@ -71,13 +71,13 @@ class Plans
             }
             if (!$room->getId()) {
                 $unit->addPlanRoom($room);
-                $this->entityManager->persist($room);
+                $this->unitOfWork->persist($room);
             }
         }
         foreach ($existing as $id => $room) {
             if (!isset($kept[$id])) {
                 $unit->removePlanRoom($room);
-                $this->entityManager->remove($room);
+                $this->unitOfWork->remove($room);
             }
         }
 
@@ -90,7 +90,7 @@ class Plans
             $unit->setPlanBackgroundOffset((int) round((float) ($background['x'] ?? $unit->getPlanBackgroundX())), (int) round((float) ($background['y'] ?? $unit->getPlanBackgroundY())));
         }
 
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
     }
 
     /**
@@ -109,13 +109,13 @@ class Plans
             throw new \InvalidArgumentException('Le plan est une image (JPEG, PNG) ou un PDF.');
         }
         $unit->setPlanBackground($file)->setPlanBackgroundScale(null)->setPlanBackgroundOffset(0, 0);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
     }
 
     public function removeBackground(Unit $unit): void
     {
         $unit->setPlanBackground(null)->setPlanBackgroundScale(null)->setPlanBackgroundOffset(0, 0);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
     }
 
     /** Whether a PDF plan can be turned into an image here. */

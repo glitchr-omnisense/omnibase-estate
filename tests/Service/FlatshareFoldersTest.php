@@ -16,8 +16,9 @@ use Base\Estate\Entity\Organisation;
 use Base\Estate\Entity\Unit;
 use Base\Estate\Enum\LeaseStatus;
 use Base\Estate\Enum\PartyRole;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\EntityRepository;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Entities;
+use Base\Database\Repository\Repositories;
 use League\Flysystem\Filesystem;
 use League\Flysystem\Local\LocalFilesystemAdapter;
 use PHPUnit\Framework\TestCase;
@@ -39,7 +40,8 @@ final class FlatshareFoldersTest extends TestCase
     /** @var list<Lease> */
     private array $leases = [];
     private FileShare $share;
-    private EntityManagerInterface $entityManager;
+    private UnitOfWork $unitOfWork;
+    private Repositories $repositories;
 
     protected function setUp(): void
     {
@@ -48,8 +50,8 @@ final class FlatshareFoldersTest extends TestCase
         }
         $this->directory = sys_get_temp_dir().'/estate-flatshare-'.bin2hex(random_bytes(4));
         $this->storage = new Filesystem(new LocalFilesystemAdapter($this->directory));
-        $this->entityManager = $this->createStub(EntityManagerInterface::class);
-        $this->entityManager->method('persist')->willReturnCallback(function (object $entity): void {
+        $this->unitOfWork = $this->createStub(UnitOfWork::class);
+        $this->unitOfWork->method('persist')->willReturnCallback(function (object $entity): void {
             if ($entity instanceof SharedPath) {
                 $this->rows[$entity->getPath()] = $entity;
             } elseif ($entity instanceof ShareGroup && null === $entity->getId()) {
@@ -58,9 +60,10 @@ final class FlatshareFoldersTest extends TestCase
                 $this->groups[$id] = $entity;
             }
         });
-        $this->entityManager->method('find')->willReturnCallback(fn (string $class, mixed $id) => ShareGroup::class === $class ? ($this->groups[$id] ?? null) : null);
-        $this->entityManager->method('getRepository')->willReturnCallback(function (string $class) {
-            $repository = $this->createStub(EntityRepository::class);
+        $this->repositories = $this->createStub(Repositories::class);
+        $this->repositories->method('of')->willReturnCallback(function (string $class) {
+            $repository = $this->createStub(Entities::class);
+            $repository->method('find')->willReturnCallback(fn (mixed $id) => ShareGroup::class === $class ? ($this->groups[$id] ?? null) : null);
             $matches = fn (array $criteria) => match ($class) {
                 Lease::class => array_values(array_filter($this->leases, fn (Lease $l) => (!\array_key_exists('folder', $criteria) || $l->getFolder() === $criteria['folder'])
                     && (!\array_key_exists('groupId', $criteria) || $l->getGroupId() === $criteria['groupId']))),
@@ -76,7 +79,7 @@ final class FlatshareFoldersTest extends TestCase
         $paths->method('byPath')->willReturnCallback(fn () => $this->rows);
         $downloads = $this->createStub(ShareDownloadRepository::class);
         $downloads->method('counts')->willReturn([]);
-        $this->share = new FileShare($this->storage, $paths, $this->entityManager, $downloads);
+        $this->share = new FileShare($this->storage, $paths, $this->unitOfWork, $downloads);
     }
 
     protected function tearDown(): void
@@ -158,7 +161,7 @@ final class FlatshareFoldersTest extends TestCase
         $single = $this->lease(new Unit($organisation, 'Appartement B'), 'MA-2024-002');
         $single->addParty((new LeaseParty('Karim', 'Benali', 'karim@example.org'))->setUser(self::user(61)));
         $single->addParty(new LeaseParty('Samia', 'Benali', 'samia@example.org', PartyRole::GUARANTOR));
-        $flatshares = new FlatshareFolders($this->share, $this->entityManager);
+        $flatshares = new FlatshareFolders($this->share, $this->unitOfWork, $this->repositories);
 
         self::assertNull($flatshares->sync($single), 'one occupant (and a guarantor): no flatshare');
         $this->leaseFolders()->sync($single);
@@ -185,12 +188,12 @@ final class FlatshareFoldersTest extends TestCase
     public function testAGroupTheTeamMadeUnderThatNameIsTaken(): void
     {
         $made = new ShareGroup('Colocation Grand appartement A');
-        $this->entityManager->persist($made);
+        $this->unitOfWork->persist($made);
         $lease = $this->lease(new Unit(new Organisation('SCI Exemple'), 'Grand appartement A'), 'MA-2026-010');
         $lease->addParty((new LeaseParty('Léa', 'Muller', 'lea@example.org'))->setUser(self::user(41)));
         $lease->addParty((new LeaseParty('Inès', 'Haddad', 'ines@example.org', PartyRole::COTENANT))->setUser(self::user(43)));
 
-        (new FlatshareFolders($this->share, $this->entityManager))->sync($lease);
+        (new FlatshareFolders($this->share, $this->unitOfWork, $this->repositories))->sync($lease);
 
         self::assertSame($made->getId(), $lease->getGroupId());
         self::assertSame([41, 43], self::ids($made));
@@ -199,7 +202,7 @@ final class FlatshareFoldersTest extends TestCase
 
     private function leaseFolders(): LeaseFolders
     {
-        return new LeaseFolders($this->share, $this->entityManager, 'staff', new FlatshareFolders($this->share, $this->entityManager));
+        return new LeaseFolders($this->share, $this->unitOfWork, 'staff', new FlatshareFolders($this->share, $this->unitOfWork, $this->repositories));
     }
 
     private function lease(Unit $unit, string $reference): Lease

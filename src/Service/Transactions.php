@@ -19,7 +19,8 @@ use Base\Estate\Model\Period;
 use Base\Estate\Model\WithdrawalPeriod;
 use Base\Estate\Repository\SaleMandateRepository;
 use Base\Estate\Repository\SaleRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
+use Base\Database\Repository\Repositories;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -46,7 +47,8 @@ class Transactions
     private array $numbers = [];
 
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
+        private readonly Repositories $repositories,
         private readonly Activities $activities,
         private readonly SaleMandateRepository $mandates,
         private readonly SaleRepository $sales,
@@ -106,19 +108,19 @@ class Transactions
     /** @return list<Visit> the mandate's visits, the latest first */
     public function visits(SaleMandate $mandate): array
     {
-        return $this->entityManager->getRepository(Visit::class)->findBy(['mandate' => $mandate], ['visitedAt' => 'DESC']);
+        return $this->repositories->of(Visit::class)->findBy(['mandate' => $mandate], ['visitedAt' => 'DESC']);
     }
 
     /** @return list<Offer> the mandate's offers, the latest first */
     public function offers(SaleMandate $mandate): array
     {
-        return $this->entityManager->getRepository(Offer::class)->findBy(['mandate' => $mandate], ['madeOn' => 'DESC', 'id' => 'DESC']);
+        return $this->repositories->of(Offer::class)->findBy(['mandate' => $mandate], ['madeOn' => 'DESC', 'id' => 'DESC']);
     }
 
     /** @return list<Sale> the mandate's sales, a cancelled one and the one after it, oldest first */
     public function salesOf(SaleMandate $mandate): array
     {
-        return $this->entityManager->getRepository(Sale::class)->findBy(['mandate' => $mandate], ['acceptedOn' => 'ASC', 'id' => 'ASC']);
+        return $this->repositories->of(Sale::class)->findBy(['mandate' => $mandate], ['acceptedOn' => 'ASC', 'id' => 'ASC']);
     }
 
     /** The mandate's sale that is not cancelled (going on, or concluded), if any. */
@@ -136,7 +138,7 @@ class Transactions
     /** The sale an accepted offer began. */
     public function saleOfOffer(Offer $offer): ?Sale
     {
-        return $this->entityManager->getRepository(Sale::class)->findOneBy(['offer' => $offer]);
+        return $this->repositories->of(Sale::class)->findOneBy(['offer' => $offer]);
     }
 
     /**
@@ -158,8 +160,8 @@ class Transactions
         $offer->decide(OfferStatus::ACCEPTED, $on);
         $sale = new Sale($offer, $on);
         $sale->addEvent(new SaleEvent(SaleStep::ACCEPTED, $on, $note ?? sprintf('Offre de %s acceptée.', self::euros($sale->getPrice()))));
-        $this->entityManager->persist($sale);
-        $this->entityManager->flush();
+        $this->unitOfWork->persist($sale);
+        $this->unitOfWork->flush();
         $this->logStep($sale, SaleStep::ACCEPTED);
         $this->syncFolder($offer->getMandate(), $sale);
 
@@ -260,8 +262,8 @@ class Transactions
             $event->setFile($file)->setFileName($fileName);
         }
         $sale->addEvent($event);
-        $this->entityManager->persist($event);
-        $this->entityManager->flush();
+        $this->unitOfWork->persist($event);
+        $this->unitOfWork->flush();
 
         if (SaleStep::COMPROMISE === $step) {
             $this->books?->depositReceived($sale);
@@ -299,8 +301,8 @@ class Transactions
         $held = $sale->getCompromiseSignedOn() && $sale->isDepositHeldByAgency() && $sale->getDeposit() > 0;
         $sale->cancel($on, $reason, $held && $depositForfeited);
         $sale->addEvent($event = new SaleEvent(SaleStep::CANCELLED, $on, $reason));
-        $this->entityManager->persist($event);
-        $this->entityManager->flush();
+        $this->unitOfWork->persist($event);
+        $this->unitOfWork->flush();
         if ($held) {
             $this->books?->depositReleased($sale, $on, $sale->isDepositForfeited() ? 'Versé au vendeur (dépôt acquis)' : 'Restitué à l\'acquéreur');
         }
@@ -329,7 +331,7 @@ class Transactions
         }
         $today ??= new \DateTimeImmutable('today');
         $found = [];
-        foreach ($this->entityManager->getRepository(SaleMandate::class)->findAll() as $mandate) {
+        foreach ($this->repositories->of(SaleMandate::class)->findAll() as $mandate) {
             if (!$mandate->covers($today) || null !== $this->saleOf($mandate)) {
                 continue;
             }
@@ -391,7 +393,7 @@ class Transactions
         if (!$this->isActive()) {
             return [];
         }
-        $repository = $this->entityManager->getRepository(Offer::class);
+        $repository = $this->repositories->of(Offer::class);
         $offers = [...$repository->findBy(['status' => OfferStatus::MADE]), ...$repository->findBy(['status' => OfferStatus::COUNTERED])];
         usort($offers, fn (Offer $a, Offer $b) => [$a->getMadeOn(), $a->getId()] <=> [$b->getMadeOn(), $b->getId()]);
 
@@ -404,7 +406,7 @@ class Transactions
         if (!$this->isActive()) {
             return [];
         }
-        $sales = array_values(array_filter($this->entityManager->getRepository(Sale::class)->findAll(), fn (Sale $sale) => $sale->getStep()->isLive()));
+        $sales = array_values(array_filter($this->repositories->of(Sale::class)->findAll(), fn (Sale $sale) => $sale->getStep()->isLive()));
         usort($sales, fn (Sale $a, Sale $b) => (($a->nextDate()['date'] ?? null)?->format('Y-m-d') ?? '9999') <=> (($b->nextDate()['date'] ?? null)?->format('Y-m-d') ?? '9999'));
 
         return $sales;
@@ -425,7 +427,7 @@ class Transactions
         }
         [$from, $to] = Period::parse($period);
         $in = fn (?\DateTimeImmutable $date) => null !== $date && $date->format('Y-m-d') >= $from->format('Y-m-d') && $date->format('Y-m-d') <= $to->format('Y-m-d');
-        foreach ($this->entityManager->getRepository(Sale::class)->findAll() as $sale) {
+        foreach ($this->repositories->of(Sale::class)->findAll() as $sale) {
             if ($sale->getStep()->isConcluded() && $in($sale->getDeedSignedOn())) {
                 $fees['invoiced'] += $sale->getFeeTotal();
                 ++$fees['count'];
@@ -474,7 +476,7 @@ class Transactions
             throw new \InvalidArgumentException('Une contre-proposition a un montant.');
         }
         $offer->decide($status, $on ?? new \DateTimeImmutable('today'), $counterAmount);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
     }
 
     private function logStep(Sale $sale, SaleStep $step): void
@@ -482,7 +484,7 @@ class Transactions
         $mandate = $sale->getMandate();
         $this->log->log($mandate->getOrganisation(), ActivityKind::OTHER, sprintf('Vente %s : %s (%s)', $mandate->getNumber(), mb_strtolower($step->label()), $sale->getBuyer()->getName()), $mandate->getUnit(),
             SaleStep::DEED === $step ? $sale->getFeeTotal() : null);
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
     }
 
     private function assertActive(): void

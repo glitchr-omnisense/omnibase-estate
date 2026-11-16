@@ -2,7 +2,7 @@
 
 namespace Base\Estate\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
+use Base\Mapping as ORM;
 
 /**
  * The agency's fee on a rent collected for an owner: the mandate's rate of

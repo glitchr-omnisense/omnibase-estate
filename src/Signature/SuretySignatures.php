@@ -15,7 +15,7 @@ use Base\Estate\Service\EstateMailer;
 use Base\Estate\Service\Receipts;
 use Base\Event\SignatureEvent;
 use Base\Service\Signatures;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
 use Omnisign\Model\Document as SignedDocument;
 use Omnisign\Model\Envelope as SignatureRequest;
 use Omnisign\Exception\OmnisignException;
@@ -103,7 +103,7 @@ class SuretySignatures
         private readonly Signatures $signatures,
         private readonly LeaseSignatures $leases,
         private readonly Receipts $receipts,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly UnitOfWork $unitOfWork,
         private readonly ActivityLog $activities,
         private readonly EstateMailer $mailer,
         private readonly Environment $twig,
@@ -229,7 +229,7 @@ class SuretySignatures
         }
         $envelope = $this->signatures->send($guarantor, $this->request($guarantor), $this->gateway());
         $this->activities->log($lease->getOrganisation(), ActivityKind::DOCUMENT, sprintf('Acte de cautionnement de %s (bail %s) envoyé à la signature', $guarantor->getName(), $lease->getReference()), $lease->getUnit());
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
 
         return $envelope;
     }
@@ -275,7 +275,7 @@ class SuretySignatures
         }
         $this->activities->log($lease->getOrganisation(), ActivityKind::DOCUMENT, sprintf('Acte de cautionnement de %s (bail %s) signé', $guarantor->getName(), $lease->getReference()), $lease->getUnit());
         $this->fileSigned($guarantor, $event->getEnvelope());
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
         $this->mailer->send((string) $lease->getOrganisation()->getEmail(), sprintf('Acte de cautionnement de %s signé — bail %s', $guarantor->getName(), $lease->getReference()), 'surety_signature', ['lease' => $lease, 'guarantor' => $guarantor, 'organisation' => $lease->getOrganisation(), 'status' => Envelope::STATUS_COMPLETED]);
     }
 
@@ -288,7 +288,7 @@ class SuretySignatures
         $status = $event->getEnvelope()->getStatus();
         $label = mb_strtolower(LeaseSignatures::label($status, 0, 0));
         $this->activities->log($lease->getOrganisation(), ActivityKind::DOCUMENT, sprintf('Acte de cautionnement de %s (bail %s) : %s', $guarantor->getName(), $lease->getReference(), $label), $lease->getUnit());
-        $this->entityManager->flush();
+        $this->unitOfWork->flush();
         $this->mailer->send((string) $lease->getOrganisation()->getEmail(), sprintf('Acte de cautionnement de %s : %s — bail %s', $guarantor->getName(), $label, $lease->getReference()), 'surety_signature', ['lease' => $lease, 'guarantor' => $guarantor, 'organisation' => $lease->getOrganisation(), 'status' => $status]);
     }
 
@@ -465,7 +465,7 @@ class SuretySignatures
             $lease = $guarantor->getLease();
             $document = (new Document($lease->getOrganisation(), DocumentKind::GUARANTEE, sprintf('Acte de cautionnement de %s, bail %s (signé)', $guarantor->getName(), $lease->getReference())))
                 ->setLease($lease)->setFile(new UploadFile($path))->setTenantVisible(false);
-            $this->entityManager->persist($document);
+            $this->unitOfWork->persist($document);
         } catch (\Throwable $e) {
             $this->logger?->warning('The signed guarantee deed of {guarantor} was not filed as a document: {message}', ['guarantor' => $guarantor->getName(), 'message' => $e->getMessage()]);
         }

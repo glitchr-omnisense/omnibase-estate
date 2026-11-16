@@ -12,7 +12,7 @@ use Base\Estate\Repository\LeaseRepository;
 use Base\Estate\Service\ActivityLog;
 use Base\Estate\Service\EstateMailer;
 use Base\Estate\Service\RentRevisions;
-use Doctrine\ORM\EntityManagerInterface;
+use Base\Contract\UnitOfWork;
 use Omnistate\Insee\Insee;
 use Omnistate\Omnistate;
 use PHPUnit\Framework\TestCase;
@@ -43,7 +43,7 @@ final class RentRevisionsTest extends TestCase
             $official = new OfficialIndex(new Omnistate(statistics: [new Insee($http)]));
         }
 
-        return new RentRevisions($this->createStub(EntityManagerInterface::class), $this->createStub(LeaseRepository::class), $this->createStub(ActivityLog::class), $this->createStub(EstateMailer::class), $official);
+        return new RentRevisions($this->createStub(UnitOfWork::class), $this->createStub(LeaseRepository::class), $this->createStub(ActivityLog::class), $this->createStub(EstateMailer::class), $official);
     }
 
     /** A lease of 850 € signed on 2025-09-01 on the IRL of T2 2025 (146.68). */
