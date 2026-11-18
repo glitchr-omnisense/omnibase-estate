@@ -25,7 +25,7 @@
         "dompdf/dompdf": "^3.0",
         "omnibase/drive": "^2.0",
         "omnibase/ledger": "^2.0",
-        "omnibridge/doctrine": "^3.0",
+        "omnibridge/doctrine": "^3.0|^4.0",
         "omnibridge/eloquent": "^2.0",
         "omnisense/omnisign": "^1.2",
         "omnistate/insee": "^1.0",
